@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#052e16"/>
+      <stop offset="1" stop-color="#0f172a"/>
+    </linearGradient>
+    <radialGradient id="r" cx="35%" cy="35%" r="70%">
+      <stop offset="0" stop-color="#fbbf24" stop-opacity="0.22"/>
+      <stop offset="0.6" stop-color="#fbbf24" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="p" width="24" height="24" patternUnits="userSpaceOnUse">
+      <path d="M0 24 L24 0" stroke="#ffffff" stroke-opacity="0.06" stroke-width="2"/>
+    </pattern>
+  </defs>
+
+  <rect width="1600" height="900" fill="url(#g)"/>
+  <rect width="1600" height="900" fill="url(#r)"/>
+  <rect width="1600" height="900" fill="url(#p)"/>
+
+  <!-- track ovals -->
+  <g fill="none" opacity="0.85">
+    <ellipse cx="820" cy="520" rx="560" ry="260" stroke="#e2e8f0" stroke-opacity="0.18" stroke-width="26"/>
+    <ellipse cx="820" cy="520" rx="560" ry="260" stroke="#0b1220" stroke-opacity="0.35" stroke-width="6"/>
+
+    <ellipse cx="820" cy="520" rx="470" ry="210" stroke="#e2e8f0" stroke-opacity="0.10" stroke-width="18"/>
+    <ellipse cx="820" cy="520" rx="470" ry="210" stroke="#0b1220" stroke-opacity="0.35" stroke-width="5"/>
+  </g>
+
+  <!-- finish line blocks -->
+  <g transform="translate(1140 490) rotate(-16)">
+    <rect x="0" y="0" width="180" height="64" rx="14" fill="#0b1220" opacity="0.6"/>
+    <g opacity="0.75">
+      <rect x="18" y="16" width="26" height="26" fill="#f8fafc"/>
+      <rect x="44" y="16" width="26" height="26" fill="#111827"/>
+      <rect x="70" y="16" width="26" height="26" fill="#f8fafc"/>
+      <rect x="96" y="16" width="26" height="26" fill="#111827"/>
+      <rect x="122" y="16" width="26" height="26" fill="#f8fafc"/>
+    </g>
+  </g>
+
+  <!-- subtle title -->
+  <g opacity="0.9">
+    <text x="120" y="160" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="46" font-weight="800" fill="#f8fafc">Horse Racing</text>
+    <text x="120" y="205" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" fill="#cbd5e1">Tournament Management System</text>
+  </g>
+</svg>

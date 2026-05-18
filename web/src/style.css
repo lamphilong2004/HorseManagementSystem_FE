@@ -147,7 +147,7 @@ input, select {
 .authShell {
   display: grid;
   min-height: 100vh;
-  background-image: url('/login-bg.png'), url('/login-bg.svg');
+  background-image: url('./assets/login-bg.png'), url('./assets/login-bg.svg');
   place-items: center;
   padding: 24px 16px;
 }
@@ -166,8 +166,8 @@ input, select {
 
 .authHero {
   position: relative;
-  /* If you add `public/login-bg.png`, it will be used (fallback to SVG). */
-  background-image: url('/login-bg.png'), url('/login-bg.svg');
+  /* Referenced from src/assets to build properly on deploy */
+  background-image: url('./assets/login-bg.png'), url('./assets/login-bg.svg');
   background-size: cover;
   background-position: center;
 }
