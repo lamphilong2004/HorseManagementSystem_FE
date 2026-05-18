@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import type { Role } from '../types'
 import { useSession } from '../auth/SessionContext'
+import axios from 'axios'
 
 const roles: Array<{ value: Role; label: string }> = [
   { value: 'OWNER', label: 'Horse Owner' },
@@ -39,7 +40,7 @@ export function LoginPage() {
 
         <div className="authForm">
           <h2 className="authTitle">Login</h2>
-          <p className="muted authSubtitle">Dev mode: chọn role để mô phỏng đăng nhập.</p>
+          <p className="muted authSubtitle">Đăng nhập tài khoản hệ thống.</p>
 
           <div className="row">
             <div className="field">
@@ -63,7 +64,7 @@ export function LoginPage() {
             </select>
           </div>
 
-          {error ? <p className="error">{error}</p> : null}
+          {error ? <p className="error" style={{ color: '#ef4444', fontSize: '14px', marginTop: '10px' }}>{error}</p> : null}
 
           <div style={{ display: 'flex', gap: 10, marginTop: 14, alignItems: 'center', flexWrap: 'wrap' }}>
             <button
@@ -75,8 +76,17 @@ export function LoginPage() {
                 try {
                   await login({ email, password, role })
                   navigate('/dashboard')
-                } catch {
-                  setError('Login failed')
+                } catch (err: any) {
+                  if (axios.isAxiosError(err) && err.response) {
+                    const serverMessage = err.response.data?.message;
+                    if (serverMessage === 'INVALID_CREDENTIALS') {
+                      setError('Thông tin đăng nhập không chính xác (Sai email hoặc mật khẩu).')
+                    } else {
+                      setError(err.response.data?.message || 'Đăng nhập thất bại. Vui lòng thử lại.')
+                    }
+                  } else {
+                    setError('Đăng nhập thất bại. Không thể kết nối với máy chủ Backend.')
+                  }
                 } finally {
                   setLoading(false)
                 }

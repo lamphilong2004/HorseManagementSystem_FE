@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import type { Role } from '../types'
 import { useSession } from '../auth/SessionContext'
+import axios from 'axios'
 
 const roles: Array<{ value: Role; label: string }> = [
   { value: 'OWNER', label: 'Horse Owner' },
@@ -39,7 +40,7 @@ export function RegisterPage() {
 
         <div className="authForm">
           <h2 className="authTitle">Register</h2>
-          <p className="muted authSubtitle">Tạo tài khoản demo (mock).</p>
+          <p className="muted authSubtitle">Tạo tài khoản hệ thống.</p>
 
           <div className="row">
             <div className="field">
@@ -69,7 +70,7 @@ export function RegisterPage() {
             </div>
           </div>
 
-          {error ? <p className="error">{error}</p> : null}
+          {error ? <p className="error" style={{ color: '#ef4444', fontSize: '14px', marginTop: '10px' }}>{error}</p> : null}
 
           <div style={{ display: 'flex', gap: 10, marginTop: 14, alignItems: 'center', flexWrap: 'wrap' }}>
             <button
@@ -81,8 +82,19 @@ export function RegisterPage() {
                 try {
                   await register({ name, email, password, role })
                   navigate('/dashboard')
-                } catch {
-                  setError('Register failed')
+                } catch (err: any) {
+                  if (axios.isAxiosError(err) && err.response) {
+                    const serverMessage = err.response.data?.message;
+                    if (serverMessage === 'INVALID_PASSWORD_FORMAT') {
+                      setError('Mật khẩu không hợp lệ (yêu cầu từ 8 ký tự trở lên).')
+                    } else if (serverMessage === 'EMAIL_ALREADY_EXISTS') {
+                      setError('Email này đã được đăng ký trên hệ thống.')
+                    } else {
+                      setError(err.response.data?.message || 'Đăng ký thất bại. Vui lòng thử lại.')
+                    }
+                  } else {
+                    setError('Đăng ký thất bại. Không thể kết nối với máy chủ Backend.')
+                  }
                 } finally {
                   setLoading(false)
                 }
