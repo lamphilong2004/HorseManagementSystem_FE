@@ -12,9 +12,11 @@ import { RaceDetailPage } from './pages/RaceDetailPage.tsx'
 import { HorsesPage } from './pages/HorsesPage.tsx'
 import { InvitesPage } from './pages/InvitesPage.tsx'
 import { PredictionsPage } from './pages/PredictionsPage.tsx'
+import { NotificationsPage } from './pages/NotificationsPage.tsx'
 import { AdminUsersPage } from './pages/AdminUsersPage.tsx'
 import { AdminSchedulingPage } from './pages/AdminSchedulingPage.tsx'
 import { RefereeRacesPage } from './pages/RefereeRacesPage.tsx'
+import { RefereeRaceDetailPage } from './pages/RefereeRaceDetailPage.tsx'
 import { RefereeReportPage } from './pages/RefereeReportPage.tsx'
 import { NotFoundPage } from './pages/NotFoundPage.tsx'
 
@@ -44,10 +46,12 @@ const router = createBrowserRouter([
       { path: 'horses', element: <HorsesPage /> },
       { path: 'invites', element: <InvitesPage /> },
       { path: 'predictions', element: <PredictionsPage /> },
+      { path: 'notifications', element: <NotificationsPage /> },
       { path: 'admin/users', element: <AdminUsersPage /> },
       { path: 'admin/scheduling', element: <AdminSchedulingPage /> },
       { path: 'referee/races', element: <RefereeRacesPage /> },
-      { path: 'referee/report', element: <RefereeReportPage /> },
+      { path: 'referee/races/:raceId', element: <RefereeRaceDetailPage /> },
+      { path: 'referee/report/:raceId', element: <RefereeReportPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

@@ -18,7 +18,7 @@ export function HorsesPage() {
       {items ? (
         <ul>
           {items.map((h) => (
-            <li key={h.id}>{h.name}</li>
+            <li key={h._id}>{h.name}</li>
           ))}
         </ul>
       ) : null}
