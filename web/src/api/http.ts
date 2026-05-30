@@ -1,7 +1,23 @@
 import axios from 'axios'
 
+function getApiBaseUrl(): string {
+  const rawBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim()
+
+  if (!rawBaseUrl) {
+    return ''
+  }
+
+  const normalized = rawBaseUrl.replace(/\/+$/, '')
+
+  if (normalized.endsWith('/api-docs')) {
+    return normalized.slice(0, -'/api-docs'.length)
+  }
+
+  return normalized
+}
+
 export const http = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? '',
+  baseURL: getApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },

@@ -15,7 +15,23 @@ import type {
   Invite,
 } from '../types'
 
-const BE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+function getApiBaseUrl(): string {
+  const rawBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim()
+
+  if (!rawBaseUrl) {
+    return ''
+  }
+
+  const normalized = rawBaseUrl.replace(/\/+$/, '')
+
+  if (normalized.endsWith('/api-docs')) {
+    return normalized.slice(0, -'/api-docs'.length)
+  }
+
+  return normalized
+}
+
+const BE = getApiBaseUrl() || 'http://localhost:3000'
 
 // ============================================================================
 // AUTH

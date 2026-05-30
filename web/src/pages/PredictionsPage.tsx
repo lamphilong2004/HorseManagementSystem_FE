@@ -1,14 +1,26 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { PredictionItem, Race } from '../types'
-import { getMyPredictions, getPublicRaces, getRaceHorses, placePrediction, checkPredictionOpen } from '../api'
+import { checkPredictionOpen, getMyPredictions, getPublicRaces, getRaceHorses, placePrediction } from '../api'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { getStatusClassName, getStatusLabel, PREDICTION_STATUS_OPTIONS } from '@/lib/status'
+import { BadgeDollarSign, RefreshCw, Sparkles, Trophy } from 'lucide-react'
 
 function statusBadge(s: string) {
-  return <span className={`badge badge-${s.toLowerCase()}`}>{s}</span>
+  return (
+    <Badge variant="outline" className={getStatusClassName(s, 'prediction')}>
+      {getStatusLabel(s, 'prediction')}
+    </Badge>
+  )
 }
 
 function formatMoney(n?: number) {
-  if (!n && n !== 0) return '—'
+  if (n === undefined || n === null) return '—'
   return n.toLocaleString('vi-VN') + ' ₫'
 }
 
@@ -16,15 +28,43 @@ function formatDate(d: string) {
   return new Date(d).toLocaleString('vi-VN')
 }
 
+const HISTORY_TIME_OPTIONS = [
+  { value: 'all', label: 'Tất cả thời gian' },
+  { value: '7d', label: '7 ngày gần đây' },
+  { value: '30d', label: '30 ngày gần đây' },
+  { value: '90d', label: '90 ngày gần đây' },
+]
+
+const SORT_OPTIONS = [
+  { value: 'newest', label: 'Mới nhất' },
+  { value: 'oldest', label: 'Cũ nhất' },
+]
+
+function getOptionLabel(options: Array<{ value: string; label: string }>, value: string) {
+  return options.find((option) => (option.value || 'all') === value)?.label || value
+}
+
+function isWithinWindow(dateValue: string, window: string) {
+  if (window === 'all') return true
+  const now = Date.now()
+  const createdAt = new Date(dateValue).getTime()
+  const windows: Record<string, number> = {
+    '7d': 7 * 24 * 60 * 60 * 1000,
+    '30d': 30 * 24 * 60 * 60 * 1000,
+    '90d': 90 * 24 * 60 * 60 * 1000,
+  }
+  return now - createdAt <= windows[window]
+}
+
 export function PredictionsPage() {
   const [activeTab, setActiveTab] = useState<'new' | 'history'>('history')
-
-  // History
   const [predictions, setPredictions] = useState<PredictionItem[]>([])
   const [historyLoading, setHistoryLoading] = useState(true)
-  const [historyFilter, setHistoryFilter] = useState('')
+  const [historyStatusFilter, setHistoryStatusFilter] = useState('all')
+  const [historyTimeFilter, setHistoryTimeFilter] = useState('all')
+  const [historySortOrder, setHistorySortOrder] = useState('newest')
+  const [historyReloadKey, setHistoryReloadKey] = useState(0)
 
-  // New prediction
   const [races, setRaces] = useState<Race[]>([])
   const [racesLoading, setRacesLoading] = useState(false)
   const [selectedRace, setSelectedRace] = useState('')
@@ -36,21 +76,17 @@ export function PredictionsPage() {
   const [predMsg, setPredMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [isPredOpen, setIsPredOpen] = useState(false)
 
-  // Load prediction history
   useEffect(() => {
     setHistoryLoading(true)
-    const params: any = {}
-    if (historyFilter) params.status = historyFilter
-    getMyPredictions(params)
+    getMyPredictions()
       .then((data) => {
         const list = Array.isArray(data) ? data : (data?.data || [])
         setPredictions(list)
       })
       .catch(() => setPredictions([]))
       .finally(() => setHistoryLoading(false))
-  }, [historyFilter])
+  }, [historyReloadKey])
 
-  // Load races for new prediction
   useEffect(() => {
     if (activeTab !== 'new') return
     setRacesLoading(true)
@@ -63,224 +99,297 @@ export function PredictionsPage() {
       .finally(() => setRacesLoading(false))
   }, [activeTab])
 
-  // Load horses when race selected
   useEffect(() => {
     if (!selectedRace) {
       setHorses([])
       setIsPredOpen(false)
       return
     }
+
     setHorsesLoading(true)
     Promise.all([
       getRaceHorses(selectedRace).catch(() => []),
       checkPredictionOpen(selectedRace).catch(() => ({ isOpen: false })),
-    ]).then(([h, openStatus]) => {
-      const horseList = Array.isArray(h) ? h : (h?.horses || h?.data || [])
-      setHorses(horseList)
-      setIsPredOpen(openStatus?.isOpen === true)
-    }).finally(() => setHorsesLoading(false))
+    ])
+      .then(([h, openStatus]) => {
+        const horseList = Array.isArray(h) ? h : (h?.horses || h?.data || [])
+        setHorses(horseList)
+        setIsPredOpen(openStatus?.isOpen === true)
+      })
+      .finally(() => setHorsesLoading(false))
   }, [selectedRace])
 
   async function handleSubmit() {
     if (!selectedRace || !selectedHorse || !betAmount) return
     setPredLoading(true)
     setPredMsg(null)
+
     try {
       await placePrediction(selectedRace, selectedHorse, Number(betAmount))
       setPredMsg({ type: 'success', text: 'Dự đoán thành công! 🎉' })
       setSelectedRace('')
       setSelectedHorse('')
       setBetAmount('')
-      // Refresh history
       setActiveTab('history')
-      setHistoryLoading(true)
-      getMyPredictions()
-        .then((data) => setPredictions(Array.isArray(data) ? data : (data?.data || [])))
-        .finally(() => setHistoryLoading(false))
-    } catch (e: any) {
-      const msg = e?.response?.data?.message || e?.response?.data?.error || 'Không thể đặt dự đoán'
+      setHistoryReloadKey((value) => value + 1)
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || error?.response?.data?.error || 'Không thể đặt dự đoán'
       setPredMsg({ type: 'error', text: msg })
     } finally {
       setPredLoading(false)
     }
   }
 
-  // Summary stats
-  const totalBet = predictions.reduce((s, p) => s + (p.betAmount || 0), 0)
-  const wonCount = predictions.filter(p => p.status === 'WON').length
-  const totalPayout = predictions.filter(p => p.status === 'WON').reduce((s, p) => s + (p.payout || 0), 0)
+  const totalBet = predictions.reduce((sum, prediction) => sum + (prediction.betAmount || 0), 0)
+  const wonCount = predictions.filter((prediction) => prediction.status === 'WON').length
+  const totalPayout = predictions
+    .filter((prediction) => prediction.status === 'WON')
+    .reduce((sum, prediction) => sum + (prediction.payout || 0), 0)
+
+  const filteredHistory = [...predictions]
+    .filter((prediction) => {
+      if (historyStatusFilter !== 'all' && prediction.status !== historyStatusFilter) return false
+      return isWithinWindow(prediction.createdAt, historyTimeFilter)
+    })
+    .sort((a, b) => {
+      const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      return historySortOrder === 'oldest' ? diff : -diff
+    })
 
   return (
-    <div>
-      <div className="page-header">
-        <h1>🎯 Dự đoán kết quả</h1>
-      </div>
-
-      {/* Summary Stats */}
-      <div className="stat-grid">
-        <div className="stat-card">
-          <div className="stat-icon">📊</div>
-          <div className="stat-label">Tổng dự đoán</div>
-          <div className="stat-value">{predictions.length}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">💰</div>
-          <div className="stat-label">Tổng đặt cược</div>
-          <div className="stat-value" style={{ fontSize: 18 }}>{formatMoney(totalBet)}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">🏆</div>
-          <div className="stat-label">Số lần thắng</div>
-          <div className="stat-value">{wonCount}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">🎉</div>
-          <div className="stat-label">Tổng thưởng</div>
-          <div className="stat-value money-won" style={{ fontSize: 18 }}>{formatMoney(totalPayout)}</div>
-        </div>
-      </div>
-
-      <div className="card">
-        <div className="tabs">
-          <button className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>
-            📋 Lịch sử dự đoán ({predictions.length})
-          </button>
-          <button className={`tab-btn ${activeTab === 'new' ? 'active' : ''}`} onClick={() => setActiveTab('new')}>
-            ✨ Dự đoán mới
-          </button>
-        </div>
-
-        {/* === History tab === */}
-        {activeTab === 'history' && (
-          <>
-            <div className="filter-bar">
-              <select value={historyFilter} onChange={(e) => setHistoryFilter(e.target.value)} style={{ width: 'auto', minWidth: 160 }}>
-                <option value="">Tất cả</option>
-                <option value="OPEN">OPEN</option>
-                <option value="CLOSED">CLOSED</option>
-                <option value="WON">WON</option>
-                <option value="LOST">LOST</option>
-              </select>
-            </div>
-
-            {historyLoading ? (
-              <div className="loading"><div className="spinner" /></div>
-            ) : predictions.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-state-icon">🎯</div>
-                <div className="empty-state-text">Chưa có dự đoán nào</div>
+    <div className="space-y-6">
+      <Card className="border-slate-800/80 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 shadow-2xl">
+        <CardHeader className="gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="space-y-3">
+            <div className="flex items-start gap-4">
+              <div className="rounded-2xl bg-amber-500/10 p-3 ring-1 ring-amber-500/20">
+                <Trophy className="h-7 w-7 text-amber-300" />
               </div>
-            ) : (
-              <div className="table-wrap">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Cuộc đua</th>
-                      <th>Ngựa</th>
-                      <th>Số tiền</th>
-                      <th>Trạng thái</th>
-                      <th>Tiền thưởng</th>
-                      <th>Ngày đặt</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {predictions.map((p) => (
-                      <tr key={p._id}>
-                        <td className="fw-600">
-                          {p.raceId?.name || (typeof p.raceId === 'string' ? (
-                            <Link to={`/races/${p.raceId}`} style={{ color: 'var(--primary)' }}>Xem cuộc đua</Link>
-                          ) : '—')}
-                        </td>
-                        <td>{p.horseId?.name || '—'}</td>
-                        <td className="money">{formatMoney(p.betAmount)}</td>
-                        <td>{statusBadge(p.status)}</td>
-                        <td className={`money ${p.status === 'WON' ? 'money-won' : ''}`}>
-                          {p.status === 'WON' ? formatMoney(p.payout) : '—'}
-                        </td>
-                        <td className="fs-13 muted">{formatDate(p.createdAt)}</td>
-                      </tr>
+              <div className="space-y-1">
+                <CardTitle className="text-3xl text-slate-50">Dự đoán kết quả</CardTitle>
+                <CardDescription className="max-w-2xl text-slate-300">
+                  Theo dõi lịch sử dự đoán, lọc theo trạng thái hoặc thời gian và đặt dự đoán mới trong cùng một luồng.
+                </CardDescription>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-200">Tổng {predictions.length}</Badge>
+              <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-200">Đã thắng {wonCount}</Badge>
+              <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 text-blue-200">Tổng cược {formatMoney(totalBet)}</Badge>
+              <Badge variant="outline" className="border-violet-500/30 bg-violet-500/10 text-violet-200">Tiền thưởng {formatMoney(totalPayout)}</Badge>
+            </div>
+          </div>
+
+          <Button
+            variant="outline"
+            className="h-11 border-slate-700 bg-slate-950/70 text-slate-100 hover:bg-slate-900"
+            onClick={() => setHistoryReloadKey((value) => value + 1)}
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Làm mới
+          </Button>
+        </CardHeader>
+      </Card>
+
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'new' | 'history')} className="space-y-5">
+        <TabsList className="grid h-12 w-full grid-cols-2 bg-slate-900/70 p-1 text-slate-300 ring-1 ring-slate-700/60">
+          <TabsTrigger value="history" className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">📋 Lịch sử dự đoán</TabsTrigger>
+          <TabsTrigger value="new" className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">✨ Dự đoán mới</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="history" className="space-y-4">
+          <Card className="border-slate-800/80 bg-slate-950/70">
+            <CardHeader className="gap-4 border-b border-slate-800/60 md:flex-row md:items-end md:justify-between">
+              <div className="space-y-1">
+                <CardTitle className="text-xl text-slate-50">Bộ lọc lịch sử</CardTitle>
+                <CardDescription className="text-slate-400">Lọc kết quả theo trạng thái, thời gian và thứ tự hiển thị.</CardDescription>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <Select value={historyStatusFilter} onValueChange={(value) => setHistoryStatusFilter(value ?? 'all')}>
+                  <SelectTrigger className="h-11 w-[180px] border-slate-700 bg-slate-950/70 text-slate-100">{getOptionLabel(PREDICTION_STATUS_OPTIONS, historyStatusFilter)}</SelectTrigger>
+                  <SelectContent>
+                    {PREDICTION_STATUS_OPTIONS.map((option) => (
+                      <SelectItem key={option.value || 'all'} value={option.value || 'all'}>{option.label}</SelectItem>
                     ))}
-                  </tbody>
-                </table>
+                  </SelectContent>
+                </Select>
+                <Select value={historyTimeFilter} onValueChange={(value) => setHistoryTimeFilter(value ?? 'all')}>
+                  <SelectTrigger className="h-11 w-[180px] border-slate-700 bg-slate-950/70 text-slate-100">{getOptionLabel(HISTORY_TIME_OPTIONS, historyTimeFilter)}</SelectTrigger>
+                  <SelectContent>
+                    {HISTORY_TIME_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={historySortOrder} onValueChange={(value) => setHistorySortOrder(value ?? 'newest')}>
+                  <SelectTrigger className="h-11 w-[180px] border-slate-700 bg-slate-950/70 text-slate-100">{getOptionLabel(SORT_OPTIONS, historySortOrder)}</SelectTrigger>
+                  <SelectContent>
+                    {SORT_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            )}
-          </>
-        )}
-
-        {/* === New Prediction tab === */}
-        {activeTab === 'new' && (
-          <div style={{ maxWidth: 600 }}>
-            {predMsg && (
-              <div className={`alert ${predMsg.type === 'success' ? 'alert-success' : 'alert-error'} mb-16`}>
-                {predMsg.text}
-              </div>
-            )}
-
-            <div className="form-group">
-              <label>Chọn cuộc đua</label>
-              {racesLoading ? (
-                <p className="muted">Đang tải...</p>
+            </CardHeader>
+            <CardContent className="pt-5">
+              {historyLoading ? (
+                <div className="loading"><div className="spinner" /></div>
+              ) : filteredHistory.length === 0 ? (
+                <div className="rounded-2xl border border-slate-800/80 bg-slate-900/60 px-6 py-12 text-center">
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 text-3xl">🎯</div>
+                  <div className="text-lg font-semibold text-slate-100">Chưa có dự đoán phù hợp</div>
+                  <p className="mt-2 text-sm text-slate-400">Thay đổi bộ lọc để xem các dự đoán khác.</p>
+                </div>
               ) : (
-                <select value={selectedRace} onChange={(e) => { setSelectedRace(e.target.value); setSelectedHorse('') }}>
-                  <option value="">— Chọn cuộc đua —</option>
-                  {races.map((r) => (
-                    <option key={r._id} value={r._id}>{r.name} ({r.status})</option>
-                  ))}
-                </select>
+                <div className="overflow-hidden rounded-2xl border border-slate-800/80">
+                  <table className="w-full border-collapse text-left text-sm">
+                    <thead className="bg-slate-900/90 text-slate-300">
+                      <tr>
+                        <th className="px-4 py-3 font-medium">Cuộc đua</th>
+                        <th className="px-4 py-3 font-medium">Ngựa</th>
+                        <th className="px-4 py-3 font-medium">Số tiền</th>
+                        <th className="px-4 py-3 font-medium">Trạng thái</th>
+                        <th className="px-4 py-3 font-medium">Tiền thưởng</th>
+                        <th className="px-4 py-3 font-medium">Ngày đặt</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/80 bg-slate-950/70">
+                      {filteredHistory.map((prediction) => (
+                        <tr key={prediction._id} className="transition-colors hover:bg-slate-900/70">
+                          <td className="px-4 py-3 font-medium text-slate-100">
+                            {prediction.raceId?.name || (typeof prediction.raceId === 'string' ? (
+                              <Link to={`/races/${prediction.raceId}`} className="text-amber-300 hover:text-amber-200">Xem cuộc đua</Link>
+                            ) : '—')}
+                          </td>
+                          <td className="px-4 py-3 text-slate-300">{prediction.horseId?.name || '—'}</td>
+                          <td className="px-4 py-3 font-medium text-slate-200">{formatMoney(prediction.betAmount)}</td>
+                          <td className="px-4 py-3">{statusBadge(prediction.status)}</td>
+                          <td className={`px-4 py-3 font-medium ${prediction.status === 'WON' ? 'text-emerald-300' : 'text-slate-300'}`}>
+                            {prediction.status === 'WON' ? formatMoney(prediction.payout) : '—'}
+                          </td>
+                          <td className="px-4 py-3 text-slate-400">{formatDate(prediction.createdAt)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
-            </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-            {selectedRace && !isPredOpen && !horsesLoading && (
-              <div className="alert alert-warning">
-                ⚠️ Cuộc đua này chưa mở hoặc đã đóng dự đoán
-              </div>
-            )}
+        <TabsContent value="new">
+          <Card className="border-slate-800/80 bg-slate-950/70">
+            <CardHeader className="border-b border-slate-800/60">
+              <CardTitle className="flex items-center gap-2 text-xl text-slate-50">
+                <Sparkles className="h-5 w-5 text-amber-300" />
+                Tạo dự đoán mới
+              </CardTitle>
+              <CardDescription className="text-slate-400">Chỉ các cuộc đua sắp diễn ra có thể đặt dự đoán.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-6 pt-6 lg:grid-cols-[1.15fr_0.85fr]">
+              <div className="space-y-4">
+                {predMsg && (
+                  <div className={`rounded-xl border px-4 py-3 text-sm ${predMsg.type === 'success' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-100' : 'border-red-500/30 bg-red-500/10 text-red-100'}`}>
+                    {predMsg.text}
+                  </div>
+                )}
 
-            {selectedRace && (
-              <div className="form-group">
-                <label>Chọn ngựa dự đoán thắng</label>
-                {horsesLoading ? (
-                  <p className="muted">Đang tải danh sách ngựa...</p>
-                ) : (
-                  <select value={selectedHorse} onChange={(e) => setSelectedHorse(e.target.value)}>
-                    <option value="">— Chọn ngựa —</option>
-                    {horses.map((h: any) => {
-                      const horse = h.horse || h.horseId || h
-                      return <option key={horse._id} value={horse._id}>{horse.name}</option>
-                    })}
-                  </select>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-200">Chọn cuộc đua</label>
+                  {racesLoading ? (
+                    <p className="text-sm text-slate-400">Đang tải...</p>
+                  ) : (
+                    <Select value={selectedRace} onValueChange={(value) => { setSelectedRace(value ?? ''); setSelectedHorse('') }}>
+                      <SelectTrigger className="h-11 w-full border-slate-700 bg-slate-950/70 text-slate-100">
+                        {selectedRace ? `${races.find((race) => race._id === selectedRace)?.name || '— Chọn cuộc đua —'} (${getStatusLabel(races.find((race) => race._id === selectedRace)?.status, 'race')})` : '— Chọn cuộc đua —'}
+                      </SelectTrigger>
+                      <SelectContent>
+                        {races.map((race) => (
+                          <SelectItem key={race._id} value={race._id}>{race.name} ({getStatusLabel(race.status, 'race')})</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+
+                {selectedRace && !isPredOpen && !horsesLoading && (
+                  <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">⚠️ Cuộc đua này chưa mở hoặc đã đóng dự đoán</div>
+                )}
+
+                {selectedRace && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-200">Chọn ngựa dự đoán thắng</label>
+                    {horsesLoading ? (
+                      <p className="text-sm text-slate-400">Đang tải danh sách ngựa...</p>
+                    ) : (
+                      <Select value={selectedHorse} onValueChange={(value) => setSelectedHorse(value ?? '')}>
+                        <SelectTrigger className="h-11 w-full border-slate-700 bg-slate-950/70 text-slate-100">
+                          {selectedHorse ? (horses.find((horse: any) => (horse.horse || horse.horseId || horse)._id === selectedHorse)?.name || '— Chọn ngựa —') : '— Chọn ngựa —'}
+                        </SelectTrigger>
+                        <SelectContent>
+                          {horses.map((horse: any) => {
+                            const item = horse.horse || horse.horseId || horse
+                            return <SelectItem key={item._id} value={item._id}>{item.name}</SelectItem>
+                          })}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                )}
+
+                {selectedRace && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-200">Số tiền đặt cược</label>
+                    <Input
+                      type="number"
+                      min="100000"
+                      max="10000000"
+                      step="50000"
+                      value={betAmount}
+                      onChange={(event) => setBetAmount(event.target.value)}
+                      placeholder="Ví dụ: 500000"
+                      className="h-11 border-slate-700 bg-slate-950/70 text-slate-100 placeholder:text-slate-500"
+                    />
+                    <p className="text-xs text-slate-400">Giới hạn từ 100,000 đến 10,000,000 VND.</p>
+                  </div>
+                )}
+
+                {selectedRace && (
+                  <Button className="h-11 w-full bg-amber-500 text-slate-950 hover:bg-amber-400" disabled={!selectedHorse || !betAmount || predLoading || !isPredOpen} onClick={handleSubmit}>
+                    {predLoading ? 'Đang xử lý...' : '✅ Xác nhận dự đoán'}
+                  </Button>
                 )}
               </div>
-            )}
 
-            {selectedRace && (
-              <div className="form-group">
-                <label>Số tiền đặt cược (100,000 - 10,000,000 VND)</label>
-                <input
-                  type="number"
-                  min="100000"
-                  max="10000000"
-                  step="50000"
-                  value={betAmount}
-                  onChange={(e) => setBetAmount(e.target.value)}
-                  placeholder="Ví dụ: 500000"
-                />
+              <div className="space-y-4 rounded-2xl border border-slate-800/80 bg-slate-900/50 p-5">
+                <div className="flex items-center gap-2 text-sm font-semibold text-slate-100">
+                  <BadgeDollarSign className="h-4 w-4 text-emerald-300" />
+                  Trạng thái phiên đặt cược
+                </div>
+                <div className="space-y-3 text-sm text-slate-300">
+                  <div className="flex items-center justify-between rounded-xl bg-slate-950/60 px-3 py-2">
+                    <span>Cuộc đua mở dự đoán</span>
+                    <span className={isPredOpen ? 'text-emerald-300' : 'text-amber-300'}>{isPredOpen ? 'Đang mở' : 'Chưa mở'}</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl bg-slate-950/60 px-3 py-2">
+                    <span>Số ngựa khả dụng</span>
+                    <span className="text-slate-100">{horses.length}</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl bg-slate-950/60 px-3 py-2">
+                    <span>Tiền thưởng hiện tại</span>
+                    <span className="text-slate-100">{formatMoney(totalPayout)}</span>
+                  </div>
+                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-xs leading-6 text-amber-100">
+                    <div className="mb-1 font-semibold">Gợi ý</div>
+                    Hãy chọn một cuộc đua có trạng thái <span className="font-semibold">Đã lên lịch</span>, sau đó chọn ngựa và nhập số tiền trước khi xác nhận.
+                  </div>
+                </div>
               </div>
-            )}
-
-            {selectedRace && (
-              <button
-                className="btn btnPrimary"
-                disabled={!selectedHorse || !betAmount || predLoading || !isPredOpen}
-                onClick={handleSubmit}
-                style={{ marginTop: 8 }}
-              >
-                {predLoading ? 'Đang xử lý...' : '✅ Xác nhận dự đoán'}
-              </button>
-            )}
-          </div>
-        )}
-      </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

@@ -127,7 +127,7 @@ export function AppLayout() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
-              <span className="text-[11px] font-bold text-emerald-400 tracking-wider uppercase">LIVE</span>
+              <span className="text-[11px] font-bold text-emerald-400 tracking-wider uppercase">TRỰC TIẾP</span>
             </div>
 
             {/* Profile Info */}

@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'
 import { App } from './App'
+import './globals.css'
 import './style.css'
 
 async function enableMocks() {
