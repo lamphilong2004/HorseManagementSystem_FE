@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import type { Race } from '../types'
-import { getRefereeRaces } from '../api'
+import type { Race } from '../../types'
+import { getRefereeRaces } from '../../api'
 
 function statusBadge(s: string) {
   return <span className={`badge badge-${s.toLowerCase()}`}>

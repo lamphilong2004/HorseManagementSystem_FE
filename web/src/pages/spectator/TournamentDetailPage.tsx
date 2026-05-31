@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
-import type { Tournament, Race, LeaderboardEntry } from '../types'
-import { getPublicTournament, getPublicRaces, getTournamentLeaderboard } from '../api'
+import { Link, useParams, useNavigate } from 'react-router-dom'
+import type { Tournament, Race, LeaderboardEntry } from '../../types'
+import { getPublicTournament, getPublicRaces, getTournamentLeaderboard } from '../../api'
+import { AnimatedTable } from '../../components/ui/animated-table'
 
 function statusBadge(s: string) {
   return <span className={`badge badge-${s.toLowerCase()}`}>{s}</span>
@@ -22,6 +23,7 @@ function formatMoney(n?: number) {
 
 export function TournamentDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const [tournament, setTournament] = useState<Tournament | null>(null)
   const [races, setRaces] = useState<Race[]>([])
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
@@ -55,6 +57,76 @@ export function TournamentDetailPage() {
   if (error) return <div className="card"><div className="alert alert-error">⚠️ {error}</div><Link to="/tournaments" className="back-link">← Quay lại</Link></div>
 
   if (!tournament) return null
+
+  const racesColumns = [
+    {
+      id: 'name',
+      header: 'Cuộc đua',
+      cell: (r: Race) => <span className="fw-600">{r.name}</span>,
+    },
+    {
+      id: 'distance',
+      header: 'Khoảng cách',
+      cell: (r: Race) => <span>{r.distance ? `${r.distance}m` : '—'}</span>,
+    },
+    {
+      id: 'scheduledAt',
+      header: 'Thời gian',
+      cell: (r: Race) => <span className="fs-13">{formatDateTime(r.scheduledAt)}</span>,
+    },
+    {
+      id: 'status',
+      header: 'Trạng thái',
+      cell: (r: Race) => statusBadge(r.status),
+    },
+    {
+      id: 'prizeFirst',
+      header: 'Giải thưởng',
+      align: 'right' as const,
+      cell: (r: Race) => <span className="money">{r.prizeFirst ? formatMoney(r.prizeFirst) : '—'}</span>,
+    },
+  ]
+
+  const leaderboardColumns = [
+    {
+      id: 'rank',
+      header: '#',
+      cell: (_: LeaderboardEntry, idx: number) => (
+        <span className={`position-cell ${idx < 3 ? `rank-${idx + 1}` : ''}`}>
+          {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}
+        </span>
+      ),
+    },
+    {
+      id: 'name',
+      header: 'Tên',
+      cell: (entry: LeaderboardEntry) => <span className="fw-600">{entry.horseName || entry.jockeyName || '—'}</span>,
+    },
+    {
+      id: 'races',
+      header: 'Số trận',
+      cell: (entry: LeaderboardEntry) => <span>{entry.races ?? '—'}</span>,
+    },
+    {
+      id: 'wins',
+      header: 'Thắng',
+      cell: (entry: LeaderboardEntry) => <span>{entry.wins ?? '—'}</span>,
+    },
+    {
+      id: 'totalPoints',
+      header: 'Tổng điểm',
+      cell: (entry: LeaderboardEntry) => <span className="fw-700">{entry.totalPoints ?? '—'}</span>,
+    },
+    {
+      id: 'totalPrize',
+      header: 'Giải thưởng',
+      align: 'right' as const,
+      cell: (entry: LeaderboardEntry) => <span className="money">{formatMoney(entry.totalPrize)}</span>,
+    },
+  ]
+
+  const racesWithId = races.map((r) => ({ ...r, id: r._id }))
+  const leaderboardWithId = leaderboard.map((entry, idx) => ({ ...entry, id: idx }))
 
   return (
     <div>
@@ -94,7 +166,7 @@ export function TournamentDetailPage() {
       </div>
 
       <div className="card">
-        <div className="tabs">
+        <div className="tabs" style={{ marginBottom: 16 }}>
           <button className={`tab-btn ${activeTab === 'races' ? 'active' : ''}`} onClick={() => setActiveTab('races')}>
             📅 Lịch đua ({races.length})
           </button>
@@ -104,77 +176,30 @@ export function TournamentDetailPage() {
         </div>
 
         {activeTab === 'races' && (
-          races.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-state-icon">📅</div>
-              <div className="empty-state-text">Chưa có cuộc đua nào trong giải</div>
-            </div>
-          ) : (
-            <div className="table-wrap">
-              <table className="table table-clickable">
-                <thead>
-                  <tr>
-                    <th>Cuộc đua</th>
-                    <th>Khoảng cách</th>
-                    <th>Thời gian</th>
-                    <th>Trạng thái</th>
-                    <th>Giải thưởng</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {races.map((r) => (
-                    <tr key={r._id} onClick={() => window.location.href = `/races/${r._id}`}>
-                      <td className="fw-600">{r.name}</td>
-                      <td>{r.distance ? `${r.distance}m` : '—'}</td>
-                      <td className="fs-13">{formatDateTime(r.scheduledAt)}</td>
-                      <td>{statusBadge(r.status)}</td>
-                      <td className="money">{r.prizeFirst ? formatMoney(r.prizeFirst) : '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )
+          <AnimatedTable
+            data={racesWithId}
+            columns={racesColumns}
+            onRowClick={(r: any) => navigate(`/races/${r._id}`)}
+            emptyMessage={
+              <div className="empty-state py-8">
+                <div className="empty-state-icon">📅</div>
+                <div className="empty-state-text">Chưa có cuộc đua nào trong giải</div>
+              </div>
+            }
+          />
         )}
 
         {activeTab === 'leaderboard' && (
-          leaderboard.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-state-icon">🥇</div>
-              <div className="empty-state-text">Chưa có dữ liệu bảng xếp hạng</div>
-            </div>
-          ) : (
-            <div className="table-wrap">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Tên</th>
-                    <th>Số trận</th>
-                    <th>Thắng</th>
-                    <th>Tổng điểm</th>
-                    <th>Giải thưởng</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {leaderboard.map((entry, idx) => (
-                    <tr key={idx}>
-                      <td>
-                        <span className={`position-cell ${idx < 3 ? `rank-${idx + 1}` : ''}`}>
-                          {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}
-                        </span>
-                      </td>
-                      <td className="fw-600">{entry.horseName || entry.jockeyName || '—'}</td>
-                      <td>{entry.races ?? '—'}</td>
-                      <td>{entry.wins ?? '—'}</td>
-                      <td className="fw-700">{entry.totalPoints ?? '—'}</td>
-                      <td className="money">{formatMoney(entry.totalPrize)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )
+          <AnimatedTable
+            data={leaderboardWithId}
+            columns={leaderboardColumns}
+            emptyMessage={
+              <div className="empty-state py-8">
+                <div className="empty-state-icon">🥇</div>
+                <div className="empty-state-text">Chưa có dữ liệu bảng xếp hạng</div>
+              </div>
+            }
+          />
         )}
       </div>
     </div>

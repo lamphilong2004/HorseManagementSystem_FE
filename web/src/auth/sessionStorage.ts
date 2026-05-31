@@ -16,6 +16,15 @@ export function saveSession(session: Session) {
   localStorage.setItem(KEY, JSON.stringify(session))
 }
 
+export function updateSessionToken(token: string) {
+  const session = loadSession()
+  if (!session) return
+  saveSession({
+    ...session,
+    token,
+  })
+}
+
 export function clearSession() {
   localStorage.removeItem(KEY)
 }

@@ -1,4 +1,5 @@
 import { http } from './http'
+import { loadSession, saveSession } from '../auth/sessionStorage'
 import type {
   Session,
   Role,
@@ -62,6 +63,62 @@ export async function register(params: { name: string; email: string; password: 
     role: params.role,
   })
   return login({ email: params.email, password: params.password, role: params.role })
+}
+
+export async function getCurrentUserProfile(): Promise<any> {
+  try {
+    const res = await http.get(`${BE}/auth/me`)
+    return res.data?.data || res.data?.user || res.data
+  } catch (error: any) {
+    if (error?.response?.status !== 401) throw error
+
+    const refreshed = await refreshAccessToken().catch(() => null)
+    if (!refreshed) throw error
+
+    const retry = await http.get(`${BE}/auth/me`)
+    return retry.data?.data || retry.data?.user || retry.data
+  }
+}
+
+export async function changePassword(params: {
+  oldPassword: string
+  newPassword: string
+}): Promise<any> {
+  try {
+    const res = await http.post(`${BE}/auth/change-password`, params)
+    return res.data?.data || res.data
+  } catch (error: any) {
+    if (error?.response?.status !== 401) throw error
+
+    const refreshed = await refreshAccessToken().catch(() => null)
+    if (!refreshed) throw error
+
+    const retry = await http.post(`${BE}/auth/change-password`, params)
+    return retry.data?.data || retry.data
+  }
+}
+
+async function refreshAccessToken(): Promise<string | null> {
+  const res = await http.post(
+    `${BE}/auth/refresh`,
+    {},
+    { withCredentials: true },
+  )
+
+  const data = res.data?.data || res.data || {}
+  const token = data.accessToken || data.token || data?.access_token || null
+
+  if (token) {
+    const session = loadSession()
+    if (session) {
+      saveSession({
+        ...session,
+        token,
+      })
+    }
+  }
+
+  return token
 }
 
 // ============================================================================

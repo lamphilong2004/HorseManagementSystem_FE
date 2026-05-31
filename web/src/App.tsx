@@ -4,21 +4,23 @@ import { SessionProvider, useSession } from './auth/SessionContext'
 import { AppLayout } from './components/AppLayout'
 import { LoginPage } from './pages/LoginPage.tsx'
 import { RegisterPage } from './pages/RegisterPage.tsx'
-import { DashboardPage } from './pages/DashboardPage.tsx'
-import { TournamentsPage } from './pages/TournamentsPage.tsx'
-import { TournamentDetailPage } from './pages/TournamentDetailPage.tsx'
-import { RacesPage } from './pages/RacesPage.tsx'
-import { RaceDetailPage } from './pages/RaceDetailPage.tsx'
+import { DashboardPage } from './pages/spectator/DashboardPage.tsx'
+import { ProfilePage } from './pages/ProfilePage.tsx'
+import { TournamentsPage } from './pages/spectator/TournamentsPage.tsx'
+import { TournamentDetailPage } from './pages/spectator/TournamentDetailPage.tsx'
+import { RacesPage } from './pages/spectator/RacesPage.tsx'
+import { RaceDetailPage } from './pages/spectator/RaceDetailPage.tsx'
 import { HorsesPage } from './pages/HorsesPage.tsx'
 import { InvitesPage } from './pages/InvitesPage.tsx'
-import { PredictionsPage } from './pages/PredictionsPage.tsx'
-import { NotificationsPage } from './pages/NotificationsPage.tsx'
+import { PredictionsPage } from './pages/spectator/PredictionsPage.tsx'
+import { NotificationsPage } from './pages/spectator/NotificationsPage.tsx'
 import { AdminUsersPage } from './pages/AdminUsersPage.tsx'
 import { AdminSchedulingPage } from './pages/AdminSchedulingPage.tsx'
-import { RefereeRacesPage } from './pages/RefereeRacesPage.tsx'
-import { RefereeRaceDetailPage } from './pages/RefereeRaceDetailPage.tsx'
-import { RefereeReportPage } from './pages/RefereeReportPage.tsx'
+import { RefereeRacesPage } from './pages/race_referee/RefereeRacesPage.tsx'
+import { RefereeRaceDetailPage } from './pages/race_referee/RefereeRaceDetailPage.tsx'
+import { RefereeReportPage } from './pages/race_referee/RefereeReportPage.tsx'
 import { NotFoundPage } from './pages/NotFoundPage.tsx'
+import { AnimatedToastProvider } from './components/ui/animated-toast'
 
 function RequireAuth(props: { children: ReactNode }) {
   const { session } = useSession()
@@ -39,6 +41,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/dashboard" replace /> },
       { path: 'dashboard', element: <DashboardPage /> },
+      { path: 'profile', element: <ProfilePage /> },
       { path: 'tournaments', element: <TournamentsPage /> },
       { path: 'tournaments/:id', element: <TournamentDetailPage /> },
       { path: 'races', element: <RacesPage /> },
@@ -60,7 +63,9 @@ const router = createBrowserRouter([
 export function App() {
   return (
     <SessionProvider>
-      <RouterProvider router={router} />
+      <AnimatedToastProvider>
+        <RouterProvider router={router} />
+      </AnimatedToastProvider>
     </SessionProvider>
   )
 }

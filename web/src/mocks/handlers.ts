@@ -31,6 +31,35 @@ export const handlers = [
     return HttpResponse.json(session)
   }),
 
+  http.post('/api/auth/change-password', async () => {
+    return HttpResponse.json({
+      message: 'Password changed successfully',
+    })
+  }),
+
+  http.get('/api/auth/me', () => {
+    try {
+      const rawSession = localStorage.getItem('hr_session')
+      const parsed = rawSession ? JSON.parse(rawSession) : null
+      const role = parsed?.user?.role || 'SPECTATOR'
+
+      return HttpResponse.json({
+        userId: demoUsers[role as Role].id,
+        fullName: demoUsers[role as Role].name,
+        email: demoUsers[role as Role].email,
+        role,
+      })
+    } catch {
+      const fallback = demoUsers.SPECTATOR
+      return HttpResponse.json({
+        userId: fallback.id,
+        fullName: fallback.name,
+        email: fallback.email,
+        role: fallback.role,
+      })
+    }
+  }),
+
   http.get('/api/tournaments', () => HttpResponse.json(tournaments)),
 
   http.get('/api/tournaments/:id', ({ params }) => {

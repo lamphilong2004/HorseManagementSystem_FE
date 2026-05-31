@@ -9,12 +9,23 @@ type SessionContextValue = {
   login: (params: { email: string; password: string; role: Role }) => Promise<void>
   register: (params: { name: string; email: string; password: string; role: Role }) => Promise<void>
   logout: () => void
+  balance: number
+  updateBalance: (newBalance: number) => void
 }
 
 const SessionContext = createContext<SessionContextValue | null>(null)
 
 export function SessionProvider(props: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(() => loadSession())
+  const [balance, setBalance] = useState<number>(() => {
+    const saved = localStorage.getItem('hr_user_balance')
+    return saved ? Number(saved) : 10000000 // 10 million VND default
+  })
+
+  const updateBalance = (newBalance: number) => {
+    setBalance(newBalance)
+    localStorage.setItem('hr_user_balance', String(newBalance))
+  }
 
   const value = useMemo<SessionContextValue>(
     () => ({
@@ -33,8 +44,10 @@ export function SessionProvider(props: { children: ReactNode }) {
         clearSession()
         setSession(null)
       },
+      balance,
+      updateBalance,
     }),
-    [session],
+    [session, balance],
   )
 
   return <SessionContext.Provider value={value}>{props.children}</SessionContext.Provider>

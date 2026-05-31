@@ -5,6 +5,34 @@
 @import "tailwindcss/utilities.css" layer(utilities);
 
 :root {
+  /* Light theme variables */
+  --bg: #f8fafc;
+  --bg2: #f1f5f9;
+  --surface: #ffffff;
+  --surface-strong: #e2e8f0;
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --primary: #f59e0b;
+  --primary-weak: rgba(245, 158, 11, 0.08);
+  --accent: #f59e0b;
+  --danger: #ef4444;
+  --danger-weak: rgba(239, 68, 68, 0.08);
+  --success: #10b981;
+  --success-weak: rgba(16, 185, 129, 0.08);
+  --warning: #f59e0b;
+  --warning-weak: rgba(245, 158, 11, 0.08);
+  --info: #3b82f6;
+  --info-weak: rgba(59, 130, 246, 0.08);
+  display: grid;
+
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color-scheme: light;
+}
+
+.dark {
   /* Modern Professional Betting UI: Slate dark theme + Amber trophy gold */
   --bg: #070b19;
   --bg2: #0f172a;
@@ -24,11 +52,6 @@
   --warning-weak: rgba(245, 158, 11, 0.1);
   --info: #3b82f6;
   --info-weak: rgba(59, 130, 246, 0.1);
-  display: grid;
-
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  font-size: 16px;
-  line-height: 1.5;
   color-scheme: dark;
 }
 

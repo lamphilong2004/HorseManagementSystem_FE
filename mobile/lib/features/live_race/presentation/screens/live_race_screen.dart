@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/state/mock_app_state.dart';
+import '../../../../features/home/domain/models/tournament_model.dart';
 
 class LiveRaceScreen extends StatefulWidget {
   const LiveRaceScreen({super.key});
@@ -219,7 +220,7 @@ class _LiveRaceScreenState extends State<LiveRaceScreen> with SingleTickerProvid
     );
   }
 
-  Widget _buildHeaderBlock(var activeRace, MockAppState appState) {
+  Widget _buildHeaderBlock(Race activeRace, MockAppState appState) {
     return Card(
       color: AppColors.surface,
       child: Padding(
@@ -279,7 +280,7 @@ class _LiveRaceScreenState extends State<LiveRaceScreen> with SingleTickerProvid
     );
   }
 
-  Widget _buildHorseProgressRow(var horse) {
+  Widget _buildHorseProgressRow(Horse horse) {
     // Generate placement colors (Gold, Silver, Bronze, standard)
     Color medalColor;
     String positionText;

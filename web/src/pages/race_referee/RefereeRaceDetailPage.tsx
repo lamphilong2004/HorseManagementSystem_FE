@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import type { Race, RaceHorseRegistration, Violation, RaceResult } from '../types'
+import type { Race, RaceHorseRegistration, Violation, RaceResult } from '../../types'
 import {
   getPublicRace, getRefereeRaceHorses, getRefereeViolations,
   createViolation, resolveViolation, confirmRaceResult, getRaceResults,
-} from '../api'
+} from '../../api'
+import { AnimatedTable } from '../../components/ui/animated-table'
 
 const VIOLATION_TYPES = ['FALSE_START', 'INTERFERENCE', 'OVERWEIGHT', 'DOPING', 'OTHER']
 const PENALTY_TYPES = ['WARNING', 'DISQUALIFY', 'FINE']
@@ -169,6 +170,215 @@ export function RefereeRaceDetailPage() {
     setRankings(rankings.filter((_, i) => i !== idx))
   }
 
+  const horseInspectionColumns = [
+    {
+      id: 'index',
+      header: '#',
+      cell: (_: any, idx: number) => idx + 1,
+    },
+    {
+      id: 'name',
+      header: 'Tên ngựa',
+      cell: (h: RaceHorseRegistration) => {
+        const horse = (h.horse || h) as any
+        return <span className="fw-700">{horse.name}</span>
+      },
+    },
+    {
+      id: 'breed',
+      header: 'Giống',
+      cell: (h: RaceHorseRegistration) => {
+        const horse = (h.horse || h) as any
+        return horse.breed || '—'
+      },
+    },
+    {
+      id: 'age',
+      header: 'Tuổi',
+      cell: (h: RaceHorseRegistration) => {
+        const horse = (h.horse || h) as any
+        return horse.age ?? '—'
+      },
+    },
+    {
+      id: 'weight',
+      header: 'Cân nặng',
+      cell: (h: RaceHorseRegistration) => {
+        const horse = (h.horse || h) as any
+        return horse.weight ? `${horse.weight} kg` : '—'
+      },
+    },
+    {
+      id: 'color',
+      header: 'Màu',
+      cell: (h: RaceHorseRegistration) => {
+        const horse = (h.horse || h) as any
+        return horse.color || '—'
+      },
+    },
+    {
+      id: 'gender',
+      header: 'Giới tính',
+      cell: (h: RaceHorseRegistration) => {
+        const horse = (h.horse || h) as any
+        return horse.gender || '—'
+      },
+    },
+    {
+      id: 'origin',
+      header: 'Nguồn gốc',
+      cell: (h: RaceHorseRegistration) => {
+        const horse = (h.horse || h) as any
+        return horse.origin || '—'
+      },
+    },
+    {
+      id: 'status',
+      header: 'Trạng thái ĐK',
+      cell: (h: RaceHorseRegistration) => statusBadge(h.registrationStatus || 'PENDING'),
+    },
+  ]
+
+  const monitorHorsesColumns = [
+    {
+      id: 'index',
+      header: '#',
+      cell: (_: any, idx: number) => idx + 1,
+    },
+    {
+      id: 'name',
+      header: 'Ngựa',
+      cell: (h: RaceHorseRegistration) => {
+        const horse = (h.horse || h) as any
+        return <span className="fw-600">{horse.name}</span>
+      },
+    },
+    {
+      id: 'breed',
+      header: 'Giống',
+      cell: (h: RaceHorseRegistration) => {
+        const horse = (h.horse || h) as any
+        return horse.breed || '—'
+      },
+    },
+    {
+      id: 'status',
+      header: 'Trạng thái',
+      cell: (h: RaceHorseRegistration) => statusBadge(h.registrationStatus || 'PENDING'),
+    },
+  ]
+
+  const monitorResultsColumns = [
+    {
+      id: 'position',
+      header: 'Hạng',
+      cell: (r: RaceResult, idx: number) => (
+        <span className={`position-cell ${idx < 3 ? `rank-${idx + 1}` : ''}`}>
+          {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${r.position}`}
+        </span>
+      ),
+    },
+    {
+      id: 'horse',
+      header: 'Ngựa',
+      cell: (r: RaceResult) => <span className="fw-600">{r.horseId?.name || '—'}</span>,
+    },
+    {
+      id: 'jockey',
+      header: 'Nài ngựa',
+      cell: (r: RaceResult) => r.jockeyId?.fullName || r.jockeyId?.name || '—',
+    },
+    {
+      id: 'time',
+      header: 'Thời gian',
+      cell: (r: RaceResult) => <span className="fw-600">{r.finishTime || '—'}</span>,
+    },
+    {
+      id: 'status',
+      header: 'Trạng thái',
+      cell: (r: RaceResult) => statusBadge(r.status || ''),
+    },
+  ]
+
+  const violationsColumns = [
+    {
+      id: 'type',
+      header: 'Loại',
+      cell: (v: Violation) => (
+        <span className={`badge badge-${v.type === 'DOPING' || v.type === 'INTERFERENCE' ? 'disqualify' : 'warning'}`}>
+          {v.type}
+        </span>
+      ),
+    },
+    {
+      id: 'description',
+      header: 'Mô tả',
+      cell: (v: Violation) => v.description,
+    },
+    {
+      id: 'penalty',
+      header: 'Hình phạt',
+      cell: (v: Violation) => <span className={`badge badge-${v.penalty.toLowerCase()}`}>{v.penalty}</span>,
+    },
+    {
+      id: 'fine',
+      header: 'Phạt tiền',
+      cell: (v: Violation) => (v.fineAmount ? formatMoney(v.fineAmount) : '—'),
+    },
+    {
+      id: 'status',
+      header: 'Trạng thái',
+      cell: (v: Violation) => statusBadge(v.status),
+    },
+    {
+      id: 'action',
+      header: 'Hành động',
+      cell: (v: Violation) => {
+        return v.status === 'OPEN' ? (
+          resolveId === v._id ? (
+            <div className="flex flex-col gap-8" onClick={(e) => e.stopPropagation()}>
+              <input
+                placeholder="Ghi chú xử lý..."
+                value={resolveNote}
+                onChange={(e) => setResolveNote(e.target.value)}
+                style={{ width: 200 }}
+              />
+              <div className="flex gap-8">
+                <button className="btn btnSmall btnSuccess" disabled={resolveLoading} onClick={() => handleResolve(v._id)}>
+                  {resolveLoading ? '...' : '✅ Xử lý'}
+                </button>
+                <button className="btn btnSmall" onClick={() => setResolveId(null)}>Hủy</button>
+              </div>
+            </div>
+          ) : (
+            <button className="btn btnSmall btnSuccess" onClick={(e) => { e.stopPropagation(); setResolveId(v._id) }}>
+              Xử lý
+            </button>
+          )
+        ) : (
+          <span className="muted fs-13">{v.resolutionNote || 'Đã xử lý'}</span>
+        )
+      },
+    },
+  ]
+
+  const horsesWithId = horses.map((h, idx) => {
+    const horse = (h.horse || h) as any
+    return {
+      ...h,
+      id: horse._id || idx,
+    }
+  })
+
+  const resultsWithId = [...results]
+    .sort((a, b) => a.position - b.position)
+    .map((r, idx) => ({ ...r, id: r._id || idx }))
+
+  const violationsWithId = violations.map((v, idx) => ({
+    ...v,
+    id: v._id || idx,
+  }))
+
   if (loading) return <div className="loading"><div className="spinner" /></div>
   if (error) return (
     <div className="card">
@@ -242,50 +452,17 @@ export function RefereeRaceDetailPage() {
 
         {/* ===== TAB 1: Horse Inspection ===== */}
         {activeTab === 'horses' && (
-          horsesLoading ? <div className="loading"><div className="spinner" /></div> : (
-            horses.length === 0 ? (
+          <AnimatedTable
+            data={horsesWithId}
+            columns={horseInspectionColumns}
+            loading={horsesLoading}
+            emptyMessage={
               <div className="empty-state">
                 <div className="empty-state-icon">🐴</div>
                 <div className="empty-state-text">Chưa có ngựa đăng ký</div>
               </div>
-            ) : (
-              <div className="table-wrap">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th>Tên ngựa</th>
-                      <th>Giống</th>
-                      <th>Tuổi</th>
-                      <th>Cân nặng</th>
-                      <th>Màu</th>
-                      <th>Giới tính</th>
-                      <th>Nguồn gốc</th>
-                      <th>Trạng thái ĐK</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {horses.map((h, idx) => {
-                      const horse = (h.horse || h) as any
-                      return (
-                        <tr key={horse._id || idx}>
-                          <td className="fw-600">{idx + 1}</td>
-                          <td className="fw-700">{horse.name}</td>
-                          <td>{horse.breed || '—'}</td>
-                          <td>{horse.age ?? '—'}</td>
-                          <td>{horse.weight ? `${horse.weight} kg` : '—'}</td>
-                          <td>{horse.color || '—'}</td>
-                          <td>{horse.gender || '—'}</td>
-                          <td>{horse.origin || '—'}</td>
-                          <td>{statusBadge(h.registrationStatus || 'PENDING')}</td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )
-          )
+            }
+          />
         )}
 
         {/* ===== TAB 2: Race Monitor ===== */}
@@ -303,66 +480,25 @@ export function RefereeRaceDetailPage() {
               </div>
             )}
 
-            <div className="section-title mt-16">🐴 Ngựa tham gia ({horses.length})</div>
+            <div className="section-title mt-16 mb-4">🐴 Ngựa tham gia ({horses.length})</div>
             {horses.length > 0 && (
-              <div className="table-wrap mb-16">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th>Ngựa</th>
-                      <th>Giống</th>
-                      <th>Trạng thái</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {horses.map((h, idx) => {
-                      const horse = (h.horse || h) as any
-                      return (
-                        <tr key={horse._id || idx}>
-                          <td>{idx + 1}</td>
-                          <td className="fw-600">{horse.name}</td>
-                          <td>{horse.breed || '—'}</td>
-                          <td>{statusBadge(h.registrationStatus || 'PENDING')}</td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
+              <div className="mb-6">
+                <AnimatedTable
+                  data={horsesWithId}
+                  columns={monitorHorsesColumns}
+                  emptyMessage="Chưa có ngựa tham gia"
+                />
               </div>
             )}
 
             {results.length > 0 && (
               <>
-                <div className="section-title">🏅 Kết quả hiện tại</div>
-                <div className="table-wrap">
-                  <table className="table">
-                    <thead>
-                      <tr>
-                        <th>Hạng</th>
-                        <th>Ngựa</th>
-                        <th>Nài ngựa</th>
-                        <th>Thời gian</th>
-                        <th>Trạng thái</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {results.sort((a, b) => a.position - b.position).map((r, idx) => (
-                        <tr key={r._id || idx}>
-                          <td>
-                            <span className={`position-cell ${idx < 3 ? `rank-${idx + 1}` : ''}`}>
-                              {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${r.position}`}
-                            </span>
-                          </td>
-                          <td className="fw-600">{r.horseId?.name || '—'}</td>
-                          <td>{r.jockeyId?.fullName || r.jockeyId?.name || '—'}</td>
-                          <td className="fw-600">{r.finishTime || '—'}</td>
-                          <td>{statusBadge(r.status || '')}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <div className="section-title mb-4">🏅 Kết quả hiện tại</div>
+                <AnimatedTable
+                  data={resultsWithId}
+                  columns={monitorResultsColumns}
+                  emptyMessage="Chưa có kết quả"
+                />
               </>
             )}
           </div>
@@ -382,66 +518,17 @@ export function RefereeRaceDetailPage() {
               </button>
             </div>
 
-            {violationsLoading ? <div className="loading"><div className="spinner" /></div> : (
-              violations.length === 0 ? (
+            <AnimatedTable
+              data={violationsWithId}
+              columns={violationsColumns}
+              loading={violationsLoading}
+              emptyMessage={
                 <div className="empty-state">
                   <div className="empty-state-icon">✅</div>
                   <div className="empty-state-text">Không có vi phạm nào</div>
                 </div>
-              ) : (
-                <div className="table-wrap">
-                  <table className="table">
-                    <thead>
-                      <tr>
-                        <th>Loại</th>
-                        <th>Mô tả</th>
-                        <th>Hình phạt</th>
-                        <th>Phạt tiền</th>
-                        <th>Trạng thái</th>
-                        <th>Hành động</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {violations.map((v) => (
-                        <tr key={v._id}>
-                          <td><span className={`badge badge-${v.type === 'DOPING' || v.type === 'INTERFERENCE' ? 'disqualify' : 'warning'}`}>{v.type}</span></td>
-                          <td>{v.description}</td>
-                          <td><span className={`badge badge-${v.penalty.toLowerCase()}`}>{v.penalty}</span></td>
-                          <td className="money">{v.fineAmount ? formatMoney(v.fineAmount) : '—'}</td>
-                          <td>{statusBadge(v.status)}</td>
-                          <td>
-                            {v.status === 'OPEN' ? (
-                              resolveId === v._id ? (
-                                <div className="flex flex-col gap-8">
-                                  <input
-                                    placeholder="Ghi chú xử lý..."
-                                    value={resolveNote}
-                                    onChange={(e) => setResolveNote(e.target.value)}
-                                    style={{ width: 200 }}
-                                  />
-                                  <div className="flex gap-8">
-                                    <button className="btn btnSmall btnSuccess" disabled={resolveLoading} onClick={() => handleResolve(v._id)}>
-                                      {resolveLoading ? '...' : '✅ Xử lý'}
-                                    </button>
-                                    <button className="btn btnSmall" onClick={() => setResolveId(null)}>Hủy</button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <button className="btn btnSmall btnSuccess" onClick={() => setResolveId(v._id)}>
-                                  Xử lý
-                                </button>
-                              )
-                            ) : (
-                              <span className="muted fs-13">{v.resolutionNote || 'Đã xử lý'}</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )
-            )}
+              }
+            />
 
             {/* Violation Form Modal */}
             {showViolationForm && (
@@ -522,29 +609,12 @@ export function RefereeRaceDetailPage() {
             {/* Existing results */}
             {results.length > 0 && (
               <div className="mb-16">
-                <div className="section-title">📊 Kết quả hiện tại</div>
-                <div className="table-wrap">
-                  <table className="table">
-                    <thead>
-                      <tr>
-                        <th>Hạng</th>
-                        <th>Ngựa</th>
-                        <th>Nài ngựa</th>
-                        <th>Thời gian</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {results.sort((a, b) => a.position - b.position).map((r, idx) => (
-                        <tr key={r._id || idx}>
-                          <td className="fw-700">#{r.position}</td>
-                          <td>{r.horseId?.name || '—'}</td>
-                          <td>{r.jockeyId?.fullName || '—'}</td>
-                          <td>{r.finishTime || '—'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <div className="section-title mb-4">📊 Kết quả hiện tại</div>
+                <AnimatedTable
+                  data={resultsWithId}
+                  columns={monitorResultsColumns}
+                  emptyMessage="Chưa có kết quả"
+                />
               </div>
             )}
 

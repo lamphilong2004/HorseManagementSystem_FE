@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import type { RaceReport } from '../types'
-import { createRaceReport, getRaceReport, getPublicRace } from '../api'
+import type { RaceReport } from '../../types'
+import { createRaceReport, getRaceReport, getPublicRace } from '../../api'
 
 export function RefereeReportPage() {
   const { raceId } = useParams<{ raceId: string }>()
