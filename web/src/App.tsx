@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
 import { SessionProvider, useSession } from './auth/SessionContext'
 import { AppLayout } from './components/AppLayout'
+import { LandingPage } from './pages/LandingPage'
 import { LoginPage } from './pages/LoginPage.tsx'
 import { RegisterPage } from './pages/RegisterPage.tsx'
 import { DashboardPage } from './pages/DashboardPage.tsx'
@@ -24,18 +25,26 @@ function RequireAuth(props: { children: ReactNode }) {
   return <>{props.children}</>
 }
 
+/** After login, redirect admin to /admin/scheduling, everyone else to /tournaments */
+function DefaultRedirect() {
+  const { session } = useSession()
+  if (session?.user.role === 'ADMIN') return <Navigate to="/admin/scheduling" replace />
+  return <Navigate to="/tournaments" replace />
+}
+
 const router = createBrowserRouter([
+  { path: '/', element: <LandingPage /> },
   { path: '/login', element: <LoginPage /> },
   { path: '/register', element: <RegisterPage /> },
   {
-    path: '/',
+    path: '/app',
     element: (
       <RequireAuth>
         <AppLayout />
       </RequireAuth>
     ),
     children: [
-      { index: true, element: <Navigate to="/dashboard" replace /> },
+      { index: true, element: <DefaultRedirect /> },
       { path: 'dashboard', element: <DashboardPage /> },
       { path: 'tournaments', element: <TournamentsPage /> },
       { path: 'tournaments/:id', element: <TournamentDetailPage /> },
@@ -51,6 +60,17 @@ const router = createBrowserRouter([
       { path: '*', element: <NotFoundPage /> },
     ],
   },
+  // Legacy redirects for old /dashboard, /tournaments, etc. paths
+  { path: '/dashboard', element: <RequireAuth><Navigate to="/app/dashboard" replace /></RequireAuth> },
+  { path: '/tournaments', element: <RequireAuth><Navigate to="/app/tournaments" replace /></RequireAuth> },
+  { path: '/races', element: <RequireAuth><Navigate to="/app/races" replace /></RequireAuth> },
+  { path: '/horses', element: <RequireAuth><Navigate to="/app/horses" replace /></RequireAuth> },
+  { path: '/invites', element: <RequireAuth><Navigate to="/app/invites" replace /></RequireAuth> },
+  { path: '/predictions', element: <RequireAuth><Navigate to="/app/predictions" replace /></RequireAuth> },
+  { path: '/admin/users', element: <RequireAuth><Navigate to="/app/admin/users" replace /></RequireAuth> },
+  { path: '/admin/scheduling', element: <RequireAuth><Navigate to="/app/admin/scheduling" replace /></RequireAuth> },
+  { path: '/referee/races', element: <RequireAuth><Navigate to="/app/referee/races" replace /></RequireAuth> },
+  { path: '*', element: <NotFoundPage /> },
 ])
 
 export function App() {
