@@ -31,11 +31,11 @@ class MockAppState extends ChangeNotifier {
 
     // 2. Create Mock Horses
     final horses = [
-      Horse(id: 'h1', name: 'Golden Pegasus', code: 'H-09', age: 4, ownerName: 'Lord Harrington', jockey: jockeys[0]),
-      Horse(id: 'h2', name: 'Midnight Shadow', code: 'H-15', age: 5, ownerName: 'K. Sato Syndicate', jockey: jockeys[1]),
-      Horse(id: 'h3', name: 'Thunder Bolt', code: 'H-22', age: 4, ownerName: 'Rossi Farms', jockey: jockeys[2]),
-      Horse(id: 'h4', name: 'Silver Storm', code: 'H-03', age: 3, ownerName: 'A. Miller Corp', jockey: jockeys[3]),
-      Horse(id: 'h5', name: 'Nordic Emperor', code: 'H-41', age: 5, ownerName: 'Viking Stables', jockey: jockeys[4]),
+      Horse(id: 'h1', name: 'Golden Pegasus', code: 'H-09', age: 4, ownerId: 'o1', ownerName: 'Lord Harrington', jockey: jockeys[0]),
+      Horse(id: 'h2', name: 'Midnight Shadow', code: 'H-15', age: 5, ownerId: 'o2', ownerName: 'K. Sato Syndicate', jockey: jockeys[1]),
+      Horse(id: 'h3', name: 'Thunder Bolt', code: 'H-22', age: 4, ownerId: 'o3', ownerName: 'Rossi Farms', jockey: jockeys[2]),
+      Horse(id: 'h4', name: 'Silver Storm', code: 'H-03', age: 3, ownerId: 'o4', ownerName: 'A. Miller Corp', jockey: jockeys[3]),
+      Horse(id: 'h5', name: 'Nordic Emperor', code: 'H-41', age: 5, ownerId: 'o5', ownerName: 'Viking Stables', jockey: jockeys[4]),
     ];
 
     // 3. Create Races

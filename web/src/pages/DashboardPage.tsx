@@ -24,6 +24,24 @@ import {
   Loader2
 } from 'lucide-react'
 
+function formatMoney(n?: number) {
+  if (n === undefined || n === null) return '—'
+  return `${new Intl.NumberFormat('vi-VN').format(n)} VND`
+}
+
+function formatMoneyCompact(n?: number) {
+  if (n === undefined || n === null) return '—'
+  if (n === 0) return '0 VND'
+  if (n < 1000000) return formatMoney(n)
+
+  const millions = n / 1000000
+  const formatted = Number.isInteger(millions)
+    ? new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(millions)
+    : new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 1 }).format(millions)
+
+  return `${formatted} triệu VND`
+}
+
 export function DashboardPage() {
   const { session } = useSession()
   const [races, setRaces] = useState<Race[]>([])
@@ -217,7 +235,7 @@ export function DashboardPage() {
           </CardHeader>
           <CardContent className="relative z-10">
             <div className="text-3xl font-black text-purple-200">
-              {totalPrizePool > 0 ? `${(totalPrizePool / 1e6).toFixed(1)}M` : '50M'}đ
+              {formatMoneyCompact(totalPrizePool)}
             </div>
             <p className="text-xs text-purple-200/80 mt-2 font-medium">
               🎯 Từ {tournaments.length} giải
@@ -262,7 +280,7 @@ export function DashboardPage() {
                             <p className="text-xs text-slate-300 mt-1">🏁 Cự ly: <span className="text-slate-200 font-semibold">{race.distance || 1200}m</span></p>
                             <div className="mt-2 flex gap-2 flex-wrap">
                               <Badge variant="outline" className="text-xs bg-amber-950/50 text-amber-200 border-amber-700/50">
-                                💰 {race.prizeFirst ? `${(race.prizeFirst / 1e6).toFixed(1)}M` : '15M'}đ
+                                💰 {formatMoneyCompact(race.prizeFirst)}
                               </Badge>
                             </div>
                           </div>
@@ -341,11 +359,11 @@ export function DashboardPage() {
                   </div>
                   <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800/30 hover:bg-slate-800/50 transition-colors">
                     <span className="text-sm font-medium text-slate-200">💰 Số tiền cược</span>
-                    <span className="text-lg font-black text-amber-200">{totalBetAmount.toLocaleString()}đ</span>
+                    <span className="text-lg font-black text-amber-200">{formatMoney(totalBetAmount)}</span>
                   </div>
                   <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800/30 hover:bg-slate-800/50 transition-colors">
                     <span className="text-sm font-medium text-slate-200">🎯 Tiền thắng</span>
-                    <span className="text-lg font-black text-emerald-300">+{totalPayout.toLocaleString()}đ</span>
+                    <span className="text-lg font-black text-emerald-300">+{formatMoney(totalPayout)}</span>
                   </div>
                   <div className="p-3 rounded-lg bg-slate-800/30">
                     <div className="flex justify-between text-sm mb-2">
@@ -444,7 +462,7 @@ export function DashboardPage() {
                         {getStatusLabel(tour.status || 'ACTIVE', 'tournament')} ✓
                       </Badge>
                       <p className="text-xs font-bold text-amber-300">
-                        💰 {((tour.prizePool || 0) / 1e6).toFixed(1)}M đ
+                        💰 {formatMoneyCompact(tour.prizePool)}
                       </p>
                     </div>
                   </div>

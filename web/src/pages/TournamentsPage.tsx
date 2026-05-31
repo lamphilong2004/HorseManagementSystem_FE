@@ -40,7 +40,7 @@ function formatDate(d: string) {
 
 function formatMoney(n?: number) {
   if (!n) return '—'
-  return n.toLocaleString('vi-VN') + ' ₫'
+  return n.toLocaleString('vi-VN') + ' VND'
 }
 
 export function TournamentsPage() {

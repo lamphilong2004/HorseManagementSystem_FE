@@ -22,7 +22,7 @@ function formatDateTime(d: string) {
 
 function formatMoney(n?: number) {
   if (!n) return '—'
-  return n.toLocaleString('vi-VN') + ' ₫'
+  return n.toLocaleString('vi-VN') + ' VND'
 }
 
 type Tab = 'horses' | 'monitor' | 'violations' | 'results'

@@ -34,7 +34,7 @@ class SpectatorHomeScreen extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.surfaceLight,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.primary.withOpacity(0.5), width: 1.5),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.5), width: 1.5),
             ),
             child: Row(
               children: [
@@ -65,7 +65,7 @@ class SpectatorHomeScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [AppColors.surface, AppColors.surfaceLight.withOpacity(0.5)],
+                    colors: [AppColors.surface, AppColors.surfaceLight.withValues(alpha: 0.5)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -73,7 +73,7 @@ class SpectatorHomeScreen extends StatelessWidget {
                   border: Border.all(color: const Color(0xFF2E2E33)),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.05),
+                      color: AppColors.primary.withValues(alpha: 0.05),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     )
@@ -140,7 +140,7 @@ class SpectatorHomeScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.secondary.withOpacity(0.15),
+                      color: AppColors.secondary.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Row(
@@ -286,7 +286,7 @@ class SpectatorHomeScreen extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
+                              color: AppColors.primary.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(

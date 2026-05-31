@@ -119,7 +119,7 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: isLive
-                        ? AppColors.secondary.withOpacity(0.15)
+                        ? AppColors.secondary.withValues(alpha: 0.15)
                         : AppColors.surfaceLight,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(

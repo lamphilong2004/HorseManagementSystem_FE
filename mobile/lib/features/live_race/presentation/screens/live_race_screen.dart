@@ -261,7 +261,7 @@ class _LiveRaceScreenState extends State<LiveRaceScreen> with SingleTickerProvid
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: AppColors.secondary.withOpacity(0.1),
+                color: AppColors.secondary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Text(
@@ -313,7 +313,7 @@ class _LiveRaceScreenState extends State<LiveRaceScreen> with SingleTickerProvid
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: medalColor.withOpacity(0.15),
+                  color: medalColor.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                   border: Border.all(color: medalColor, width: 1.5),
                 ),
@@ -363,7 +363,7 @@ class _LiveRaceScreenState extends State<LiveRaceScreen> with SingleTickerProvid
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
-                                  medalColor.withOpacity(0.5),
+                                  medalColor.withValues(alpha: 0.5),
                                   medalColor,
                                 ],
                               ),

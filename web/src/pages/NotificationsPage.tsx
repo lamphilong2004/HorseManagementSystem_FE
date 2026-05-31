@@ -84,7 +84,7 @@ export function NotificationsPage() {
 
   return (
     <div className="space-y-6">
-      <Card className="border-slate-800/80 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 shadow-2xl">
+      <Card className="border-slate-800/80 bg-linear-to-br from-slate-950 via-slate-900 to-slate-950 shadow-2xl">
         <CardHeader className="gap-4 md:flex-row md:items-end md:justify-between">
           <div className="space-y-3">
             <div className="flex items-start gap-4">
@@ -105,31 +105,31 @@ export function NotificationsPage() {
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="flex w-full flex-wrap items-center gap-3 md:justify-end">
             <Button
               variant={filter === 'all' ? 'default' : 'outline'}
-              className={filter === 'all' ? 'bg-amber-500 text-slate-950 hover:bg-amber-400' : 'border-slate-700 bg-slate-950/70 text-slate-100 hover:bg-slate-900'}
+              className={`h-11 min-w-30 whitespace-nowrap ${filter === 'all' ? 'bg-amber-500 text-slate-950 hover:bg-amber-400' : 'border-slate-700 bg-slate-950/70 text-slate-100 hover:bg-slate-900'}`}
               onClick={() => setFilter('all')}
             >
               Tất cả
             </Button>
             <Button
               variant={filter === 'unread' ? 'default' : 'outline'}
-              className={filter === 'unread' ? 'bg-amber-500 text-slate-950 hover:bg-amber-400' : 'border-slate-700 bg-slate-950/70 text-slate-100 hover:bg-slate-900'}
+              className={`h-11 min-w-30 whitespace-nowrap ${filter === 'unread' ? 'bg-amber-500 text-slate-950 hover:bg-amber-400' : 'border-slate-700 bg-slate-950/70 text-slate-100 hover:bg-slate-900'}`}
               onClick={() => setFilter('unread')}
             >
               Chưa đọc
             </Button>
             <Button
               variant={filter === 'read' ? 'default' : 'outline'}
-              className={filter === 'read' ? 'bg-amber-500 text-slate-950 hover:bg-amber-400' : 'border-slate-700 bg-slate-950/70 text-slate-100 hover:bg-slate-900'}
+              className={`h-11 min-w-30 whitespace-nowrap ${filter === 'read' ? 'bg-amber-500 text-slate-950 hover:bg-amber-400' : 'border-slate-700 bg-slate-950/70 text-slate-100 hover:bg-slate-900'}`}
               onClick={() => setFilter('read')}
             >
               Đã đọc
             </Button>
 
             <Select value={timeFilter} onValueChange={(value) => setTimeFilter(value ?? 'all')}>
-              <SelectTrigger className="h-11 w-[180px] border-slate-700 bg-slate-950/70 text-slate-100">
+              <SelectTrigger className="h-11 w-45 shrink-0 border-slate-700 bg-slate-950/70 text-slate-100">
                 {getOptionLabel(TIME_OPTIONS, timeFilter)}
               </SelectTrigger>
               <SelectContent>
@@ -140,7 +140,7 @@ export function NotificationsPage() {
             </Select>
 
             <Select value={sortOrder} onValueChange={(value) => setSortOrder(value ?? 'newest')}>
-              <SelectTrigger className="h-11 w-[180px] border-slate-700 bg-slate-950/70 text-slate-100">
+              <SelectTrigger className="h-11 w-45 shrink-0 border-slate-700 bg-slate-950/70 text-slate-100">
                 {getOptionLabel(SORT_OPTIONS, sortOrder)}
               </SelectTrigger>
               <SelectContent>
@@ -152,7 +152,7 @@ export function NotificationsPage() {
 
             <Button
               variant="outline"
-              className="h-11 border-slate-700 bg-slate-950/70 text-slate-100 hover:bg-slate-900"
+              className="h-11 min-w-30 whitespace-nowrap border-slate-700 bg-slate-950/70 text-slate-100 hover:bg-slate-900"
               onClick={() => setReloadKey((value) => value + 1)}
             >
               <RefreshCw className="mr-2 h-4 w-4" />
