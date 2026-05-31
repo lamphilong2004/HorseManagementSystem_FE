@@ -1,5 +1,5 @@
 import { http } from './http'
-import type { Invite, Prediction, Race, Role, Session, Tournament, Horse, User, RaceRegistration, Jockey } from '../types'
+import type { Invite, Prediction, Race, Role, Session, Tournament, Horse, User, RaceRegistration, Jockey, LeaderboardEntry, RaceHorseRegistration, Violation, NotificationItem, RaceReport } from '../types'
 
 // Khai báo Base URL cho Backend Node.js thực tế
 const BE_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
@@ -424,4 +424,176 @@ export async function closePredictions(raceId: string): Promise<any> {
 export async function settlePredictions(raceId: string): Promise<any> {
   const res = await http.post(`${BE_BASE_URL}/admin/races/${raceId}/predictions/settle`)
   return res.data
+}
+
+// ============================================================================
+// 4. BỔ SUNG CÁC API THIẾU CHO TOURNAMENT, PREDICTION, REFEREE & NOTIFICATIONS
+// ============================================================================
+
+export async function getPublicRaces(params?: { status?: string; tournamentId?: string }): Promise<Race[]> {
+  const res = await http.get(`${BE_BASE_URL}/races`, { params })
+  const data = res.data.races || res.data.data || res.data
+  return data.map((r: any) => ({
+    id: r._id || r.id,
+    _id: r._id || r.id,
+    tournamentId: r.tournamentId,
+    name: r.name,
+    distance: r.distance,
+    scheduledAt: r.scheduledAt,
+    maxHorses: r.maxHorses,
+    prizeFirst: r.prizeFirst,
+    prizeSecond: r.prizeSecond,
+    prizeThird: r.prizeThird,
+    status: r.status,
+    refereeId: r.refereeId,
+  }))
+}
+
+export async function getPublicTournament(id: string): Promise<Tournament> {
+  return getTournament(id)
+}
+
+export async function getPublicTournaments(): Promise<Tournament[]> {
+  return getTournaments()
+}
+
+export async function getTournamentLeaderboard(id: string): Promise<LeaderboardEntry[]> {
+  const res = await http.get(`${BE_BASE_URL}/tournaments/${id}/leaderboard`)
+  const data = res.data.leaderboard || res.data.data || res.data || []
+  return data.map((entry: any, index: number) => ({
+    id: entry._id || entry.id || String(index),
+    _id: entry._id || entry.id || String(index),
+    horseId: entry.horseId,
+    horseName: entry.horseName,
+    jockeyId: entry.jockeyId,
+    jockeyName: entry.jockeyName,
+    races: entry.races ?? 0,
+    wins: entry.wins ?? 0,
+    totalPoints: entry.totalPoints ?? 0,
+    totalPrize: entry.totalPrize ?? 0,
+  }))
+}
+
+export async function checkPredictionOpen(raceId: string): Promise<{ isOpen: boolean }> {
+  const res = await http.get(`${BE_BASE_URL}/races/${raceId}/predictions/open`)
+  return res.data
+}
+
+export async function getMyPredictions(): Promise<Prediction[]> {
+  return getPredictions()
+}
+
+export async function getRaceHorses(raceId: string): Promise<any> {
+  const res = await http.get(`${BE_BASE_URL}/races/${raceId}/horses`)
+  const list = Array.isArray(res.data) ? res.data : (res.data.horses || res.data.data || [])
+  return list.map((h: any) => ({
+    id: h._id || h.id,
+    _id: h._id || h.id,
+    horse: h.horse || h,
+    horseId: h.horseId || h.horse?._id || h.horse?.id,
+    raceId: h.raceId,
+    registrationStatus: h.registrationStatus || h.status || 'PENDING',
+    status: h.status || h.registrationStatus || 'PENDING',
+  }))
+}
+
+export async function getRefereeRaceHorses(raceId: string): Promise<{ horses: RaceHorseRegistration[] }> {
+  const res = await http.get(`${BE_BASE_URL}/referee/races/${raceId}/horses`)
+  const list = Array.isArray(res.data) ? res.data : (res.data.horses || res.data.data || [])
+  return {
+    horses: list.map((h: any) => ({
+      id: h._id || h.id,
+      _id: h._id || h.id,
+      horse: h.horse || h,
+      horseId: h.horseId || h.horse?._id || h.horse?.id,
+      raceId: h.raceId,
+      registrationStatus: h.registrationStatus || h.status || 'PENDING',
+      status: h.status || h.registrationStatus || 'PENDING',
+      confirmedByOwner: h.confirmedByOwner ?? false,
+    }))
+  }
+}
+
+export async function placePrediction(raceId: string, horseId: string, betAmount: number): Promise<any> {
+  const res = await http.post(`${BE_BASE_URL}/predictions`, { raceId, horseId, betAmount })
+  return res.data
+}
+
+export async function getPublicRace(id: string): Promise<Race> {
+  return getRace(id)
+}
+
+export async function getRefereeViolations(raceId: string): Promise<{ violations: Violation[] }> {
+  const res = await http.get(`${BE_BASE_URL}/referee/races/${raceId}/violations`)
+  const list = Array.isArray(res.data) ? res.data : (res.data.violations || res.data.data || [])
+  return {
+    violations: list.map((v: any) => ({
+      id: v._id || v.id,
+      _id: v._id || v.id,
+      raceId: v.raceId,
+      horseId: v.horseId,
+      jockeyId: v.jockeyId,
+      type: v.type,
+      description: v.description,
+      penalty: v.penalty,
+      fineAmount: v.fineAmount,
+      status: v.status,
+      resolutionNote: v.resolutionNote,
+      createdAt: v.createdAt,
+    }))
+  }
+}
+
+export async function createViolation(raceId: string, data: any): Promise<any> {
+  const res = await http.post(`${BE_BASE_URL}/referee/races/${raceId}/violations`, data)
+  return res.data
+}
+
+export async function resolveViolation(violationId: string, resolutionNote: string): Promise<any> {
+  const res = await http.patch(`${BE_BASE_URL}/referee/violations/${violationId}/resolve`, { resolutionNote })
+  return res.data
+}
+
+export async function confirmRaceResult(raceId: string, rankings: any[], notes?: string): Promise<any> {
+  const res = await http.post(`${BE_BASE_URL}/referee/races/${raceId}/confirm-result`, { rankings, notes })
+  return res.data
+}
+
+export async function getMyNotifications(): Promise<NotificationItem[]> {
+  const res = await http.get(`${BE_BASE_URL}/me/notifications`)
+  const list = Array.isArray(res.data) ? res.data : (res.data.notifications || res.data.data || [])
+  return list.map((n: any) => ({
+    id: n._id || n.id,
+    _id: n._id || n.id,
+    userId: n.userId,
+    title: n.title,
+    message: n.message,
+    read: n.read ?? false,
+    createdAt: n.createdAt,
+  }))
+}
+
+export async function createRaceReport(raceId: string, data: any): Promise<any> {
+  const res = await http.post(`${BE_BASE_URL}/referee/races/${raceId}/report`, data)
+  return res.data
+}
+
+export async function getRaceReport(raceId: string): Promise<RaceReport> {
+  const res = await http.get(`${BE_BASE_URL}/referee/races/${raceId}/report`)
+  const rep = res.data
+  return {
+    id: rep._id || rep.id,
+    _id: rep._id || rep.id,
+    raceId: rep.raceId,
+    summary: rep.summary,
+    weatherCondition: rep.weatherCondition,
+    trackCondition: rep.trackCondition,
+    incidentDetails: rep.incidentDetails,
+    additionalNotes: rep.additionalNotes,
+    totalParticipants: rep.totalParticipants,
+    totalViolations: rep.totalViolations,
+    refereeId: rep.refereeId,
+    updatedAt: rep.updatedAt,
+    createdAt: rep.createdAt,
+  }
 }

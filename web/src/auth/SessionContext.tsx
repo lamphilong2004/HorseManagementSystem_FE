@@ -2,19 +2,22 @@ import { createContext, useContext, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { Role, Session } from '../types'
 import { clearSession, loadSession, saveSession } from './sessionStorage'
-import * as api from '../api'
+import * as api from '@/api'
 
 type SessionContextValue = {
   session: Session | null
   login: (params: { email: string; password: string; role: Role }) => Promise<void>
   register: (params: { name: string; email: string; password: string; role: Role }) => Promise<void>
   logout: () => void
+  balance: number
+  updateBalance: (newBalance: number) => void
 }
 
 const SessionContext = createContext<SessionContextValue | null>(null)
 
 export function SessionProvider(props: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(() => loadSession())
+  const [balance, setBalance] = useState<number>(10000000) // Default 10,000,000 VND for demo purposes
 
   const value = useMemo<SessionContextValue>(
     () => ({
@@ -33,8 +36,12 @@ export function SessionProvider(props: { children: ReactNode }) {
         clearSession()
         setSession(null)
       },
+      balance,
+      updateBalance: (newBalance: number) => {
+        setBalance(newBalance)
+      },
     }),
-    [session],
+    [session, balance],
   )
 
   return <SessionContext.Provider value={value}>{props.children}</SessionContext.Provider>

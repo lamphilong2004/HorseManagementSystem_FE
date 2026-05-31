@@ -11,7 +11,7 @@ import {
   sendJockeyInvitation,
   getHorseJockeys,
   confirmJockey,
-} from '../api'
+} from '@/api'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

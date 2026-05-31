@@ -1,5 +1,5 @@
 import { useEffect, useState, startTransition } from 'react'
-import type { Tournament, Race, User, RaceRegistration, Horse, Jockey, Prediction } from '../types'
+import type { Tournament, Race, User, RaceRegistration, Horse, Jockey, Prediction } from '../../types'
 import {
   getTournaments,
   createTournament,
@@ -23,8 +23,8 @@ import {
   closePredictions,
   settlePredictions,
   getPredictionStats,
-} from '../api'
-import { http } from '../api/http'
+} from '@/api'
+import { http } from '../../api/http'
 
 type Tab = 'tournaments' | 'registrations' | 'horses-jockeys' | 'referee-results' | 'predictions'
 
@@ -345,6 +345,7 @@ export function AdminSchedulingPage() {
   // REFEREE & RESULT ACTIONS
   // ---------------------------------------------------------
   const openRefModal = (raceId: string, currentRefId?: string) => {
+    console.debug('openRefModal called', { raceId, currentRefId })
     setRefRaceId(raceId)
     setSelectedRefId(currentRefId || '')
     setShowRefModal(true)
@@ -353,11 +354,13 @@ export function AdminSchedulingPage() {
   const handleSaveReferee = async () => {
     if (!selectedRefId) return
     try {
+      console.debug('assignReferee called', { refRaceId, selectedRefId })
       await assignReferee(refRaceId, selectedRefId)
       showToast('Đã phân công trọng tài thành công')
       setShowRefModal(false)
       loadTabData()
     } catch (err: any) {
+      console.error('assignReferee error', err)
       showToast(err.response?.data?.message || 'Không thể phân công trọng tài', 'error')
     }
   }
@@ -513,7 +516,7 @@ export function AdminSchedulingPage() {
         <div className="card">
           <div className="flex-between" style={{ marginBottom: 16 }}>
             <div>
-              <h2 style={{ fontSize: '20px' }}>Quản Lý Giải Đấu Đua Ngựa</h2>
+              <h2 style={{ fontSize: '20px', color: 'white' }}>Quản Lý Giải Đấu Đua Ngựa</h2>
               <p className="muted">Tạo mới, chỉnh sửa thông tin giải đấu và các vòng đua tương ứng.</p>
             </div>
             <button className="btn btnPrimary" onClick={() => openTournModal(null)}>
@@ -528,7 +531,7 @@ export function AdminSchedulingPage() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               {tournaments.map((t) => (
-                <div key={t.id} className="card" style={{ background: '#fff', border: '1px solid var(--border)' }}>
+                <div key={t.id} className="card card-light" style={{ background: '#fff', border: '1px solid var(--border)' }}>
                   <div className="flex-between">
                     <div>
                       <span className={`badge ${t.status === 'PUBLISHED' || t.status === 'ONGOING' ? 'badge-approved' : t.status === 'COMPLETED' ? 'badge-confirmed' : 'badge-pending'}`} style={{ marginBottom: 6 }}>
@@ -736,7 +739,7 @@ export function AdminSchedulingPage() {
                         <td>{j.wins} trận</td>
                         <td>
                           <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                            {j.specialties?.map((s) => (
+                            {j.specialties?.map((s: string) => (
                               <span key={s} className="badge badge-scheduled" style={{ fontSize: '10px', padding: '2px 6px' }}>{s}</span>
                             ))}
                           </div>
@@ -808,7 +811,7 @@ export function AdminSchedulingPage() {
                         <div style={{ display: 'inline-flex', gap: 6 }}>
                           {r.status === 'SCHEDULED' && (
                             <>
-                              <button className="btn" style={{ fontSize: '12px', padding: '5px 8px' }} onClick={() => openRefModal(r.id, typeof r.refereeId === 'object' ? r.refereeId._id : r.refereeId)}>
+                              <button type="button" className="btn" style={{ fontSize: '12px', padding: '5px 8px' }} onClick={() => openRefModal(r.id, r.refereeId && typeof r.refereeId === 'object' ? r.refereeId._id : r.refereeId)}>
                                 Phân trọng tài
                               </button>
                               <button className="btn btnPrimary" style={{ fontSize: '12px', padding: '5px 8px' }} onClick={() => openSchedModal(r)}>

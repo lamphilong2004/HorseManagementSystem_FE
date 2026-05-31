@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Race } from '../types'
-import { getRefereeRaces } from '../api'
+import { getRefereeRaces } from '@/api'
 
 export function RefereeRacesPage() {
   const [items, setItems] = useState<Race[] | null>(null)

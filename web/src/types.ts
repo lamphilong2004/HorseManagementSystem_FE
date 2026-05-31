@@ -2,6 +2,7 @@ export type Role = 'ADMIN' | 'OWNER' | 'JOCKEY' | 'REFEREE' | 'SPECTATOR'
 
 export type User = {
   id: string
+  _id?: string
   name: string
   role: Role
   email?: string
@@ -17,6 +18,7 @@ export type Session = {
 
 export type Tournament = {
   id: string
+  _id?: string
   name: string
   description?: string
   venue: string
@@ -31,6 +33,7 @@ export type Tournament = {
 
 export type Race = {
   id: string
+  _id?: string
   tournamentId: any
   name: string
   distance: number
@@ -39,12 +42,13 @@ export type Race = {
   prizeFirst: number
   prizeSecond: number
   prizeThird: number
-  status?: 'SCHEDULED' | 'ONGOING' | 'COMPLETED' | 'CANCELLED' | 'RUNNING' | 'FINISHED' // Merge legacy and actual statuses
+  status?: 'SCHEDULED' | 'ONGOING' | 'COMPLETED' | 'CANCELLED' | 'RUNNING' | 'FINISHED' | 'RESULT_CONFIRMED' // Merge legacy and actual statuses
   refereeId?: any
 }
 
 export type Horse = {
   id: string
+  _id?: string
   name: string
   breed?: string
   age?: number
@@ -59,6 +63,7 @@ export type Horse = {
 
 export type Jockey = {
   id: string
+  _id?: string
   userId: any
   age: number
   experience: number
@@ -73,6 +78,7 @@ export type Jockey = {
 
 export type Invite = {
   id: string
+  _id?: string
   horseId: any
   horseName?: string // Legacy alias
   jockeyId?: any
@@ -86,6 +92,7 @@ export type Invite = {
 
 export type RaceRegistration = {
   id: string
+  _id?: string
   horseId: any
   raceId: any
   status: 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED' | 'CONFIRMED'
@@ -95,6 +102,7 @@ export type RaceRegistration = {
 
 export type Prediction = {
   id: string
+  _id?: string
   raceId: any
   spectatorId: any
   horseId: any
@@ -105,12 +113,19 @@ export type Prediction = {
   prizeAmount?: number
   actualPosition?: number
   createdAt?: string
+  payout?: number
 }
 
 export type RaceResult = {
   id: string
+  _id?: string
   raceId: string
-  rankings: Array<{
+  status?: string
+  position?: number
+  horseId?: any
+  jockeyId?: any
+  finishTime?: string
+  rankings?: Array<{
     position: number
     horseId: any
     jockeyId: any
@@ -119,4 +134,68 @@ export type RaceResult = {
   notes?: string
   confirmedBy?: string
   confirmedAt?: string
+  prizeAmount?: number
+}
+
+export type LeaderboardEntry = {
+  id?: string
+  _id?: string
+  horseName?: string
+  jockeyName?: string
+  races?: number
+  wins?: number
+  totalPoints?: number
+  totalPrize?: number
+}
+
+export type RaceHorseRegistration = RaceRegistration & {
+  horse?: Horse
+  registrationStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CONFIRMED'
+}
+
+export type Violation = {
+  id: string
+  _id: string
+  raceId: string
+  horseId: string
+  jockeyId?: string
+  type: 'FALSE_START' | 'INTERFERENCE' | 'OVERWEIGHT' | 'DOPING' | 'OTHER' | string
+  description: string
+  penalty: 'WARNING' | 'DISQUALIFY' | 'FINE' | string
+  fineAmount?: number
+  status: 'OPEN' | 'RESOLVED' | string
+  resolutionNote?: string
+  createdAt?: string
+}
+
+export type NotificationItem = {
+  id: string
+  _id: string
+  userId: string
+  title: string
+  message: string
+  read: boolean
+  isRead?: boolean
+  type?: string
+  createdAt: string
+}
+
+export type PredictionItem = Prediction & {
+  payout?: number
+}
+
+export type RaceReport = {
+  id: string
+  _id: string
+  raceId: string
+  summary: string
+  weatherCondition?: string
+  trackCondition?: string
+  incidentDetails?: string
+  additionalNotes?: string
+  totalParticipants?: number
+  totalViolations?: number
+  refereeId?: any
+  updatedAt?: string
+  createdAt?: string
 }

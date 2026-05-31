@@ -1,0 +1,227 @@
+src/App.tsx(15,33): error TS2307: Cannot find module './pages/PredictionsPage.tsx' or its corresponding type declarations.
+src/App.tsx(16,32): error TS2307: Cannot find module './pages/AdminUsersPage.tsx' or its corresponding type declarations.
+src/App.tsx(17,37): error TS2307: Cannot find module './pages/AdminSchedulingPage.tsx' or its corresponding type declarations.
+src/components/ui/animated-table.tsx(2,140): error TS2307: Cannot find module 'lucide-react' or its corresponding type declarations.
+src/components/ui/animated-table.tsx(3,41): error TS2307: Cannot find module 'motion/react' or its corresponding type declarations.
+src/components/ui/animated-table.tsx(5,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+src/components/ui/animated-table.tsx(444,15): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/components/ui/animated-toast.tsx(2,72): error TS2307: Cannot find module 'lucide-react' or its corresponding type declarations.
+src/components/ui/animated-toast.tsx(3,41): error TS2307: Cannot find module 'motion/react' or its corresponding type declarations.
+src/components/ui/animated-toast.tsx(5,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+src/components/ui/badge.tsx(1,28): error TS2307: Cannot find module '@base-ui/react/merge-props' or its corresponding type declarations.
+src/components/ui/badge.tsx(2,27): error TS2307: Cannot find module '@base-ui/react/use-render' or its corresponding type declarations.
+src/components/ui/badge.tsx(3,40): error TS2307: Cannot find module 'class-variance-authority' or its corresponding type declarations.
+src/components/ui/badge.tsx(5,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+src/components/ui/button.tsx(1,43): error TS2307: Cannot find module '@base-ui/react/button' or its corresponding type declarations.
+src/components/ui/button.tsx(2,40): error TS2307: Cannot find module 'class-variance-authority' or its corresponding type declarations.
+src/components/ui/button.tsx(4,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+src/components/ui/calendar.tsx(35,8): error TS2307: Cannot find module 'date-fns' or its corresponding type declarations.
+src/components/ui/calendar.tsx(36,22): error TS2307: Cannot find module 'date-fns/locale' or its corresponding type declarations.
+src/components/ui/calendar.tsx(47,8): error TS2307: Cannot find module 'lucide-react' or its corresponding type declarations.
+src/components/ui/calendar.tsx(48,59): error TS2307: Cannot find module 'motion/react' or its corresponding type declarations.
+src/components/ui/calendar.tsx(51,57): error TS2307: Cannot find module '@/components/ui/popover' or its corresponding type declarations.
+src/components/ui/calendar.tsx(52,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+src/components/ui/calendar.tsx(1245,28): error TS7006: Parameter 'day' implicitly has an 'any' type.
+src/components/ui/calendar.tsx(1245,33): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/components/ui/card.tsx(3,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+src/components/ui/dialog.tsx(2,43): error TS2307: Cannot find module '@base-ui/react/dialog' or its corresponding type declarations.
+src/components/ui/dialog.tsx(4,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+src/components/ui/dialog.tsx(5,24): error TS2307: Cannot find module '@/components/ui/button' or its corresponding type declarations.
+src/components/ui/dialog.tsx(6,23): error TS2307: Cannot find module 'lucide-react' or its corresponding type declarations.
+src/components/ui/input.tsx(2,41): error TS2307: Cannot find module '@base-ui/react/input' or its corresponding type declarations.
+src/components/ui/input.tsx(4,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+src/components/ui/liquid-metal-button.tsx(2,26): error TS2307: Cannot find module 'lucide-react' or its corresponding type declarations.
+src/components/ui/liquid-metal-button.tsx(127,11): error TS2307: Cannot find module '@paper-design/shaders' or its corresponding type declarations.
+src/components/ui/magnetic.tsx(3,71): error TS2307: Cannot find module 'motion/react' or its corresponding type declarations.
+src/components/ui/number-counter.tsx(1,27): error TS2307: Cannot find module 'motion/react' or its corresponding type declarations.
+src/components/ui/number-counter.tsx(3,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+src/components/ui/popover.tsx(2,45): error TS2307: Cannot find module '@base-ui/react/popover' or its corresponding type declarations.
+src/components/ui/popover.tsx(4,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+src/components/ui/progress.tsx(1,47): error TS2307: Cannot find module '@base-ui/react/progress' or its corresponding type declarations.
+src/components/ui/progress.tsx(3,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+src/components/ui/scroll-text.tsx(7,8): error TS2307: Cannot find module 'motion/react' or its corresponding type declarations.
+src/components/ui/scroll-text.tsx(9,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+src/components/ui/scroll-text.tsx(175,44): error TS7006: Parameter 'v' implicitly has an 'any' type.
+src/components/ui/scroll-text.tsx(176,51): error TS7006: Parameter 'v' implicitly has an 'any' type.
+src/components/ui/select.tsx(4,43): error TS2307: Cannot find module '@base-ui/react/select' or its corresponding type declarations.
+src/components/ui/select.tsx(6,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+src/components/ui/select.tsx(7,59): error TS2307: Cannot find module 'lucide-react' or its corresponding type declarations.
+src/components/ui/shutter-text.tsx(2,52): error TS2307: Cannot find module 'motion/react' or its corresponding type declarations.
+src/components/ui/table.tsx(3,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+src/components/ui/tabs.tsx(3,39): error TS2307: Cannot find module '@base-ui/react/tabs' or its corresponding type declarations.
+src/components/ui/tabs.tsx(4,40): error TS2307: Cannot find module 'class-variance-authority' or its corresponding type declarations.
+src/components/ui/tabs.tsx(6,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+src/pages/admin/AdminSchedulingPage.tsx(2,90): error TS2307: Cannot find module '../types' or its corresponding type declarations.
+src/pages/admin/AdminSchedulingPage.tsx(26,8): error TS2307: Cannot find module '../api' or its corresponding type declarations.
+src/pages/admin/AdminSchedulingPage.tsx(27,22): error TS2307: Cannot find module '../api/http' or its corresponding type declarations.
+src/pages/admin/AdminSchedulingPage.tsx(739,50): error TS7006: Parameter 's' implicitly has an 'any' type.
+src/pages/admin/AdminUsersPage.tsx(2,33): error TS2307: Cannot find module '../types' or its corresponding type declarations.
+src/pages/admin/AdminUsersPage.tsx(3,77): error TS2307: Cannot find module '../api' or its corresponding type declarations.
+src/pages/admin/AdminUsersPage.tsx(157,14): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/pages/admin/AdminUsersPage.tsx(158,15): error TS7006: Parameter 'err' implicitly has an 'any' type.
+src/pages/race_referee/RefereeRaceDetailPage.tsx(3,21): error TS2724: '"../../types"' has no exported member named 'RaceHorseRegistration'. Did you mean 'RaceRegistration'?
+src/pages/race_referee/RefereeRaceDetailPage.tsx(3,44): error TS2305: Module '"../../types"' has no exported member 'Violation'.
+src/pages/race_referee/RefereeRaceDetailPage.tsx(5,3): error TS2305: Module '"../../api"' has no exported member 'getPublicRace'.
+src/pages/race_referee/RefereeRaceDetailPage.tsx(5,18): error TS2724: '"../../api"' has no exported member named 'getRefereeRaceHorses'. Did you mean 'getRefereeRaces'?
+src/pages/race_referee/RefereeRaceDetailPage.tsx(5,40): error TS2305: Module '"../../api"' has no exported member 'getRefereeViolations'.
+src/pages/race_referee/RefereeRaceDetailPage.tsx(6,3): error TS2305: Module '"../../api"' has no exported member 'createViolation'.
+src/pages/race_referee/RefereeRaceDetailPage.tsx(6,20): error TS2305: Module '"../../api"' has no exported member 'resolveViolation'.
+src/pages/race_referee/RefereeRaceDetailPage.tsx(6,38): error TS2305: Module '"../../api"' has no exported member 'confirmRaceResult'.
+src/pages/race_referee/RefereeRaceDetailPage.tsx(87,16): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/pages/race_referee/RefereeRaceDetailPage.tsx(95,16): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/pages/race_referee/RefereeRaceDetailPage.tsx(104,16): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/pages/race_referee/RefereeRaceDetailPage.tsx(294,75): error TS2339: Property 'position' does not exist on type 'RaceResult'.
+src/pages/race_referee/RefereeRaceDetailPage.tsx(301,60): error TS2339: Property 'horseId' does not exist on type 'RaceResult'.
+src/pages/race_referee/RefereeRaceDetailPage.tsx(306,34): error TS2339: Property 'jockeyId' does not exist on type 'RaceResult'.
+src/pages/race_referee/RefereeRaceDetailPage.tsx(306,58): error TS2339: Property 'jockeyId' does not exist on type 'RaceResult'.
+src/pages/race_referee/RefereeRaceDetailPage.tsx(311,60): error TS2339: Property 'finishTime' does not exist on type 'RaceResult'.
+src/pages/race_referee/RefereeRaceDetailPage.tsx(316,46): error TS2339: Property 'status' does not exist on type 'RaceResult'.
+src/pages/race_referee/RefereeRaceDetailPage.tsx(391,23): error TS2339: Property 'position' does not exist on type 'RaceResult'.
+src/pages/race_referee/RefereeRaceDetailPage.tsx(391,36): error TS2339: Property 'position' does not exist on type 'RaceResult'.
+src/pages/race_referee/RefereeRaceDetailPage.tsx(392,37): error TS2339: Property '_id' does not exist on type 'RaceResult'.
+src/pages/race_referee/RefereeRaceDetailPage.tsx(422,26): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/race_referee/RefereeRacesPage.tsx(36,67): error TS2367: This comparison appears to be unintentional because the types '"ONGOING" | "CANCELLED" | "SCHEDULED" | "RUNNING" | "FINISHED" | undefined' and '"RESULT_CONFIRMED"' have no overlap.
+src/pages/race_referee/RefereeRacesPage.tsx(37,103): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/race_referee/RefereeRacesPage.tsx(88,32): error TS2339: Property '_id' does not exist on type 'Race'.
+src/pages/race_referee/RefereeRacesPage.tsx(88,61): error TS2339: Property '_id' does not exist on type 'Race'.
+src/pages/race_referee/RefereeRacesPage.tsx(92,38): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/race_referee/RefereeRacesPage.tsx(111,32): error TS2339: Property '_id' does not exist on type 'Race'.
+src/pages/race_referee/RefereeRacesPage.tsx(111,61): error TS2339: Property '_id' does not exist on type 'Race'.
+src/pages/race_referee/RefereeRacesPage.tsx(115,38): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/race_referee/RefereeRacesPage.tsx(135,32): error TS2339: Property '_id' does not exist on type 'Race'.
+src/pages/race_referee/RefereeRacesPage.tsx(135,61): error TS2339: Property '_id' does not exist on type 'Race'.
+src/pages/race_referee/RefereeRacesPage.tsx(139,38): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/race_referee/RefereeRacesPage.tsx(157,32): error TS2339: Property '_id' does not exist on type 'Race'.
+src/pages/race_referee/RefereeRacesPage.tsx(157,61): error TS2339: Property '_id' does not exist on type 'Race'.
+src/pages/race_referee/RefereeRacesPage.tsx(161,38): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/race_referee/RefereeReportPage.tsx(3,15): error TS2305: Module '"../../types"' has no exported member 'RaceReport'.
+src/pages/race_referee/RefereeReportPage.tsx(4,10): error TS2305: Module '"../../api"' has no exported member 'createRaceReport'.
+src/pages/race_referee/RefereeReportPage.tsx(4,28): error TS2305: Module '"../../api"' has no exported member 'getRaceReport'.
+src/pages/race_referee/RefereeReportPage.tsx(4,43): error TS2305: Module '"../../api"' has no exported member 'getPublicRace'.
+src/pages/RaceDetailPage.tsx(3,28): error TS2307: Cannot find module '../../auth/SessionContext' or its corresponding type declarations.
+src/pages/RaceDetailPage.tsx(4,39): error TS2307: Cannot find module '../../types' or its corresponding type declarations.
+src/pages/RaceDetailPage.tsx(5,100): error TS2307: Cannot find module '../../api' or its corresponding type declarations.
+src/pages/RaceDetailPage.tsx(6,47): error TS2307: Cannot find module '../../components/ui/animated-table' or its corresponding type declarations.
+src/pages/RacesPage.tsx(4,10): error TS2305: Module '"../api"' has no exported member 'getPublicRaces'.
+src/pages/RacesPage.tsx(5,23): error TS2307: Cannot find module '@/components/ui/badge' or its corresponding type declarations.
+src/pages/RacesPage.tsx(6,50): error TS2307: Cannot find module '@/components/ui/calendar' or its corresponding type declarations.
+src/pages/RacesPage.tsx(7,24): error TS2307: Cannot find module '@/components/ui/button' or its corresponding type declarations.
+src/pages/RacesPage.tsx(8,75): error TS2307: Cannot find module '@/components/ui/card' or its corresponding type declarations.
+src/pages/RacesPage.tsx(9,66): error TS2307: Cannot find module '@/components/ui/select' or its corresponding type declarations.
+src/pages/RacesPage.tsx(10,23): error TS2307: Cannot find module '@/components/ui/input' or its corresponding type declarations.
+src/pages/RacesPage.tsx(11,73): error TS2307: Cannot find module '@/lib/status' or its corresponding type declarations.
+src/pages/RacesPage.tsx(12,31): error TS2307: Cannot find module '@/components/ui/number-counter' or its corresponding type declarations.
+src/pages/RacesPage.tsx(13,30): error TS2307: Cannot find module '@/components/ui/scroll-text' or its corresponding type declarations.
+src/pages/RacesPage.tsx(14,26): error TS2307: Cannot find module '@/components/ui/magnetic' or its corresponding type declarations.
+src/pages/RacesPage.tsx(15,50): error TS2307: Cannot find module 'lucide-react' or its corresponding type declarations.
+src/pages/RacesPage.tsx(84,49): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/RacesPage.tsx(88,43): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/RacesPage.tsx(92,71): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/RacesPage.tsx(118,73): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/RacesPage.tsx(119,82): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/RacesPage.tsx(120,105): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/RacesPage.tsx(160,28): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/RacesPage.tsx(164,60): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/pages/RacesPage.tsx(169,45): error TS7006: Parameter 'option' implicitly has an 'any' type.
+src/pages/RacesPage.tsx(177,58): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/pages/RacesPage.tsx(199,57): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/pages/RacesPage.tsx(247,37): error TS2339: Property '_id' does not exist on type 'Race'.
+src/pages/RacesPage.tsx(248,40): error TS2339: Property '_id' does not exist on type 'Race'.
+src/pages/RacesPage.tsx(259,34): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/spectator/NotificationsPage.tsx(2,15): error TS2305: Module '"../../types"' has no exported member 'NotificationItem'.
+src/pages/spectator/NotificationsPage.tsx(3,10): error TS2305: Module '"../../api"' has no exported member 'getMyNotifications'.
+src/pages/spectator/NotificationsPage.tsx(4,23): error TS2307: Cannot find module '@/components/ui/badge' or its corresponding type declarations.
+src/pages/spectator/NotificationsPage.tsx(5,24): error TS2307: Cannot find module '@/components/ui/button' or its corresponding type declarations.
+src/pages/spectator/NotificationsPage.tsx(6,75): error TS2307: Cannot find module '@/components/ui/card' or its corresponding type declarations.
+src/pages/spectator/NotificationsPage.tsx(7,66): error TS2307: Cannot find module '@/components/ui/select' or its corresponding type declarations.
+src/pages/spectator/NotificationsPage.tsx(8,23): error TS2307: Cannot find module '@/components/ui/input' or its corresponding type declarations.
+src/pages/spectator/NotificationsPage.tsx(9,42): error TS2307: Cannot find module '@/lib/status' or its corresponding type declarations.
+src/pages/spectator/NotificationsPage.tsx(10,31): error TS2307: Cannot find module '@/components/ui/number-counter' or its corresponding type declarations.
+src/pages/spectator/NotificationsPage.tsx(11,30): error TS2307: Cannot find module '@/components/ui/scroll-text' or its corresponding type declarations.
+src/pages/spectator/NotificationsPage.tsx(12,26): error TS2307: Cannot find module '@/components/ui/magnetic' or its corresponding type declarations.
+src/pages/spectator/NotificationsPage.tsx(13,45): error TS2307: Cannot find module 'lucide-react' or its corresponding type declarations.
+src/pages/spectator/NotificationsPage.tsx(69,14): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/pages/spectator/NotificationsPage.tsx(125,28): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/spectator/NotificationsPage.tsx(150,56): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/pages/spectator/NotificationsPage.tsx(161,55): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/pages/spectator/PredictionsPage.tsx(3,15): error TS2724: '"../../types"' has no exported member named 'PredictionItem'. Did you mean 'Prediction'?
+src/pages/spectator/PredictionsPage.tsx(4,10): error TS2305: Module '"../../api"' has no exported member 'checkPredictionOpen'.
+src/pages/spectator/PredictionsPage.tsx(4,31): error TS2724: '"../../api"' has no exported member named 'getMyPredictions'. Did you mean 'getPredictions'?
+src/pages/spectator/PredictionsPage.tsx(4,49): error TS2305: Module '"../../api"' has no exported member 'getPublicRaces'.
+src/pages/spectator/PredictionsPage.tsx(4,65): error TS2724: '"../../api"' has no exported member named 'getRaceHorses'. Did you mean 'getHorses'?
+src/pages/spectator/PredictionsPage.tsx(4,80): error TS2305: Module '"../../api"' has no exported member 'placePrediction'.
+src/pages/spectator/PredictionsPage.tsx(5,47): error TS2307: Cannot find module '@/components/ui/animated-table' or its corresponding type declarations.
+src/pages/spectator/PredictionsPage.tsx(6,23): error TS2307: Cannot find module '@/components/ui/badge' or its corresponding type declarations.
+src/pages/spectator/PredictionsPage.tsx(7,24): error TS2307: Cannot find module '@/components/ui/button' or its corresponding type declarations.
+src/pages/spectator/PredictionsPage.tsx(8,75): error TS2307: Cannot find module '@/components/ui/card' or its corresponding type declarations.
+src/pages/spectator/PredictionsPage.tsx(9,23): error TS2307: Cannot find module '@/components/ui/input' or its corresponding type declarations.
+src/pages/spectator/PredictionsPage.tsx(10,66): error TS2307: Cannot find module '@/components/ui/select' or its corresponding type declarations.
+src/pages/spectator/PredictionsPage.tsx(11,79): error TS2307: Cannot find module '@/lib/status' or its corresponding type declarations.
+src/pages/spectator/PredictionsPage.tsx(13,31): error TS2307: Cannot find module '@/components/ui/number-counter' or its corresponding type declarations.
+src/pages/spectator/PredictionsPage.tsx(14,30): error TS2307: Cannot find module '@/components/ui/scroll-text' or its corresponding type declarations.
+src/pages/spectator/PredictionsPage.tsx(15,26): error TS2307: Cannot find module '@/components/ui/magnetic' or its corresponding type declarations.
+src/pages/spectator/PredictionsPage.tsx(16,62): error TS2307: Cannot find module 'lucide-react' or its corresponding type declarations.
+src/pages/spectator/PredictionsPage.tsx(83,11): error TS2339: Property 'balance' does not exist on type 'SessionContextValue'.
+src/pages/spectator/PredictionsPage.tsx(83,20): error TS2339: Property 'updateBalance' does not exist on type 'SessionContextValue'.
+src/pages/spectator/PredictionsPage.tsx(99,14): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/pages/spectator/PredictionsPage.tsx(110,14): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/pages/spectator/PredictionsPage.tsx(322,62): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/pages/spectator/PredictionsPage.tsx(324,66): error TS2339: Property '_id' does not exist on type 'Race'.
+src/pages/spectator/PredictionsPage.tsx(324,162): error TS2339: Property '_id' does not exist on type 'Race'.
+src/pages/spectator/PredictionsPage.tsx(328,45): error TS2339: Property '_id' does not exist on type 'Race'.
+src/pages/spectator/PredictionsPage.tsx(328,62): error TS2339: Property '_id' does not exist on type 'Race'.
+src/pages/spectator/PredictionsPage.tsx(345,65): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/pages/spectator/PredictionsPage.tsx(370,30): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/pages/spectator/PredictionsPage.tsx(439,30): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/spectator/PredictionsPage.tsx(442,69): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/pages/spectator/PredictionsPage.tsx(445,53): error TS7006: Parameter 'option' implicitly has an 'any' type.
+src/pages/spectator/PredictionsPage.tsx(450,67): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/pages/spectator/PredictionsPage.tsx(458,66): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/pages/TournamentDetailPage.tsx(3,33): error TS2305: Module '"../types"' has no exported member 'LeaderboardEntry'.
+src/pages/TournamentDetailPage.tsx(4,10): error TS2724: '"../api"' has no exported member named 'getPublicTournament'. Did you mean 'getTournament'?
+src/pages/TournamentDetailPage.tsx(4,31): error TS2305: Module '"../api"' has no exported member 'getPublicRaces'.
+src/pages/TournamentDetailPage.tsx(4,47): error TS2305: Module '"../api"' has no exported member 'getTournamentLeaderboard'.
+src/pages/TournamentDetailPage.tsx(80,38): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/TournamentDetailPage.tsx(128,55): error TS2339: Property '_id' does not exist on type 'Race'.
+src/pages/TournamentsPage.tsx(4,10): error TS2724: '"../api"' has no exported member named 'getPublicTournaments'. Did you mean 'getTournaments'?
+src/pages/TournamentsPage.tsx(5,23): error TS2307: Cannot find module '@/components/ui/badge' or its corresponding type declarations.
+src/pages/TournamentsPage.tsx(6,24): error TS2307: Cannot find module '@/components/ui/button' or its corresponding type declarations.
+src/pages/TournamentsPage.tsx(7,75): error TS2307: Cannot find module '@/components/ui/card' or its corresponding type declarations.
+src/pages/TournamentsPage.tsx(8,66): error TS2307: Cannot find module '@/components/ui/select' or its corresponding type declarations.
+src/pages/TournamentsPage.tsx(9,23): error TS2307: Cannot find module '@/components/ui/input' or its corresponding type declarations.
+src/pages/TournamentsPage.tsx(10,79): error TS2307: Cannot find module '@/lib/status' or its corresponding type declarations.
+src/pages/TournamentsPage.tsx(11,31): error TS2307: Cannot find module '@/components/ui/number-counter' or its corresponding type declarations.
+src/pages/TournamentsPage.tsx(12,30): error TS2307: Cannot find module '@/components/ui/scroll-text' or its corresponding type declarations.
+src/pages/TournamentsPage.tsx(13,26): error TS2307: Cannot find module '@/components/ui/magnetic' or its corresponding type declarations.
+src/pages/TournamentsPage.tsx(14,58): error TS2307: Cannot find module 'lucide-react' or its corresponding type declarations.
+src/pages/TournamentsPage.tsx(88,48): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/TournamentsPage.tsx(92,47): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/TournamentsPage.tsx(96,72): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/TournamentsPage.tsx(110,84): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/TournamentsPage.tsx(112,111): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/TournamentsPage.tsx(152,28): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/TournamentsPage.tsx(156,60): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/pages/TournamentsPage.tsx(161,51): error TS7006: Parameter 'option' implicitly has an 'any' type.
+src/pages/TournamentsPage.tsx(169,58): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/pages/TournamentsPage.tsx(182,57): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/pages/TournamentsPage.tsx(227,43): error TS2339: Property '_id' does not exist on type 'Tournament'.
+src/pages/TournamentsPage.tsx(228,52): error TS2339: Property '_id' does not exist on type 'Tournament'.

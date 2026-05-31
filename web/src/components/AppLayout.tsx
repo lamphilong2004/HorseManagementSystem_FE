@@ -78,7 +78,7 @@ export function AppLayout() {
   ]
 
   return (
-    <div>
+    <div className={`app-shell theme-${role.toLowerCase()}`}>
       <div className="topbar">
         <div
           className="container"

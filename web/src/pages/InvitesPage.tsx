@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Invite } from '../types'
-import { getInvites } from '../api'
+import { getInvites } from '@/api'
 
 export function InvitesPage() {
   const [items, setItems] = useState<Invite[] | null>(null)

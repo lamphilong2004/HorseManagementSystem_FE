@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, startTransition } from 'react'
-import type { Role, User } from '../types'
-import { getAdminUsers, updateUserRole, toggleUserStatus, deleteUser } from '../api'
+import type { Role, User } from '../../types'
+import { getAdminUsers, updateUserRole, toggleUserStatus, deleteUser } from '@/api'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
