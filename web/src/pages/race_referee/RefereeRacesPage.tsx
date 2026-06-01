@@ -1,17 +1,23 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import type { Race } from '../../types'
 import { getRefereeRaces } from '@/api'
+import { AnimatedTable, type ColumnDef } from '@/components/ui/animated-table'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 
 function statusBadge(s?: string) {
   if (!s) return null
-  return <span className={`badge badge-${s.toLowerCase()}`}>
-    {s === 'ONGOING' && <span className="live-dot" />}
-    {s}
-  </span>
+  return (
+    <Badge variant="outline" className="font-bold">
+      {s === 'ONGOING' && <span className="live-dot mr-2" />}
+      {s}
+    </Badge>
+  )
 }
 
-function formatDateTime(d: string) {
+function formatDateTime(d?: string) {
+  if (!d) return '—'
   return new Date(d).toLocaleString('vi-VN')
 }
 
@@ -19,6 +25,7 @@ export function RefereeRacesPage() {
   const [items, setItems] = useState<Race[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const navigate = useNavigate()
 
   useEffect(() => {
     setLoading(true)
@@ -31,11 +38,53 @@ export function RefereeRacesPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  // Group by status
-  const ongoing = items.filter(r => r.status === 'ONGOING')
-  const scheduled = items.filter(r => r.status === 'SCHEDULED')
-  const completed = items.filter(r => r.status === 'COMPLETED' || r.status === 'RESULT_CONFIRMED')
-  const other = items.filter(r => !['ONGOING', 'SCHEDULED', 'COMPLETED', 'RESULT_CONFIRMED'].includes(r.status || ''))
+  const itemsWithId = useMemo(() => items.map((r, i) => ({ ...r, id: r._id ?? r.id ?? String(i) })), [items])
+
+  const columns: ColumnDef<any>[] = [
+    {
+      id: 'name',
+      header: 'Tên cuộc đua',
+      accessorKey: 'name',
+      cell: (r: any) => (
+        <Link to={`/referee/races/${r._id ?? r.id}`} className="font-bold hover:underline">
+          {r.name}
+        </Link>
+      ),
+    },
+    {
+      id: 'scheduledAt',
+      header: 'Thời gian',
+      accessorKey: 'scheduledAt',
+      cell: (r: any) => formatDateTime(r.scheduledAt),
+    },
+    {
+      id: 'tournament',
+      header: 'Giải đấu',
+      accessorKey: 'tournamentId',
+      cell: (r: any) => r.tournamentId?.name || '—',
+    },
+    {
+      id: 'distance',
+      header: 'Khoảng cách',
+      accessorKey: 'distance',
+      cell: (r: any) => (r.distance ? `${r.distance} m` : '—'),
+    },
+    {
+      id: 'status',
+      header: 'Trạng thái',
+      accessorKey: 'status',
+      cell: (r: any) => statusBadge(r.status),
+    },
+    {
+      id: 'actions',
+      header: 'Hành động',
+      cell: (r: any) => (
+        <div className="flex items-center gap-2">
+          <button className="btn-link" onClick={() => navigate(`/referee/races/${r._id ?? r.id}`)}>Chi tiết</button>
+        </div>
+      ),
+    },
+  ]
 
   return (
     <div>
@@ -45,133 +94,60 @@ export function RefereeRacesPage() {
 
       {error && <div className="alert alert-error">⚠️ {error}</div>}
 
-      {/* Stats */}
-      <div className="stat-grid">
-        <div className="stat-card">
-          <div className="stat-icon">📋</div>
-          <div className="stat-label">Tổng phân công</div>
-          <div className="stat-value">{items.length}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">🔴</div>
-          <div className="stat-label">Đang diễn ra</div>
-          <div className="stat-value" style={{ color: 'var(--warning)' }}>{ongoing.length}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">📅</div>
-          <div className="stat-label">Sắp tới</div>
-          <div className="stat-value" style={{ color: 'var(--info)' }}>{scheduled.length}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">✅</div>
-          <div className="stat-label">Hoàn thành</div>
-          <div className="stat-value" style={{ color: 'var(--success)' }}>{completed.length}</div>
-        </div>
-      </div>
-
-      {loading ? (
-        <div className="loading"><div className="spinner" /></div>
-      ) : items.length === 0 ? (
-        <div className="card">
-          <div className="empty-state">
-            <div className="empty-state-icon">⚖️</div>
-            <div className="empty-state-text">Chưa được phân công cuộc đua nào</div>
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Thống kê phân công</CardTitle>
+          <CardDescription>Thông tin nhanh về công việc trọng tài hiện tại</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="stat-grid">
+            <div className="stat-card">
+              <div className="stat-icon">📋</div>
+              <div className="stat-label">Tổng phân công</div>
+              <div className="stat-value">{items.length}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon">🔴</div>
+              <div className="stat-label">Đang diễn ra</div>
+              <div className="stat-value" style={{ color: 'var(--warning)' }}>{items.filter(r => r.status === 'ONGOING').length}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon">📅</div>
+              <div className="stat-label">Sắp tới</div>
+              <div className="stat-value" style={{ color: 'var(--info)' }}>{items.filter(r => r.status === 'SCHEDULED').length}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon">✅</div>
+              <div className="stat-label">Hoàn thành</div>
+              <div className="stat-value" style={{ color: 'var(--success)' }}>{items.filter(r => r.status === 'COMPLETED' || r.status === 'RESULT_CONFIRMED').length}</div>
+            </div>
           </div>
-        </div>
-      ) : (
-        <>
-          {/* Ongoing races first */}
-          {ongoing.length > 0 && (
-            <div className="section">
-              <div className="section-title"><span className="live-dot" /> Đang diễn ra</div>
-              <div className="grid-cards">
-                {ongoing.map((r) => (
-                  <Link key={r._id || r.id} to={`/referee/races/${r._id || r.id}`} style={{ textDecoration: 'none' }}>
-                    <div className="grid-card" style={{ borderColor: 'rgba(245,158,11,0.3)' }}>
-                      <div className="grid-card-header">
-                        <div className="grid-card-title">{r.name}</div>
-                        {statusBadge(r.status)}
-                      </div>
-                      <div className="grid-card-meta">
-                        <span>🕐 {formatDateTime(r.scheduledAt)}</span>
-                        {r.tournamentId?.name && <span>🏆 {r.tournamentId.name}</span>}
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
+        </CardContent>
+      </Card>
 
-          {/* Scheduled */}
-          {scheduled.length > 0 && (
-            <div className="section">
-              <div className="section-title">📅 Sắp diễn ra</div>
-              <div className="grid-cards">
-                {scheduled.map((r) => (
-                  <Link key={r._id || r.id} to={`/referee/races/${r._id || r.id}`} style={{ textDecoration: 'none' }}>
-                    <div className="grid-card">
-                      <div className="grid-card-header">
-                        <div className="grid-card-title">{r.name}</div>
-                        {statusBadge(r.status)}
-                      </div>
-                      <div className="grid-card-meta">
-                        <span>🕐 {formatDateTime(r.scheduledAt)}</span>
-                        {r.tournamentId?.name && <span>🏆 {r.tournamentId.name}</span>}
-                        {r.distance && <span>📏 {r.distance}m</span>}
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
+      <Card>
+        <CardHeader className="flex items-center justify-between">
+          <CardTitle>Danh sách cuộc đua</CardTitle>
+          <CardDescription>Quản lý và truy cập chi tiết mỗi cuộc đua</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="loading"><div className="spinner" /></div>
+          ) : (
+            <AnimatedTable
+              data={itemsWithId}
+              columns={columns}
+              onRowClick={(r: any) => navigate(`/referee/races/${r._id ?? r.id}`)}
+              emptyMessage={
+                <div className="empty-state py-8">
+                  <div className="empty-state-icon">⚖️</div>
+                  <div className="empty-state-text">Chưa được phân công cuộc đua nào</div>
+                </div>
+              }
+            />
           )}
-
-          {/* Completed */}
-          {completed.length > 0 && (
-            <div className="section">
-              <div className="section-title">✅ Đã hoàn thành</div>
-              <div className="grid-cards">
-                {completed.map((r) => (
-                  <Link key={r._id || r.id} to={`/referee/races/${r._id || r.id}`} style={{ textDecoration: 'none' }}>
-                    <div className="grid-card" style={{ opacity: 0.85 }}>
-                      <div className="grid-card-header">
-                        <div className="grid-card-title">{r.name}</div>
-                        {statusBadge(r.status)}
-                      </div>
-                      <div className="grid-card-meta">
-                        <span>🕐 {formatDateTime(r.scheduledAt)}</span>
-                        {r.tournamentId?.name && <span>🏆 {r.tournamentId.name}</span>}
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {other.length > 0 && (
-            <div className="section">
-              <div className="section-title">Khác</div>
-              <div className="grid-cards">
-                {other.map((r) => (
-                  <Link key={r._id || r.id} to={`/referee/races/${r._id || r.id}`} style={{ textDecoration: 'none' }}>
-                    <div className="grid-card">
-                      <div className="grid-card-header">
-                        <div className="grid-card-title">{r.name}</div>
-                        {statusBadge(r.status)}
-                      </div>
-                      <div className="grid-card-meta">
-                        <span>🕐 {formatDateTime(r.scheduledAt)}</span>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-        </>
-      )}
+        </CardContent>
+      </Card>
     </div>
   )
 }
