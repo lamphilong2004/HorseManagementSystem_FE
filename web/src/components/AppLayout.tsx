@@ -14,11 +14,8 @@ const roleNavItems: Record<string, { to: string; label: string }[]> = {
     { to: '/app/dashboard', label: 'Dashboard' },
     { to: '/app/tournaments', label: 'Giải đấu' },
     { to: '/app/races', label: 'Cuộc đua' },
-    { to: '/app/invites', label: 'Lời mời' },
     { to: '/app/jockey/races', label: 'Cuộc đua của tôi' },
     { to: '/app/jockey/schedule', label: 'Lịch thi đấu' },
-    { to: '/app/jockey/results', label: 'Kết quả' },
-    { to: '/app/jockey/profile', label: 'Profile' },
   ],
   SPECTATOR: [
     { to: '/app/dashboard', label: 'Dashboard' },
@@ -288,7 +285,7 @@ export function AppLayout() {
             {/* Notification Bell */}
             <NotificationBell />
 
-            <div className="user-badge">
+            <Link to={role === 'JOCKEY' ? '/app/jockey/profile' : '/app/dashboard'} className="user-badge" style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}>
               <div className={`avatar avatar-sm ${avatarClass[role] ?? 'avatar-default'}`}>
                 {getInitials(session?.user.name ?? '?')}
               </div>
@@ -300,7 +297,7 @@ export function AppLayout() {
                   {roleLabels[role] ?? role}
                 </span>
               </div>
-            </div>
+            </Link>
             <button
               className="btn btn-sm btn-ghost"
               onClick={() => {
