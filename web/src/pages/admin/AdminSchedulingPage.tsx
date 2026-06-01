@@ -58,6 +58,14 @@ export function AdminSchedulingPage() {
   const [jockeys, setJockeys] = useState<Jockey[]>([])
   const [referees, setReferees] = useState<User[]>([])
   const [predictions, setPredictions] = useState<Prediction[]>([])
+  
+  // Dashboard Stats
+  const [adminStats, setAdminStats] = useState({
+    tournaments: 0,
+    activeRaces: 0,
+    pendingHorses: 0,
+    pendingRegs: 0,
+  })
 
   // ---------------------------------------------------------
   // MODAL STATES
@@ -73,6 +81,7 @@ export function AdminSchedulingPage() {
     endDate: '',
     prizePool: 0,
     maxHorses: 10,
+    status: 'DRAFT',
   })
 
   // Races
@@ -127,6 +136,29 @@ export function AdminSchedulingPage() {
     loadTabData()
   }, [activeTab])
 
+  useEffect(() => {
+    loadDashboardStats()
+  }, [])
+
+  const loadDashboardStats = async () => {
+    try {
+      const [tList, rList, hList, regList] = await Promise.all([
+        getTournaments(),
+        getRaces(),
+        getAdminHorses(),
+        getRaceRegistrations(),
+      ])
+      setAdminStats({
+        tournaments: tList.length,
+        activeRaces: rList.filter((r) => r.status === 'SCHEDULED' || r.status === 'ONGOING').length,
+        pendingHorses: hList.filter((h) => h.status === 'PENDING').length,
+        pendingRegs: regList.filter((r) => r.status === 'PENDING_APPROVAL').length,
+      })
+    } catch (err) {
+      console.error('Failed to load admin stats', err)
+    }
+  }
+
   const loadTabData = async () => {
     setLoading(true)
     setError(null)
@@ -172,6 +204,7 @@ export function AdminSchedulingPage() {
         endDate: t.endDate ? new Date(t.endDate).toISOString().split('T')[0] : '',
         prizePool: t.prizePool || 0,
         maxHorses: t.maxHorses || 10,
+        status: t.status || 'DRAFT',
       })
     } else {
       setTournForm({
@@ -182,6 +215,7 @@ export function AdminSchedulingPage() {
         endDate: '',
         prizePool: 0,
         maxHorses: 10,
+        status: 'DRAFT',
       })
     }
     setShowTournModal(true)
@@ -191,10 +225,10 @@ export function AdminSchedulingPage() {
     e.preventDefault()
     try {
       if (selectedTourn) {
-        await updateTournament(selectedTourn.id, tournForm)
+        await updateTournament(selectedTourn.id, tournForm as any)
         showToast(`Đã cập nhật giải đấu ${tournForm.name}`)
       } else {
-        await createTournament(tournForm)
+        await createTournament(tournForm as any)
         showToast(`Đã tạo giải đấu ${tournForm.name} thành công`)
       }
       setShowTournModal(false)
@@ -212,6 +246,23 @@ export function AdminSchedulingPage() {
       loadTabData()
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Không thể xóa giải đấu', 'error')
+    }
+  }
+
+  const handleQuickStatusChange = async (id: string, name: string, newStatus: string) => {
+    try {
+      await updateTournament(id, { status: newStatus } as any)
+      const statusLabel: Record<string, string> = {
+        DRAFT: 'Bản nháp',
+        PUBLISHED: 'Đã công bố',
+        ONGOING: 'Đang diễn ra',
+        COMPLETED: 'Đã kết thúc',
+        CANCELLED: 'Đã hủy',
+      }
+      showToast(`"${name}" → ${statusLabel[newStatus] || newStatus}`)
+      loadTabData()
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Không thể đổi trạng thái', 'error')
     }
   }
 
@@ -309,8 +360,10 @@ export function AdminSchedulingPage() {
   }
 
   const handleRejectReg = async (regId: string) => {
+    const reason = window.prompt('Nhập lý do từ chối đăng ký (có thể để trống):')
+    if (reason === null) return // user cancelled
     try {
-      await rejectRaceRegistration(regId)
+      await rejectRaceRegistration(regId, reason)
       showToast('Đã từ chối đăng ký', 'warning')
       loadTabData()
     } catch (err: any) {
@@ -332,8 +385,10 @@ export function AdminSchedulingPage() {
   }
 
   const handleRejectHorse = async (horseId: string) => {
+    const reason = window.prompt('Nhập lý do từ chối hồ sơ ngựa (có thể để trống):')
+    if (reason === null) return // user cancelled
     try {
-      await rejectHorse(horseId)
+      await rejectHorse(horseId, reason)
       showToast('Đã từ chối hồ sơ ngựa', 'warning')
       loadTabData()
     } catch (err: any) {
@@ -469,6 +524,38 @@ export function AdminSchedulingPage() {
           <p className="muted text-sm">Giải đấu, lịch trình, duyệt đăng ký và công bố kết quả</p>
         </div>
       </div>
+      
+      {/* Real Stats Panel */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+        <div className="card" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 16, background: 'linear-gradient(135deg, rgba(59,130,246,0.1), rgba(37,99,235,0.05))', border: '1px solid rgba(59,130,246,0.2)' }}>
+          <div style={{ fontSize: 32 }}>🏆</div>
+          <div>
+            <div style={{ fontSize: 13, color: '#3b82f6', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tổng giải đấu</div>
+            <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--text)' }}>{adminStats.tournaments}</div>
+          </div>
+        </div>
+        <div className="card" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 16, background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(5,150,105,0.05))', border: '1px solid rgba(16,185,129,0.2)' }}>
+          <div style={{ fontSize: 32 }}>🏁</div>
+          <div>
+            <div style={{ fontSize: 13, color: '#10b981', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cuộc đua đang mở</div>
+            <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--text)' }}>{adminStats.activeRaces}</div>
+          </div>
+        </div>
+        <div className="card" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 16, background: 'linear-gradient(135deg, rgba(245,158,11,0.1), rgba(217,119,6,0.05))', border: '1px solid rgba(245,158,11,0.2)' }}>
+          <div style={{ fontSize: 32 }}>📋</div>
+          <div>
+            <div style={{ fontSize: 13, color: '#d97706', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Đăng ký đua chờ duyệt</div>
+            <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--text)' }}>{adminStats.pendingRegs}</div>
+          </div>
+        </div>
+        <div className="card" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 16, background: 'linear-gradient(135deg, rgba(139,92,246,0.1), rgba(109,40,217,0.05))', border: '1px solid rgba(139,92,246,0.2)' }}>
+          <div style={{ fontSize: 32 }}>🐎</div>
+          <div>
+            <div style={{ fontSize: 13, color: '#8b5cf6', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ngựa chờ duyệt</div>
+            <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--text)' }}>{adminStats.pendingHorses}</div>
+          </div>
+        </div>
+      </div>
       {/* Tab Navigation */}
       <div className="tabs">
         <button
@@ -533,10 +620,42 @@ export function AdminSchedulingPage() {
               {tournaments.map((t) => (
                 <div key={t.id} className="card card-light" style={{ background: '#fff', border: '1px solid var(--border)' }}>
                   <div className="flex-between">
-                    <div>
-                      <span className={`badge ${t.status === 'PUBLISHED' || t.status === 'ONGOING' ? 'badge-approved' : t.status === 'COMPLETED' ? 'badge-confirmed' : 'badge-pending'}`} style={{ marginBottom: 6 }}>
-                        {t.status}
-                      </span>
+                    <div style={{ flex: 1 }}>
+                      {/* Quick Status Changer */}
+                      <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Trạng thái:</span>
+                        <select
+                          value={t.status || 'DRAFT'}
+                          onChange={(e) => handleQuickStatusChange(t.id, t.name, e.target.value)}
+                          style={{
+                            width: 'auto',
+                            padding: '3px 28px 3px 8px',
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            borderRadius: '999px',
+                            border: '1.5px solid',
+                            cursor: 'pointer',
+                            background:
+                              t.status === 'PUBLISHED' || t.status === 'ONGOING' ? 'rgba(16,185,129,0.12)' :
+                              t.status === 'COMPLETED' ? 'rgba(16,185,129,0.08)' :
+                              t.status === 'CANCELLED' ? 'rgba(239,68,68,0.10)' : 'rgba(245,158,11,0.10)',
+                            borderColor:
+                              t.status === 'PUBLISHED' || t.status === 'ONGOING' ? '#10b981' :
+                              t.status === 'COMPLETED' ? '#059669' :
+                              t.status === 'CANCELLED' ? '#ef4444' : '#f59e0b',
+                            color:
+                              t.status === 'PUBLISHED' || t.status === 'ONGOING' ? '#059669' :
+                              t.status === 'COMPLETED' ? '#047857' :
+                              t.status === 'CANCELLED' ? '#dc2626' : '#d97706',
+                          }}
+                        >
+                          <option value="DRAFT">📝 Bản nháp</option>
+                          <option value="PUBLISHED">📢 Đã công bố</option>
+                          <option value="ONGOING">🏁 Đang diễn ra</option>
+                          <option value="COMPLETED">✅ Hoàn thành</option>
+                          <option value="CANCELLED">❌ Đã hủy</option>
+                        </select>
+                      </div>
                       <h3 style={{ margin: '0 0 4px', fontSize: '18px' }}>{t.name}</h3>
                       <p className="muted" style={{ fontSize: '13px', margin: 0 }}>
                         📍 Địa điểm: {t.venue} | 📅 Thời gian: {new Date(t.startDate).toLocaleDateString('vi-VN')} - {new Date(t.endDate).toLocaleDateString('vi-VN')}
@@ -546,7 +665,7 @@ export function AdminSchedulingPage() {
                       </p>
                       {t.description && <p style={{ fontSize: '14px', marginTop: 8, fontStyle: 'italic' }}>{t.description}</p>}
                     </div>
-                    <div style={{ display: 'flex', gap: 6 }}>
+                    <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                       <button className="btn" onClick={() => openRaceModal(null, t.id)}>+ Thêm cuộc đua</button>
                       <button className="btn" onClick={() => openTournModal(t)}>Sửa</button>
                       <button className="btn" style={{ color: '#ef4444' }} onClick={() => handleDeleteTourn(t.id, t.name)}>Xóa</button>
@@ -606,9 +725,12 @@ export function AdminSchedulingPage() {
                         <div className="muted" style={{ fontSize: '12px' }}>📞 {reg.horseId?.ownerId?.phone}</div>
                       </td>
                       <td>
-                        <span className={`badge badge-pending`}>
+                        <span className={`badge ${reg.status === 'APPROVED' ? 'badge-approved' : reg.status === 'REJECTED' ? 'badge-rejected' : 'badge-pending'}`}>
                           {reg.status}
                         </span>
+                        {reg.status === 'REJECTED' && (reg as any).rejectionReason && (
+                          <div className="text-xs" style={{ marginTop: 4, color: '#ef4444' }}>Lý do: {(reg as any).rejectionReason}</div>
+                        )}
                       </td>
                       <td>{reg.createdAt ? new Date(reg.createdAt).toLocaleDateString('vi-VN') : ''}</td>
                       <td style={{ textAlign: 'right' }}>
@@ -673,6 +795,9 @@ export function AdminSchedulingPage() {
                           <span className={`badge ${h.status === 'APPROVED' ? 'badge-approved' : h.status === 'REJECTED' ? 'badge-rejected' : 'badge-pending'}`}>
                             {h.status}
                           </span>
+                          {h.status === 'REJECTED' && (h as any).rejectionReason && (
+                            <div className="text-xs" style={{ marginTop: 4, color: '#ef4444' }}>Lý do: {(h as any).rejectionReason}</div>
+                          )}
                         </td>
                         <td>
                           {h.healthCertUrl ? (
@@ -949,6 +1074,16 @@ export function AdminSchedulingPage() {
                     <label>Số ngựa tối đa</label>
                     <input type="number" required value={tournForm.maxHorses} onChange={(e) => setTournForm({ ...tournForm, maxHorses: parseInt(e.target.value) })} />
                   </div>
+                </div>
+                <div className="form-group">
+                  <label>Trạng thái giải đấu</label>
+                  <select value={tournForm.status} onChange={(e) => setTournForm({ ...tournForm, status: e.target.value })}>
+                    <option value="DRAFT">📝 Bản nháp (DRAFT)</option>
+                    <option value="PUBLISHED">📢 Đã công bố (PUBLISHED)</option>
+                    <option value="ONGOING">🏁 Đang diễn ra (ONGOING)</option>
+                    <option value="COMPLETED">✅ Đã kết thúc (COMPLETED)</option>
+                    <option value="CANCELLED">❌ Đã hủy (CANCELLED)</option>
+                  </select>
                 </div>
               </div>
               <div className="modal-footer">

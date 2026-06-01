@@ -6,16 +6,20 @@ import {
   updateHorse,
   deleteHorse,
   getRaces,
+  getRaceHorses,
   registerHorseRace,
   searchJockeys,
   sendJockeyInvitation,
   getHorseJockeys,
   confirmJockey,
+  confirmRaceParticipation,
+  getHorseResults
 } from '@/api'
+import { Pagination } from '@/components/ui/Pagination'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Tab = 'my-horses' | 'race-registration' | 'hire-jockey' | 'invitations'
+type Tab = 'my-horses' | 'race-registration' | 'hire-jockey' | 'invitations' | 'my-registrations'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -75,13 +79,22 @@ export function HorsesPage() {
   const [selectedHorseId, setSelectedHorseId] = useState<string>('')
   const [jockeySearch, setJockeySearch] = useState<string>('')
   const [inviteRaceId, setInviteRaceId] = useState<string>('')
+  const [registrations, setRegistrations] = useState<{ race: Race; horseId: string; horseName: string; status: string; rejectionReason?: string; confirmedByOwner?: boolean }[]>([])
 
-  // Horse modal
+  // Pagination
+  const [horsePage, setHorsePage] = useState(1)
+  const PAGE_SIZE = 6
+
   const [showHorseModal, setShowHorseModal] = useState(false)
   const [selectedHorse, setSelectedHorse] = useState<Horse | null>(null)
   const [horseForm, setHorseForm] = useState({
     name: '', breed: '', age: 3, weight: 450, color: '', gender: 'MALE' as 'MALE' | 'FEMALE', origin: '', healthCertUrl: '',
   })
+
+  // Horse Results Modal
+  const [showResultsModal, setShowResultsModal] = useState(false)
+  const [horseResults, setHorseResults] = useState<any>(null)
+  const [loadingResults, setLoadingResults] = useState(false)
 
   const { toasts, show: showToast } = useToast()
 
@@ -99,7 +112,15 @@ export function HorsesPage() {
     try {
       const hList = await getHorses()
       setHorses(hList)
-      if (!selectedHorseId && hList.length > 0) setSelectedHorseId(hList[0].id)
+      // Ensure ID is always a non-empty string before comparing
+      if (hList.length > 0) {
+        const firstId = String(hList[0].id || hList[0]._id || '')
+        setSelectedHorseId((prev) => {
+          const prevStr = String(prev || '')
+          const isValidPrev = prevStr && hList.some((h) => String(h.id || h._id) === prevStr)
+          return isValidPrev ? prevStr : firstId
+        })
+      }
 
       if (activeTab === 'race-registration') {
         const rList = await getRaces()
@@ -111,6 +132,32 @@ export function HorsesPage() {
       } else if (activeTab === 'invitations' && selectedHorseId) {
         const iList = await getHorseJockeys(selectedHorseId)
         setInvitations(iList)
+      } else if (activeTab === 'my-registrations') {
+        const rList = await getRaces()
+        const myHorseIds = new Set(hList.map((h) => String(h.id || h._id)))
+        const regs: { race: Race; horseId: string; horseName: string; status: string; rejectionReason?: string; confirmedByOwner?: boolean }[] = []
+        await Promise.all(
+          rList.map(async (race) => {
+            try {
+              const raceHorsesRes = await getRaceHorses(race.id)
+              const matched = raceHorsesRes.horses || (Array.isArray(raceHorsesRes) ? raceHorsesRes : [])
+              matched.forEach((entry: any) => {
+                const horseId = String(entry.horseId || entry.horse?._id || entry.horse?.id || '')
+                if (myHorseIds.has(horseId)) {
+                  const matchedHorse = hList.find((h) => String(h.id || h._id) === horseId)
+                  regs.push({
+                    race,
+                    horseId,
+                    horseName: matchedHorse?.name || entry.horse?.name || 'Ngựa',
+                    status: entry.status || entry.registrationStatus || 'PENDING',
+                    confirmedByOwner: entry.confirmedByOwner,
+                  })
+                }
+              })
+            } catch { /* skip races with errors */ }
+          })
+        )
+        setRegistrations(regs)
       }
     } catch (err: any) {
       setError(err.response?.data?.message || err.message)
@@ -198,6 +245,33 @@ export function HorsesPage() {
     }
   }
 
+  const handleConfirmRace = async (horseId: string, raceId: string) => {
+    try {
+      setLoading(true)
+      await confirmRaceParticipation(horseId, raceId)
+      showToast('Đã xác nhận tham gia đua thành công!')
+      loadData()
+    } catch (err: any) {
+      showToast(err.response?.data?.message || err.message, 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const openHorseResults = async (horseId: string, horseName: string) => {
+    setShowResultsModal(true)
+    setLoadingResults(true)
+    setHorseResults({ horseName, stats: null, results: [] })
+    try {
+      const data = await getHorseResults(horseId)
+      setHorseResults(data)
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Không thể tải kết quả', 'error')
+    } finally {
+      setLoadingResults(false)
+    }
+  }
+
   // Filtered jockeys
   const filteredJockeys = jockeys.filter((j) => {
     const name = (j.userId?.fullName || j.userId?.name || '').toLowerCase()
@@ -237,6 +311,7 @@ export function HorsesPage() {
           {([
             { key: 'my-horses', label: 'Hồ Sơ Ngựa', icon: '🐎' },
             { key: 'race-registration', label: 'Đăng Ký Đua', icon: '🏆' },
+            { key: 'my-registrations', label: 'Đăng Ký Của Tôi', icon: '📊' },
             { key: 'hire-jockey', label: 'Tuyển Jockey', icon: '🤝' },
             { key: 'invitations', label: 'Quản Lý Lời Mời', icon: '📋' },
           ] as { key: Tab; label: string; icon: string }[]).map((tab) => (
@@ -280,7 +355,7 @@ export function HorsesPage() {
               </div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
-                {horses.map((h) => {
+                {horses.slice((horsePage - 1) * PAGE_SIZE, horsePage * PAGE_SIZE).map((h) => {
                   const sc = statusConfig(h.status || 'PENDING')
                   return (
                     <div key={h.id} className="card card-hover" style={{ padding: 0, overflow: 'hidden' }}>
@@ -297,7 +372,27 @@ export function HorsesPage() {
                             <h3 style={{ margin: 0, fontSize: 16 }}>{h.name}</h3>
                             <span className={`badge ${sc.cls}`}>{sc.label}</span>
                           </div>
-                          <p className="muted text-xs" style={{ marginTop: 2 }}>{h.breed} · {h.origin}</p>
+                          <p className="muted text-xs" style={{ marginTop: 4 }}>{h.breed} · {h.origin}</p>
+                          
+                          {/* Mini Stats */}
+                          <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+                            <div style={{ fontSize: 11, background: 'rgba(59,130,246,0.1)', color: '#2563eb', padding: '3px 8px', borderRadius: 12, fontWeight: 700 }}>
+                              🏁 Tham gia: {(h as any).stats?.races ?? 0}
+                            </div>
+                            <div style={{ fontSize: 11, background: 'rgba(234,179,8,0.1)', color: '#ca8a04', padding: '3px 8px', borderRadius: 12, fontWeight: 700 }}>
+                              🏆 Thắng: {(h as any).stats?.wins ?? 0}
+                            </div>
+                          </div>
+                          
+                          <div style={{ marginTop: 12 }}>
+                            <button
+                              className="btn btn-secondary text-xs"
+                              style={{ padding: '4px 8px' }}
+                              onClick={() => openHorseResults(h.id, h.name)}
+                            >
+                              📊 Xem kết quả
+                            </button>
+                          </div>
                         </div>
                       </div>
 
@@ -334,6 +429,14 @@ export function HorsesPage() {
                 })}
               </div>
             )}
+            
+            {/* Pagination for Horses */}
+            {horses.length > PAGE_SIZE && (
+              <div style={{ marginTop: 28, display: 'flex', justifyContent: 'center' }}>
+                <Pagination total={horses.length} page={horsePage} pageSize={PAGE_SIZE} onChange={setHorsePage} />
+              </div>
+            )}
+            
           </div>
         )}
 
@@ -359,10 +462,10 @@ export function HorsesPage() {
               </div>
               <div className="form-group" style={{ flex: '1 1 260px', marginBottom: 0 }}>
                 <label>Ngựa tham gia (chỉ ngựa APPROVED)</label>
-                <select value={selectedHorseId} onChange={(e) => setSelectedHorseId(e.target.value)}>
+                <select value={String(selectedHorseId)} onChange={(e) => setSelectedHorseId(e.target.value)}>
                   <option value="">— Chọn ngựa —</option>
                   {horses.map((h) => (
-                    <option key={h.id} value={h.id}>
+                    <option key={h.id} value={String(h.id || h._id)}>
                       {h.name} {h.status === 'APPROVED' ? '✅' : h.status === 'PENDING' ? '⏳' : '❌'}
                     </option>
                   ))}
@@ -413,6 +516,70 @@ export function HorsesPage() {
           </div>
         )}
 
+        {/* ── TAB: My Registrations ── */}
+        {activeTab === 'my-registrations' && (
+          <div className="card">
+            <div className="section-header">
+              <div className="section-title">📊 Đăng Ký Của Tôi</div>
+              <p className="section-desc">Xem trạng thái tất cả các cuộc đua mà ngựa của bạn đã đăng ký.</p>
+            </div>
+            {loading ? (
+              <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--muted)' }}>Đang tải dữ liệu đăng ký...</div>
+            ) : registrations.length === 0 ? (
+              <div className="empty-state">
+                <span className="empty-state-icon">📋</span>
+                <div className="empty-state-title">Chưa có đăng ký nào</div>
+                <p className="empty-state-desc">Chuyển sang tab "Đăng Ký Đua" để đăng ký ngựa vào cuộc đua</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {registrations.map((reg, idx) => {
+                  const regStatusCls =
+                    reg.status === 'APPROVED' ? 'badge-approved' :
+                    reg.status === 'REJECTED' ? 'badge-rejected' : 'badge-pending'
+                  return (
+                    <div key={idx} className="card card-hover" style={{ background: 'var(--surface-2)', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 'var(--radius-md)', background: 'linear-gradient(135deg,#059669,#047857)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>🐎</div>
+                      <div style={{ flex: 1, minWidth: 200 }}>
+                        <div style={{ fontWeight: 800, color: 'var(--text)', fontSize: 15 }}>{reg.horseName}</div>
+                        <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>🏁 {reg.race.name}</div>
+                        <div style={{ display: 'flex', gap: 12, marginTop: 4, flexWrap: 'wrap' }}>
+                          <span className="text-xs muted">📅 {new Date(reg.race.scheduledAt).toLocaleString('vi-VN')}</span>
+                          {reg.race.distance && <span className="text-xs muted">📏 {reg.race.distance}m</span>}
+                          {reg.race.prizeFirst && <span className="text-xs" style={{ color: '#d97706', fontWeight: 600 }}>🥇 {reg.race.prizeFirst.toLocaleString('vi-VN')} VND</span>}
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        <span className={`badge ${regStatusCls}`}>
+                          {reg.status === 'APPROVED' ? '✅' : reg.status === 'REJECTED' ? '❌' : '⏳'} {reg.status}
+                        </span>
+                        <div className="text-xs muted" style={{ marginTop: 6 }}>
+                        {reg.status === 'PENDING' ? 'Chờ Admin duyệt' : reg.status === 'APPROVED' ? (reg.confirmedByOwner ? 'Đã xác nhận tham gia' : 'Cần chốt tham gia') : reg.status === 'CONFIRMED' ? 'Đã xác nhận tham gia' : 'Bị từ chối'}
+                        </div>
+                        {reg.status === 'REJECTED' && reg.rejectionReason && (
+                          <div className="text-xs" style={{ marginTop: 6, color: '#ef4444', fontWeight: 600 }}>
+                            Lý do: {reg.rejectionReason}
+                          </div>
+                        )}
+                        {reg.status === 'APPROVED' && !reg.confirmedByOwner && (
+                          <button
+                            className="btn btn-primary"
+                            style={{ padding: '6px 12px', fontSize: 13, marginTop: 8 }}
+                            onClick={() => handleConfirmRace(reg.horseId, reg.race.id)}
+                            disabled={loading}
+                          >
+                            ✓ Chốt tham gia
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ── TAB 3: Hire Jockey ── */}
         {activeTab === 'hire-jockey' && (
           <div className="card">
@@ -425,9 +592,9 @@ export function HorsesPage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 20 }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label>Ngựa cần tuyển Jockey</label>
-                <select value={selectedHorseId} onChange={(e) => setSelectedHorseId(e.target.value)}>
+                <select value={String(selectedHorseId)} onChange={(e) => setSelectedHorseId(e.target.value)}>
                   <option value="">— Chọn ngựa —</option>
-                  {horses.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
+                  {horses.map((h) => <option key={h.id} value={String(h.id || h._id)}>{h.name}</option>)}
                 </select>
               </div>
               <div className="form-group" style={{ marginBottom: 0 }}>
@@ -522,9 +689,9 @@ export function HorsesPage() {
 
             <div className="form-group" style={{ maxWidth: 300, marginBottom: 20 }}>
               <label>Chọn Ngựa</label>
-              <select value={selectedHorseId} onChange={(e) => setSelectedHorseId(e.target.value)}>
+              <select value={String(selectedHorseId)} onChange={(e) => setSelectedHorseId(e.target.value)}>
                 <option value="">— Chọn ngựa —</option>
-                {horses.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
+                {horses.map((h) => <option key={h.id} value={String(h.id || h._id)}>{h.name}</option>)}
               </select>
             </div>
 
@@ -588,6 +755,73 @@ export function HorsesPage() {
             )}
           </div>
         )}
+
+        {/* ── Modal: Horse Results ── */}
+        {showResultsModal && (
+          <div className="modal-overlay" onClick={() => setShowResultsModal(false)}>
+            <div className="modal-content" style={{ maxWidth: 700 }} onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>🏆 Lịch sử thi đấu: {horseResults?.horseName}</h2>
+                <button className="btn btn-secondary" onClick={() => setShowResultsModal(false)}>✕</button>
+              </div>
+              <div className="modal-body">
+                {loadingResults ? (
+                  <div style={{ padding: '40px 0', textAlign: 'center' }}>Đang tải kết quả...</div>
+                ) : horseResults?.results?.length > 0 ? (
+                  <div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+                      <div className="card" style={{ padding: 12, textAlign: 'center' }}>
+                        <div className="muted text-xs">Tổng tham gia</div>
+                        <div style={{ fontSize: 20, fontWeight: 700 }}>{horseResults.stats.totalRaces}</div>
+                      </div>
+                      <div className="card" style={{ padding: 12, textAlign: 'center' }}>
+                        <div className="muted text-xs">Số lần thắng</div>
+                        <div style={{ fontSize: 20, fontWeight: 700, color: '#ca8a04' }}>{horseResults.stats.wins}</div>
+                      </div>
+                      <div className="card" style={{ padding: 12, textAlign: 'center' }}>
+                        <div className="muted text-xs">Top 3</div>
+                        <div style={{ fontSize: 20, fontWeight: 700, color: '#059669' }}>{horseResults.stats.topThree}</div>
+                      </div>
+                      <div className="card" style={{ padding: 12, textAlign: 'center' }}>
+                        <div className="muted text-xs">Tiền thưởng</div>
+                        <div style={{ fontSize: 16, fontWeight: 700, color: '#2563eb' }}>{horseResults.stats.totalPrizes.toLocaleString('vi-VN')} đ</div>
+                      </div>
+                    </div>
+                    
+                    <table className="table">
+                      <thead>
+                        <tr>
+                          <th>Cuộc đua</th>
+                          <th>Ngày</th>
+                          <th>Vị trí</th>
+                          <th>Tiền thưởng</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {horseResults.results.map((r: any, idx: number) => (
+                          <tr key={idx}>
+                            <td>{r.raceId?.name}</td>
+                            <td>{new Date(r.raceId?.scheduledAt).toLocaleString('vi-VN')}</td>
+                            <td>
+                              {r.position === 1 ? '🥇 Hạng 1' : r.position === 2 ? '🥈 Hạng 2' : r.position === 3 ? '🥉 Hạng 3' : `Hạng ${r.position}`}
+                            </td>
+                            <td style={{ color: r.prizeAmount > 0 ? '#10b981' : 'var(--text)', fontWeight: 600 }}>
+                              {r.prizeAmount.toLocaleString('vi-VN')} VND
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--muted)' }}>
+                    Ngựa này chưa có kết quả thi đấu nào.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Horse Modal ── */}
@@ -634,7 +868,15 @@ export function HorsesPage() {
                   </div>
                   <div className="form-group">
                     <label>Link Chứng nhận Sức khỏe (URL) *</label>
-                    <input required type="url" placeholder="https://..." value={horseForm.healthCertUrl} onChange={(e) => setHorseForm({ ...horseForm, healthCertUrl: e.target.value })} />
+                    <input required type="text" placeholder="https://..." value={horseForm.healthCertUrl} onChange={(e) => setHorseForm({ ...horseForm, healthCertUrl: e.target.value })} />
+                    <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
+                      Nhập link Google Drive / Dropbox / Hình ảnh hợp lệ (bắt đầu bằng http)
+                    </div>
+                    {horseForm.healthCertUrl && horseForm.healthCertUrl.startsWith('http') && (
+                      <a href={horseForm.healthCertUrl} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 600, display: 'inline-block', marginTop: 4 }}>
+                        👁️ Kiểm tra đường dẫn ↗
+                      </a>
+                    )}
                   </div>
                 </div>
 

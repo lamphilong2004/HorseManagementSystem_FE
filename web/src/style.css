@@ -547,6 +547,14 @@ input, select, textarea {
   outline: none;
 }
 
+/* Native select dropdown options must use OS-level colors.
+   Force dark text on light background so options are readable. */
+select option {
+  background: #1e2d3d;
+  color: #f8fafc;
+  padding: 8px 12px;
+}
+
 input:hover, select:hover, textarea:hover {
   border-color: var(--border-2);
 }

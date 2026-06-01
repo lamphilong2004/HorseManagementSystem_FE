@@ -27,6 +27,39 @@ function parseMoney(value: string) {
   return digits ? Number(digits) : 0
 }
 
+// ── Countdown Hook ─────────────────────────────────────────────────────────────
+function useCountdown(targetDate?: string) {
+  const [diff, setDiff] = useState(0)
+  useEffect(() => {
+    if (!targetDate) return
+    const update = () => setDiff(new Date(targetDate).getTime() - Date.now())
+    update()
+    const id = setInterval(update, 1000)
+    return () => clearInterval(id)
+  }, [targetDate])
+  if (!targetDate || diff <= 0) return null
+  const total = Math.floor(diff / 1000)
+  const days = Math.floor(total / 86400)
+  const hours = Math.floor((total % 86400) / 3600)
+  const mins = Math.floor((total % 3600) / 60)
+  const secs = total % 60
+  return { days, hours, mins, secs }
+}
+
+// ── Share Function ──────────────────────────────────────────────────────────────
+async function shareRaceResult(raceName: string) {
+  const url = window.location.href
+  const text = `🏁 Kết quả cuộc đua: ${raceName} | HorseRacing System`
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: text, text, url })
+    } catch { /* user cancelled */ }
+  } else {
+    await navigator.clipboard.writeText(url)
+    alert('Đã sao chép link kết quả vào clipboard! 📋')
+  }
+}
+
 export function RaceDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { session, balance, updateBalance } = useSession()
@@ -37,6 +70,9 @@ export function RaceDetailPage() {
   const [results, setResults] = useState<RaceResult[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Countdown
+  const countdown = useCountdown(race?.scheduledAt)
 
   // Prediction state
   const [predOpen, setPredOpen] = useState(false)
@@ -293,6 +329,19 @@ export function RaceDetailPage() {
         )}
       </div>
 
+      {/* Countdown — only when race is SCHEDULED */}
+      {race.status === 'SCHEDULED' && countdown && (
+        <div style={{ marginBottom: 16, padding: '14px 20px', background: 'linear-gradient(135deg, rgba(16,185,129,0.12), rgba(245,158,11,0.08))', borderRadius: 'var(--radius-md)', border: '1px solid var(--primary-ring)', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <span style={{ fontWeight: 700, color: 'var(--primary)', fontSize: 14 }}>⏳ Bắt đầu sau:</span>
+          {[{ v: countdown.days, u: 'ngày' }, { v: countdown.hours, u: 'giờ' }, { v: countdown.mins, u: 'phút' }, { v: countdown.secs, u: 'giây' }].map(({ v, u }) => (
+            <div key={u} style={{ textAlign: 'center', minWidth: 52, padding: '6px 10px', background: 'rgba(255,255,255,0.06)', borderRadius: 8, border: '1px solid var(--border)' }}>
+              <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--text)', lineHeight: 1.1 }}>{String(v).padStart(2, '0')}</div>
+              <div style={{ fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{u}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* ONGOING race banner */}
       {race.status === 'ONGOING' && (
         <div className="alert alert-warning mb-16">
@@ -317,7 +366,18 @@ export function RaceDetailPage() {
       {/* Results */}
       {(race.status === 'COMPLETED' || race.status === 'RESULT_CONFIRMED' || results.length > 0) && (
         <div className="card">
-          <h2 style={{ marginBottom: 16 }}>🏅 Kết quả cuộc đua</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
+            <h2 style={{ margin: 0 }}>🏅 Kết quả cuộc đua</h2>
+            {(race.status === 'COMPLETED' || race.status === 'RESULT_CONFIRMED') && (
+              <button
+                className="btn btn-sm"
+                onClick={() => shareRaceResult(race.name)}
+                style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                📤 Chia sẻ kết quả
+              </button>
+            )}
+          </div>
           <AnimatedTable
             data={resultsWithId}
             columns={resultsColumns}

@@ -156,6 +156,11 @@ export async function registerHorseRace(horseId: string, raceId: string): Promis
   return res.data
 }
 
+export async function confirmRaceParticipation(horseId: string, raceId: string): Promise<any> {
+  const res = await http.patch(`${BE_BASE_URL}/horses/me/${horseId}/confirm-race/${raceId}`)
+  return res.data
+}
+
 export async function searchJockeys(params?: { status?: string; page?: number; limit?: number }): Promise<Jockey[]> {
   const res = await http.get(`${BE_BASE_URL}/jockeys`, { params })
   const data = res.data.jockeys || res.data.data || res.data
@@ -196,13 +201,39 @@ export async function getInvites(): Promise<Invite[]> {
     id: inv._id || inv.id,
     horseId: inv.horseId?._id || inv.horseId,
     horseName: inv.horseId?.name || (typeof inv.horseId === 'object' ? inv.horseId?.name : inv.horseId) || 'Ngựa thi đấu',
+    horseBreed: inv.horseId?.breed,
+    horseAge: inv.horseId?.age,
+    horseWeight: inv.horseId?.weight,
+    horseColor: inv.horseId?.color,
+    horseGender: inv.horseId?.gender,
+    horseHealthCertUrl: inv.horseId?.healthCertUrl,
     jockeyId: inv.jockeyId,
     raceId: inv.raceId,
+    raceName: inv.raceId?.name,
+    raceScheduledAt: inv.raceId?.scheduledAt,
+    raceDistance: inv.raceId?.distance,
     status: inv.status === 'REJECTED' ? 'DECLINED' : inv.status,
     message: inv.message,
     sentAt: inv.sentAt,
   }))
 }
+
+export async function acceptInvitation(inviteId: string): Promise<any> {
+  const res = await http.patch(`${BE_BASE_URL}/jockeys/me/invitations/${inviteId}/accept`)
+  return res.data
+}
+
+export async function rejectInvitation(inviteId: string): Promise<any> {
+  const res = await http.patch(`${BE_BASE_URL}/jockeys/me/invitations/${inviteId}/reject`)
+  return res.data
+}
+
+export async function markNotificationRead(notifId: string): Promise<any> {
+  const res = await http.patch(`${BE_BASE_URL}/me/notifications/${notifId}/read`)
+  return res.data
+}
+
+
 
 export async function getPredictions(): Promise<Prediction[]> {
   const res = await http.get(`${BE_BASE_URL}/me/predictions`)
@@ -316,7 +347,8 @@ export async function getRaceRegistrations(status?: string, raceId?: string): Pr
   const res = await http.get(`${BE_BASE_URL}/admin/races/registrations`, {
     params: { status, raceId },
   })
-  return res.data.map((r: any) => ({
+  const data = Array.isArray(res.data) ? res.data : (res.data.registrations || [])
+  return data.map((r: any) => ({
     id: r._id || r.id,
     horseId: r.horseId,
     raceId: r.raceId,
@@ -331,8 +363,8 @@ export async function approveRaceRegistration(regId: string): Promise<any> {
   return res.data
 }
 
-export async function rejectRaceRegistration(regId: string): Promise<any> {
-  const res = await http.patch(`${BE_BASE_URL}/admin/races/registrations/${regId}/reject`)
+export async function rejectRaceRegistration(regId: string, reason?: string): Promise<any> {
+  const res = await http.patch(`${BE_BASE_URL}/admin/races/registrations/${regId}/reject`, { reason })
   return res.data
 }
 
@@ -359,8 +391,8 @@ export async function approveHorse(horseId: string): Promise<any> {
   return res.data
 }
 
-export async function rejectHorse(horseId: string): Promise<any> {
-  const res = await http.patch(`${BE_BASE_URL}/admin/horses/${horseId}/reject`)
+export async function rejectHorse(horseId: string, reason?: string): Promise<any> {
+  const res = await http.patch(`${BE_BASE_URL}/admin/horses/${horseId}/reject`, { reason })
   return res.data
 }
 
@@ -384,18 +416,23 @@ export async function getAdminJockeys(params?: { status?: string }): Promise<Joc
 
 // --- CÔNG BỐ KẾT QUẢ ---
 export async function publishRaceResult(raceId: string, results: any[]): Promise<any> {
-  const res = await http.post(`${BE_BASE_URL}/admin/races/${raceId}/publish-result`, { results })
+  const res = await http.post(`${BE_BASE_URL}/results/admin/races/${raceId}/publish`, { results })
   return res.data
 }
 
 export async function getRaceResults(raceId: string): Promise<any> {
-  const res = await http.get(`${BE_BASE_URL}/races/${raceId}/results`)
+  const res = await http.get(`${BE_BASE_URL}/results/races/${raceId}`)
+  return res.data
+}
+
+export async function getHorseResults(horseId: string): Promise<any> {
+  const res = await http.get(`${BE_BASE_URL}/results/horses/me/${horseId}`)
   return res.data
 }
 
 // --- QUẢN LÝ DỰ ĐOÁN (PREDICTIONS) ---
 export async function getAdminPredictions(params?: { status?: string; raceId?: string }): Promise<Prediction[]> {
-  const res = await http.get(`${BE_BASE_URL}/admin/predictions`, { params })
+  const res = await http.get(`${BE_BASE_URL}/prediction/admin/predictions`, { params })
   const data = res.data.predictions || res.data.data || res.data
   return data.map((p: any) => ({
     id: p._id || p.id,
@@ -412,17 +449,17 @@ export async function getAdminPredictions(params?: { status?: string; raceId?: s
 }
 
 export async function getPredictionStats(raceId?: string): Promise<any> {
-  const res = await http.get(`${BE_BASE_URL}/admin/predictions/stats`, { params: { raceId } })
+  const res = await http.get(`${BE_BASE_URL}/prediction/admin/predictions/stats`, { params: { raceId } })
   return res.data
 }
 
 export async function closePredictions(raceId: string): Promise<any> {
-  const res = await http.post(`${BE_BASE_URL}/admin/races/${raceId}/predictions/close`)
+  const res = await http.post(`${BE_BASE_URL}/prediction/admin/races/${raceId}/predictions/close`)
   return res.data
 }
 
 export async function settlePredictions(raceId: string): Promise<any> {
-  const res = await http.post(`${BE_BASE_URL}/admin/races/${raceId}/predictions/settle`)
+  const res = await http.post(`${BE_BASE_URL}/prediction/admin/races/${raceId}/predictions/settle`)
   return res.data
 }
 

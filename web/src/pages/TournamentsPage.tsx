@@ -18,7 +18,6 @@ const TIME_OPTIONS = [
   { value: 'upcoming', label: 'Sắp khai mạc' },
   { value: 'ongoing', label: 'Đang diễn ra' },
   { value: 'completed', label: 'Đã kết thúc' },
-  { value: 'draft', label: 'Bản nháp' },
 ]
 
 const SORT_OPTIONS = [
@@ -51,7 +50,7 @@ export function TournamentsPage() {
   const [items, setItems] = useState<Tournament[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [statusFilter, setStatusFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('PUBLISHED')
   const [timeFilter, setTimeFilter] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [sortOrder, setSortOrder] = useState('newest')
