@@ -1,374 +1,359 @@
 import { Link } from 'react-router-dom'
 
-const features = [
-  {
-    icon: '🏆',
-    title: 'Quản lý Giải đấu',
-    desc: 'Tạo và theo dõi giải đấu đua ngựa chuyên nghiệp với lịch trình chi tiết và kết quả thời gian thực.',
-    color: 'var(--accent)',
-  },
-  {
-    icon: '🐎',
-    title: 'Hồ sơ Ngựa đua',
-    desc: 'Đăng ký và quản lý hồ sơ ngựa đầy đủ: giống, sức khỏe, lịch sử thi đấu và thành tích.',
-    color: 'var(--primary)',
-  },
-  {
-    icon: '🏇',
-    title: 'Kết nối Jockey',
-    desc: 'Chủ ngựa dễ dàng tìm và thuê jockey chuyên nghiệp, theo dõi lời mời và xác nhận tham gia.',
-    color: '#3b82f6',
-  },
-  {
-    icon: '⚖️',
-    title: 'Quản lý Trọng tài',
-    desc: 'Phân công trọng tài, ghi nhận vi phạm, xác nhận kết quả và đảm bảo tính công bằng cuộc đua.',
-    color: '#8b5cf6',
-  },
-  {
-    icon: '🔮',
-    title: 'Dự đoán & Cược',
-    desc: 'Khán giả đặt cược và dự đoán kết quả cuộc đua. Hệ thống tự động tính toán và trả thưởng.',
-    color: '#f97316',
-  },
-  {
-    icon: '📊',
-    title: 'Bảng xếp hạng',
-    desc: 'Theo dõi thành tích, tiền thưởng và bảng xếp hạng tổng hợp của tất cả các cuộc đua.',
-    color: '#10b981',
-  },
-]
-
-const roles = [
-  { icon: '👑', name: 'Horse Owner', desc: 'Đăng ký ngựa, tuyển jockey, theo dõi kết quả', color: '#059669' },
-  { icon: '🏇', name: 'Jockey', desc: 'Nhận lời mời, tham gia đua, theo dõi thành tích', color: '#f97316' },
-  { icon: '⚖️', name: 'Trọng tài', desc: 'Giám sát, xử lý vi phạm, xác nhận kết quả', color: '#3b82f6' },
-  { icon: '🔮', name: 'Khán giả', desc: 'Xem giải đấu, dự đoán, tham gia cược', color: '#8b5cf6' },
-]
-
-const stats = [
-  { value: '50+', label: 'Giải đấu' },
-  { value: '200+', label: 'Cuộc đua' },
-  { value: '1,000+', label: 'Ngựa đăng ký' },
-  { value: '5,000+', label: 'Thành viên' },
-]
-
 export function LandingPage() {
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(145deg, #071a12 0%, #0a1628 100%)', color: 'white', fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div
+      className="bg-background text-on-surface selection:bg-primary-container selection:text-on-primary-container min-h-screen"
+      style={{
+        fontFamily: "'Inter', sans-serif",
+        backgroundColor: '#f8fafc',
+        color: '#0f172a',
+        // Define Glacier design system colors locally
+        '--color-tertiary-fixed': '#e8d0ff',
+        '--color-on-secondary': '#001f2e',
+        '--color-inverse-primary': '#0a4c6e',
+        '--color-surface-container-low': '#f8fafc',
+        '--color-surface': '#ffffff',
+        '--color-on-tertiary': '#1a002e',
+        '--color-primary-fixed': '#c8eaff',
+        '--color-primary-container': '#e0f2fe',
+        '--color-inverse-surface': '#0f172a',
+        '--color-surface-variant': '#f1f5f9',
+        '--color-surface-container': '#f8fafc',
+        '--color-on-secondary-container': '#075985',
+        '--color-secondary': '#0ea5e9',
+        '--color-on-tertiary-fixed-variant': '#4d2a73',
+        '--color-primary': '#0ea5e9',
+        '--color-surface-container-high': '#f1f5f9',
+        '--color-on-surface': '#0f172a',
+        '--color-error': '#ef4444',
+        '--color-surface-container-lowest': '#ffffff',
+        '--color-outline-variant': '#e2e8f0',
+        '--color-surface-tint': '#0ea5e9',
+        '--color-on-error-container': '#7f1d1d',
+        '--color-error-container': '#fee2e2',
+        '--color-on-tertiary-fixed': '#1a002e',
+        '--color-inverse-on-surface': '#f8fafc',
+        '--color-outline': '#94a3b8',
+        '--color-surface-bright': '#ffffff',
+        '--color-secondary-fixed-dim': '#7dd3fc',
+        '--color-secondary-container': '#bae6fd',
+        '--color-tertiary': '#a855f7',
+        '--color-surface-dim': '#f1f5f9',
+        '--color-surface-container-highest': '#e2e8f0',
+        '--color-on-primary-fixed': '#001f2e',
+        '--color-on-tertiary-container': '#3b0764',
+        '--color-on-surface-variant': '#475569',
+        '--color-background': '#f8fafc',
+        '--color-on-secondary-fixed-variant': '#075985',
+        '--color-on-primary-container': '#0369a1',
+        '--color-on-primary-fixed-variant': '#0c4a6e',
+        '--color-on-primary': '#ffffff',
+        '--color-secondary-fixed': '#e0f2fe',
+        '--color-on-background': '#0f172a',
+        '--color-on-secondary-fixed': '#0c4a6e',
+        '--color-tertiary-container': '#f3e8ff',
+        '--color-primary-fixed-dim': '#7dd3fc',
+        '--color-on-error': '#ffffff',
+        '--color-tertiary-fixed-dim': '#c8a0f0',
+      } as React.CSSProperties}
+    >
+      <style>{`
+        .glass {
+          background: rgba(255, 255, 255, 0.7);
+          backdrop-filter: blur(16px);
+          border: 1px solid rgba(14, 165, 233, 0.1);
+        }
+        .glass-darker {
+          background: rgba(255, 255, 255, 0.85);
+          backdrop-filter: blur(24px);
+          border: 1px solid rgba(14, 165, 233, 0.15);
+          transition: all 0.3s ease;
+        }
+        .glass-darker:hover {
+          box-shadow: 0 10px 40px rgba(14, 165, 233, 0.12) !important;
+          transform: translateY(-8px);
+        }
+        .material-symbols-outlined {
+          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glow-subtle {
+          box-shadow: 0 0 30px rgba(14, 165, 233, 0.08);
+        }
+      `}</style>
 
-      {/* ── Topbar ── */}
-      <nav style={{
-        position: 'sticky', top: 0, zIndex: 50,
-        background: 'rgba(7, 26, 18, 0.85)',
-        backdropFilter: 'blur(16px) saturate(180%)',
-        borderBottom: '1px solid rgba(255,255,255,0.08)',
-        padding: '0 24px',
-      }}>
-        <div style={{ maxWidth: 1160, margin: '0 auto', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-          {/* Logo */}
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: 10,
-              background: 'linear-gradient(135deg, #059669, #047857)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
-            }}>🏇</div>
-            <span style={{ fontWeight: 800, fontSize: 18, color: 'white', letterSpacing: '-0.02em' }}>HorseRacing</span>
+      {/* TopAppBar */}
+      <header className="fixed top-0 z-50 w-full bg-surface/80 backdrop-blur-md border-b border-outline-variant">
+        <div className="flex justify-between items-center w-full px-6 md:px-12 h-16 max-w-[1440px] mx-auto">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary text-3xl" data-icon="stadium">stadium</span>
+            <span className="font-headline font-bold text-xl tracking-tight text-primary">Equestrian Admin Elite</span>
+          </div>
+          <nav className="hidden md:flex items-center gap-8">
+            <Link className="text-primary font-bold border-b-2 border-primary pb-1 transition-colors duration-200" to="/">Home</Link>
+            <a className="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200" href="#races">Races</a>
+            <a className="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200" href="#features">Features</a>
+            <a className="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200" href="#about">About</a>
+          </nav>
+          <Link to="/login" className="bg-primary text-on-primary px-6 py-2 rounded-full font-semibold hover:opacity-90 active:scale-95 transition-all text-center">
+            Get Started
           </Link>
-
-          {/* Nav links */}
-          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-            {['Tính năng', 'Vai trò', 'Về chúng tôi'].map((label) => (
-              <a key={label} href={`#${label === 'Tính năng' ? 'features' : label === 'Vai trò' ? 'roles' : 'about'}`}
-                style={{ padding: '6px 14px', borderRadius: 999, fontSize: 14, fontWeight: 500, color: 'rgba(255,255,255,0.7)', textDecoration: 'none', transition: 'all 0.15s', cursor: 'pointer' }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = 'white')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.7)')}
-              >
-                {label}
-              </a>
-            ))}
-          </div>
-
-          {/* CTA buttons */}
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Link to="/login" style={{
-              padding: '8px 18px', borderRadius: 10, fontSize: 14, fontWeight: 600,
-              border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.06)',
-              color: 'white', textDecoration: 'none', transition: 'all 0.15s',
-            }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.12)' }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)' }}
-            >
-              Đăng nhập
-            </Link>
-            <Link to="/register" style={{
-              padding: '8px 18px', borderRadius: 10, fontSize: 14, fontWeight: 600,
-              background: 'linear-gradient(135deg, #059669, #047857)',
-              border: '1px solid #047857', color: 'white', textDecoration: 'none',
-              boxShadow: '0 4px 12px rgba(5,150,105,0.35)',
-              transition: 'all 0.15s',
-            }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 16px rgba(5,150,105,0.45)' }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 12px rgba(5,150,105,0.35)' }}
-            >
-              Đăng ký miễn phí
-            </Link>
-          </div>
         </div>
-      </nav>
+      </header>
 
-      {/* ── HERO ── */}
-      <section style={{ position: 'relative', overflow: 'hidden', padding: '100px 24px 80px' }}>
-        {/* Background decorations */}
-        <div style={{
-          position: 'absolute', top: '-200px', left: '50%', transform: 'translateX(-50%)',
-          width: '900px', height: '600px', borderRadius: '50%',
-          background: 'radial-gradient(ellipse, rgba(5,150,105,0.18) 0%, transparent 70%)',
-          pointerEvents: 'none',
-        }} />
-        <div style={{
-          position: 'absolute', bottom: 0, right: '-100px',
-          width: '400px', height: '400px', borderRadius: '50%',
-          background: 'radial-gradient(ellipse, rgba(245,158,11,0.12) 0%, transparent 70%)',
-          pointerEvents: 'none',
-        }} />
-
-        <div style={{ maxWidth: 860, margin: '0 auto', textAlign: 'center', position: 'relative' }}>
-          {/* Badge */}
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            padding: '6px 16px', borderRadius: 999,
-            background: 'rgba(5,150,105,0.15)',
-            border: '1px solid rgba(5,150,105,0.35)',
-            marginBottom: 28, fontSize: 13, fontWeight: 600, color: '#34d399',
-          }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', display: 'inline-block', animation: 'pulse 2s infinite' }} />
-            Nền tảng Quản lý Đua ngựa Chuyên nghiệp
+      <main className="pt-16">
+        {/* Hero Section */}
+        <section className="relative min-h-[921px] flex items-center overflow-hidden">
+          <div className="absolute inset-0 z-0">
+            <img
+              className="w-full h-full object-cover"
+              alt="A majestic white horse galloping across a mist-covered field at sunrise"
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuBm_LN5oeZeYaR3sYCdiQp6wzE_iWsWveVll_Ty41EfiWwU-zloTjxlOrDuWhh8UcZq5RUBXDfQrzdK6z0hCt8XMLs9vxLE651q0OW2AjqnW9slOprPaxlJ1W2sA-Vo3lA8AfgS816nNMQxr9kuDMewIOpEk2tRlfXJss2ULlLp-fh_jjhhw-Y2fquvCd7biikftJIBaqQqYLhuJgBDQBkr6XhHUPPdZ38n2ovi-7eQu9xXNgEiYxKKaSIoPiW0L3DHdB1SVS9Pnddm"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-background via-background/60 to-transparent"></div>
           </div>
-
-          {/* Headline */}
-          <h1 style={{
-            fontSize: 'clamp(36px, 6vw, 72px)', fontWeight: 800,
-            lineHeight: 1.08, letterSpacing: '-0.04em',
-            margin: '0 0 24px',
-            background: 'linear-gradient(135deg, #ffffff 40%, rgba(255,255,255,0.55))',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-          }}>
-            Hệ thống Đua Ngựa<br />
-            <span style={{
-              background: 'linear-gradient(135deg, #34d399, #059669)',
-              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            }}>Thông minh & Chuyên nghiệp</span>
-          </h1>
-
-          <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.6)', lineHeight: 1.65, margin: '0 auto 40px', maxWidth: 620 }}>
-            Quản lý toàn bộ quy trình đua ngựa — từ đăng ký ngựa, tuyển jockey, lên lịch thi đấu, 
-            theo dõi kết quả đến hệ thống cược trực tuyến.
-          </p>
-
-          {/* CTA group */}
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link to="/register" style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8,
-              padding: '14px 28px', borderRadius: 12, fontSize: 16, fontWeight: 700,
-              background: 'linear-gradient(135deg, #059669, #047857)',
-              border: '1px solid #047857', color: 'white', textDecoration: 'none',
-              boxShadow: '0 8px 24px rgba(5,150,105,0.4)',
-            }}>
-              🚀 Bắt đầu miễn phí
-            </Link>
-            <Link to="/login" style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8,
-              padding: '14px 28px', borderRadius: 12, fontSize: 16, fontWeight: 600,
-              border: '1px solid rgba(255,255,255,0.15)',
-              background: 'rgba(255,255,255,0.06)',
-              color: 'white', textDecoration: 'none',
-            }}>
-              Đăng nhập →
-            </Link>
-          </div>
-        </div>
-
-        {/* Hero visual — animated stats strip */}
-        <div style={{ maxWidth: 900, margin: '64px auto 0', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1, background: 'rgba(255,255,255,0.06)', borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
-          {stats.map((s, i) => (
-            <div key={i} style={{ padding: '24px 20px', textAlign: 'center', background: 'rgba(255,255,255,0.02)' }}>
-              <div style={{ fontSize: 28, fontWeight: 800, color: 'white', letterSpacing: '-0.03em' }}>{s.value}</div>
-              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>{s.label}</div>
+          <div className="container mx-auto px-6 md:px-12 relative z-10">
+            <div className="max-w-2xl">
+              <h1 className="text-5xl md:text-7xl font-extrabold text-on-surface leading-tight mb-6">
+                Nâng Tầm Đẳng Cấp <br />
+                <span className="text-primary">Đua Ngựa</span>
+              </h1>
+              <p className="text-lg md:text-xl text-on-surface-variant mb-10 font-medium">
+                Hệ thống quản lý chuyên nghiệp, minh bạch và hiện đại hàng đầu dành cho các giải đua ngựa quốc tế. Trải nghiệm sự chính xác trong từng khoảnh khắc.
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <Link to="/register" className="bg-primary text-on-primary px-8 py-4 rounded-xl font-bold text-lg hover:shadow-lg transition-all active:scale-95 text-center">
+                  Khám Phá Ngay
+                </Link>
+                <Link to="/login" className="glass px-8 py-4 rounded-xl font-bold text-lg border border-primary/20 text-on-surface hover:bg-surface transition-all active:scale-95 text-center">
+                  Xem Tài Liệu
+                </Link>
+              </div>
             </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── FEATURES ── */}
-      <section id="features" style={{ padding: '80px 24px' }}>
-        <div style={{ maxWidth: 1160, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 56 }}>
-            <p style={{ fontSize: 13, fontWeight: 700, color: '#34d399', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>Tính năng nổi bật</p>
-            <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 800, margin: '0 0 16px', letterSpacing: '-0.03em', color: 'white' }}>
-              Mọi thứ bạn cần để<br />quản lý giải đấu đua ngựa
-            </h2>
-            <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.55)', maxWidth: 520, margin: '0 auto' }}>
-              Từ đăng ký đến công bố kết quả — một nền tảng duy nhất cho tất cả vai trò.
-            </p>
           </div>
+        </section>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
-            {features.map((f, i) => (
-              <div key={i} style={{
-                padding: '28px 24px',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: 16,
-                transition: 'all 0.2s',
-                cursor: 'default',
-              }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.07)'
-                  ;(e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.15)'
-                  ;(e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)'
-                  ;(e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)'
-                  ;(e.currentTarget as HTMLElement).style.transform = 'translateY(0)'
-                }}
-              >
-                <div style={{
-                  width: 48, height: 48, borderRadius: 12,
-                  background: `${f.color}22`,
-                  border: `1px solid ${f.color}44`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 22, marginBottom: 16,
-                }}>
-                  {f.icon}
+        {/* Stats Section (Bento Inspired) */}
+        <section className="py-20 bg-surface-container-lowest">
+          <div className="container mx-auto px-6 md:px-12">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="glass-darker p-8 rounded-3xl glow-subtle border-t border-white/50">
+                <div className="text-primary-container bg-primary p-3 rounded-2xl w-fit mb-6">
+                  <span className="material-symbols-outlined text-3xl text-white" data-icon="sports_score">sports_score</span>
                 </div>
-                <h3 style={{ fontSize: 17, fontWeight: 700, color: 'white', margin: '0 0 8px' }}>{f.title}</h3>
-                <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', lineHeight: 1.6, margin: 0 }}>{f.desc}</p>
+                <h3 className="text-4xl font-extrabold text-on-surface">128+</h3>
+                <p className="text-on-surface-variant font-medium">Races Organized</p>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── ROLES ── */}
-      <section id="roles" style={{ padding: '80px 24px', background: 'rgba(255,255,255,0.02)', borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        <div style={{ maxWidth: 1160, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 52 }}>
-            <p style={{ fontSize: 13, fontWeight: 700, color: '#34d399', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>Vai trò trong hệ thống</p>
-            <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 800, margin: '0 0 12px', letterSpacing: '-0.03em', color: 'white' }}>
-              Dành cho mọi người trong giải đấu
-            </h2>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
-            {roles.map((r, i) => (
-              <div key={i} style={{
-                padding: '32px 24px', textAlign: 'center',
-                background: 'rgba(255,255,255,0.03)',
-                border: `1px solid ${r.color}33`,
-                borderRadius: 16, transition: 'all 0.2s',
-              }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = `${r.color}88`
-                  ;(e.currentTarget as HTMLElement).style.background = `${r.color}0f`
-                  ;(e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = `${r.color}33`
-                  ;(e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)'
-                  ;(e.currentTarget as HTMLElement).style.transform = 'translateY(0)'
-                }}
-              >
-                <div style={{ fontSize: 40, marginBottom: 14 }}>{r.icon}</div>
-                <div style={{ fontSize: 17, fontWeight: 700, color: 'white', marginBottom: 8 }}>{r.name}</div>
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>{r.desc}</div>
+              <div className="glass-darker p-8 rounded-3xl glow-subtle border-t border-white/50">
+                <div className="text-primary-container bg-tertiary p-3 rounded-2xl w-fit mb-6">
+                  <span className="material-symbols-outlined text-3xl text-white" data-icon="pets">pets</span>
+                </div>
+                <h3 className="text-4xl font-extrabold text-on-surface">500+</h3>
+                <p className="text-on-surface-variant font-medium">Elite Horses</p>
               </div>
-            ))}
+              <div className="glass-darker p-8 rounded-3xl glow-subtle border-t border-white/50">
+                <div className="text-primary-container bg-secondary p-3 rounded-2xl w-fit mb-6">
+                  <span className="material-symbols-outlined text-3xl text-white" data-icon="military_tech">military_tech</span>
+                </div>
+                <h3 className="text-4xl font-extrabold text-on-surface">10+</h3>
+                <p className="text-on-surface-variant font-medium">Major Tournaments</p>
+              </div>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ── CTA SECTION ── */}
-      <section id="about" style={{ padding: '100px 24px', textAlign: 'center' }}>
-        <div style={{ maxWidth: 700, margin: '0 auto' }}>
-          <div style={{
-            padding: '60px 40px',
-            background: 'linear-gradient(135deg, rgba(5,150,105,0.15) 0%, rgba(5,150,105,0.05) 100%)',
-            border: '1px solid rgba(5,150,105,0.25)',
-            borderRadius: 24,
-            position: 'relative', overflow: 'hidden',
-          }}>
-            {/* Glow */}
-            <div style={{ position: 'absolute', top: -60, left: '50%', transform: 'translateX(-50%)', width: 300, height: 200, borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(5,150,105,0.25), transparent)', pointerEvents: 'none' }} />
+        {/* Features Section (Asymmetric Layout) */}
+        <section id="features" className="py-24 overflow-hidden">
+          <div className="container mx-auto px-6 md:px-12">
+            <div className="flex flex-col lg:flex-row items-center gap-16">
+              <div className="w-full lg:w-1/2 relative">
+                <div className="absolute -top-10 -left-10 w-64 h-64 bg-primary/10 rounded-full blur-3xl"></div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-4 pt-12">
+                    <div className="glass p-6 rounded-2xl border-primary/5">
+                      <span className="material-symbols-outlined text-primary text-4xl mb-4" data-icon="verified_user">verified_user</span>
+                      <h4 className="font-bold text-on-surface mb-2">Professional Management</h4>
+                      <p className="text-sm text-on-surface-variant">Quy trình vận hành chuẩn quốc tế, bảo mật tuyệt đối.</p>
+                    </div>
+                    <div className="glass p-6 rounded-2xl border-primary/5">
+                      <span className="material-symbols-outlined text-secondary text-4xl mb-4" data-icon="speed">speed</span>
+                      <h4 className="font-bold text-on-surface mb-2">Real-time Results</h4>
+                      <p className="text-sm text-on-surface-variant">Cập nhật kết quả tức thì với độ trễ gần như bằng không.</p>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="glass p-6 rounded-2xl border-primary/5">
+                      <span className="material-symbols-outlined text-tertiary text-4xl mb-4" data-icon="app_registration">app_registration</span>
+                      <h4 className="font-bold text-on-surface mb-2">Seamless Registration</h4>
+                      <p className="text-sm text-on-surface-variant">Đăng ký tham gia dễ dàng qua nền tảng trực tuyến.</p>
+                    </div>
+                    <div className="relative rounded-2xl overflow-hidden h-64 shadow-xl">
+                      <img
+                        className="w-full h-full object-cover"
+                        alt="Equestrian equipment closeup"
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuCtOTgWfmVMjw7xB5k2S5yG0H-ofUucRCkWYxEPxHcVo0wHzEWe8Nl2Fxj8PKC0EG0pdDsYYg8b-nVA7I3GE-JuXZeyagtoghvEoZcuzP8gibEUmDPD2ad3lVCADdXErvp3PJRS5yYS4sRDPH1hHzXGGctzhTyTeN4GyUwVaS6mCwyeVW4ZHY0R4mADwjJvuf555KTjhVxoCokrGWHKR89HnMvgY4-M_MkgvIczU23rxJJlp3z6GatYyuZpxkeXoeLqj1iJkt7dniDL"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="w-full lg:w-1/2">
+                <h2 className="text-4xl md:text-5xl font-extrabold text-on-surface mb-8 leading-tight">Tính Năng Ưu Việt Cho <br /> <span className="text-primary">Quản Trị Viên Elite</span></h2>
+                <div className="space-y-8">
+                  <div className="flex gap-6 items-start">
+                    <div className="bg-primary-container p-4 rounded-xl">
+                      <span className="material-symbols-outlined text-primary" data-icon="monitoring">monitoring</span>
+                    </div>
+                    <div>
+                      <h5 className="text-xl font-bold text-on-surface mb-2">Phân Tích Dữ Liệu Chuyên Sâu</h5>
+                      <p className="text-on-surface-variant">Hệ thống báo cáo chi tiết về hiệu suất ngựa đua, nài ngựa và các thông số kỹ thuật sân bãi.</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-6 items-start">
+                    <div className="bg-secondary-container p-4 rounded-xl">
+                      <span className="material-symbols-outlined text-on-secondary-container" data-icon="security">security</span>
+                    </div>
+                    <div>
+                      <h5 className="text-xl font-bold text-on-surface mb-2">Bảo Mật &amp; Minh Bạch</h5>
+                      <p className="text-on-surface-variant">Công nghệ blockchain đảm bảo tính toàn vẹn của dữ liệu và kết quả mỗi vòng đua.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🏇</div>
-            <h2 style={{ fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 800, margin: '0 0 16px', letterSpacing: '-0.03em', color: 'white' }}>
-              Sẵn sàng tham gia?
-            </h2>
-            <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.6)', margin: '0 0 32px', lineHeight: 1.65 }}>
-              Đăng ký tài khoản miễn phí ngay hôm nay và trải nghiệm<br />
-              nền tảng quản lý đua ngựa chuyên nghiệp nhất.
-            </p>
+        {/* Giải Đua Nổi Bật (Glass Cards) */}
+        <section id="races" className="py-24 bg-surface-container">
+          <div className="container mx-auto px-6 md:px-12 text-center mb-16">
+            <h2 className="text-4xl font-extrabold text-on-surface mb-4">Giải Đua Nổi Bật</h2>
+            <div className="w-24 h-1.5 bg-primary mx-auto rounded-full"></div>
+          </div>
+          <div className="container mx-auto px-6 md:px-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Card 1 */}
+            <div className="glass-darker rounded-[2rem] overflow-hidden">
+              <div className="h-56 relative">
+                <img
+                  className="w-full h-full object-cover"
+                  alt="Premium horse racing track"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuC_-LGsB-NXPY1FIQ9-AbkVAt0zjgOABU7YKQ3ba_wNEuLWH8uT1grak3vUg1zP_bPSt1phKpPf1-c56j6uyW3rMrrNnI07jgQiIZDcH9JqZ_fu9GnjqN5iCZHHGoY1vtQLG6mgelbIjW5tGR5TZScEO7IBBd0UrzNrlFL0HfmUzGr1Eow0MTKTrvS280R8xk7kqHXUJon_UGFBIXvcOVS0tq4I-X6EaM9kzWl0eEK57MZ3Ssf8IzVenxJyTyLIBI0O3M_P18EqyCa1"
+                />
+                <div className="absolute top-4 right-4 bg-primary text-on-primary px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Upcoming</div>
+              </div>
+              <div className="p-8">
+                <h4 className="text-2xl font-bold text-on-surface mb-2">Grand National Cup</h4>
+                <p className="text-on-surface-variant mb-6">Giải đấu quy mô lớn nhất năm với sự góp mặt của các chiến mã huyền thoại.</p>
+                <div className="flex justify-between items-center pt-6 border-t border-outline-variant">
+                  <span className="text-primary font-bold">25/12/2024</span>
+                  <Link to="/login" className="text-on-surface font-semibold flex items-center gap-2 group">
+                    Chi tiết <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform" data-icon="arrow_forward">arrow_forward</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+            {/* Card 2 */}
+            <div className="glass-darker rounded-[2rem] overflow-hidden">
+              <div className="h-56 relative">
+                <img
+                  className="w-full h-full object-cover"
+                  alt="Elegant horse in stable corridor"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuC1SbKBCegDjoAWAIpTG4fa2rNVldov6CYPM5etTwDVtMu5AQcdWaGqwvO1j7d-GD2lo_reMvtY7gTV3CGhYNxmnng_7PTHOROqMoQgHCU8EjXzO06jpfV3Qoom6RRJp9DVgNI8141aOuRAgOZmW7LfZ_el_f9-5VZj0QyhrYOdE7tLgdCEswrWsjvx_qtoXvSW5JtMmI_Zpw9-qxLP217biu7Ws3AAZ6KXcYPMAgK9w1JD40pb0rvDwg-AfLCnWrzInBw6h7NOdxkw"
+                />
+                <div className="absolute top-4 right-4 bg-tertiary text-on-tertiary px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Live</div>
+              </div>
+              <div className="p-8">
+                <h4 className="text-2xl font-bold text-on-surface mb-2">Glacier Sprint</h4>
+                <p className="text-on-surface-variant mb-6">Tốc độ là tất cả. Những vòng chạy kịch tính trên mặt sân cỏ tiêu chuẩn.</p>
+                <div className="flex justify-between items-center pt-6 border-t border-outline-variant">
+                  <span className="text-tertiary font-bold">Đang diễn ra</span>
+                  <Link to="/login" className="text-on-surface font-semibold flex items-center gap-2 group">
+                    Xem ngay <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform" data-icon="play_circle">play_circle</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+            {/* Card 3 */}
+            <div className="glass-darker rounded-[2rem] overflow-hidden">
+              <div className="h-56 relative">
+                <img
+                  className="w-full h-full object-cover"
+                  alt="Modern horse racing arena overhead"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuAOUhpcRB30Zfg9d5qFMxjtQs__nwcJwp7ubjHfTlVKHKb58kZaYix6gxIV0T_iLIYYzg300z8QuXs7ZW2AJXebXtfQQC3bY5ayFwGl1yYKK2dW-VkFM6cF_dj4-OrR5bfk6DRslxNOIY7D6Ipjv1f_PbI1D1aGCtoiPz526C6WSWoR0tHBOqRfQluNmLRFFiOucmgqsYSKteso9vCxgvxRrvuiBoa0Yh64eKzNyW5D7djO7USi4ZAJ2t6SCKyt6j31UnPmvZ3Vw3-U"
+                />
+                <div className="absolute top-4 right-4 bg-secondary text-on-secondary px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Registration</div>
+              </div>
+              <div className="p-8">
+                <h4 className="text-2xl font-bold text-on-surface mb-2">Winter Elite Derby</h4>
+                <p className="text-on-surface-variant mb-6">Giải đua truyền thống trong không khí se lạnh, đòi hỏi sức bền vượt trội.</p>
+                <div className="flex justify-between items-center pt-6 border-t border-outline-variant">
+                  <span className="text-secondary font-bold">15/01/2025</span>
+                  <Link to="/login" className="text-on-surface font-semibold flex items-center gap-2 group">
+                    Đăng ký <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform" data-icon="edit_note">edit_note</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <Link to="/register" style={{
-                padding: '13px 28px', borderRadius: 12, fontSize: 15, fontWeight: 700,
-                background: 'linear-gradient(135deg, #059669, #047857)',
-                border: '1px solid #047857', color: 'white', textDecoration: 'none',
-                boxShadow: '0 6px 20px rgba(5,150,105,0.4)',
-              }}>
-                🚀 Đăng ký ngay
+        {/* CTA Section */}
+        <section id="about" className="py-24 relative overflow-hidden bg-primary/5">
+          <div className="container mx-auto px-6 md:px-12 text-center max-w-4xl">
+            <h2 className="text-4xl md:text-5xl font-extrabold text-on-surface mb-8">Sẵn Sàng Nâng Tầm Hệ Thống Của Bạn?</h2>
+            <p className="text-xl text-on-surface-variant mb-12">Gia nhập cộng đồng quản trị viên chuyên nghiệp và trải nghiệm công nghệ hàng đầu thế giới ngay hôm nay.</p>
+            <div className="flex flex-col sm:flex-row gap-6 justify-center">
+              <Link to="/register" className="bg-primary text-on-primary px-10 py-5 rounded-2xl font-bold text-xl hover:shadow-xl transition-all hover:scale-105 active:scale-95 text-center">
+                Bắt Đầu Miễn Phí
               </Link>
-              <Link to="/login" style={{
-                padding: '13px 28px', borderRadius: 12, fontSize: 15, fontWeight: 600,
-                border: '1px solid rgba(255,255,255,0.18)',
-                background: 'rgba(255,255,255,0.06)',
-                color: 'white', textDecoration: 'none',
-              }}>
-                Đã có tài khoản
+              <Link to="/login" className="glass px-10 py-5 rounded-2xl font-bold text-xl text-on-surface border border-primary/20 hover:bg-surface transition-all active:scale-95 text-center">
+                Liên Hệ Tư Vấn
               </Link>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </main>
 
-      {/* ── Footer ── */}
-      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.07)', padding: '32px 24px' }}>
-        <div style={{ maxWidth: 1160, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 28, height: 28, borderRadius: 8, background: 'linear-gradient(135deg,#059669,#047857)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>🏇</div>
-            <span style={{ fontWeight: 700, fontSize: 15, color: 'rgba(255,255,255,0.8)' }}>HorseRacing</span>
+      {/* Footer */}
+      <footer className="bg-surface-container-low border-t border-outline-variant">
+        <div className="flex flex-col md:flex-row justify-between items-center w-full p-6 md:p-12 gap-8 max-w-[1440px] mx-auto pb-24 md:pb-8">
+          <div className="flex flex-col items-center md:items-start gap-4">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary text-2xl" data-icon="stadium">stadium</span>
+              <span className="font-headline font-bold text-lg text-primary">Equestrian Admin Elite</span>
+            </div>
+            <p className="text-on-surface-variant text-sm text-center md:text-left max-w-xs">
+              © 2024 Equestrian Admin Elite. Precision Management for the Racing Industry.
+            </p>
           </div>
-          <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 13, margin: 0 }}>
-            © 2025 Horse Racing Management System · Dự án học thuật FPT
-          </p>
-          <div style={{ display: 'flex', gap: 20 }}>
-            {[
-              { label: 'Đăng nhập', to: '/login' },
-              { label: 'Đăng ký', to: '/register' },
-            ].map((link) => (
-              <Link key={link.to} to={link.to} style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', textDecoration: 'none', fontWeight: 500 }}
-                onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = 'white')}
-                onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.45)')}
-              >
-                {link.label}
-              </Link>
-            ))}
+          <div className="flex flex-wrap justify-center gap-8">
+            <Link className="text-on-surface-variant hover:text-primary underline decoration-2 underline-offset-4 font-medium transition-colors" to="/login">Terms</Link>
+            <Link className="text-on-surface-variant hover:text-primary underline decoration-2 underline-offset-4 font-medium transition-colors" to="/login">Privacy</Link>
+            <Link className="text-on-surface-variant hover:text-primary underline decoration-2 underline-offset-4 font-medium transition-colors" to="/login">Support</Link>
+            <Link className="text-on-surface-variant hover:text-primary underline decoration-2 underline-offset-4 font-medium transition-colors" to="/login">Contact</Link>
           </div>
         </div>
       </footer>
 
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.4; }
-        }
-        @media (max-width: 640px) {
-          nav div { flex-wrap: wrap; }
-          section { padding: 60px 16px; }
-        }
-      `}</style>
+      {/* BottomNavBar (Mobile) */}
+      <nav className="fixed bottom-0 w-full z-50 md:hidden bg-surface-container/90 backdrop-blur-md border-t border-outline-variant flex justify-around items-center py-3 px-4">
+        <Link to="/" className="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-5 py-1.5 active:scale-90 transition-transform">
+          <span className="material-symbols-outlined" data-icon="home">home</span>
+          <span className="text-[10px] font-semibold mt-0.5">Home</span>
+        </Link>
+        <Link to="/login" className="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-variant px-5 py-1.5 rounded-full transition-colors">
+          <span className="material-symbols-outlined" data-icon="sports_score">sports_score</span>
+          <span className="text-[10px] font-semibold mt-0.5">Races</span>
+        </Link>
+        <Link to="/login" className="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-variant px-5 py-1.5 rounded-full transition-colors">
+          <span className="material-symbols-outlined" data-icon="groups">groups</span>
+          <span className="text-[10px] font-semibold mt-0.5">Participants</span>
+        </Link>
+        <Link to="/login" className="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-variant px-5 py-1.5 rounded-full transition-colors">
+          <span className="material-symbols-outlined" data-icon="settings">settings</span>
+          <span className="text-[10px] font-semibold mt-0.5">Settings</span>
+        </Link>
+      </nav>
     </div>
   )
 }
