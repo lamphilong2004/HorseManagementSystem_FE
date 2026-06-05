@@ -1,3 +1,3 @@
-# Expo HAS CHANGED
+# Flutter Mobile
 
-Read the exact versioned docs at https://docs.expo.dev/versions/v54.0.0/ before writing any code.
+This folder is a Flutter app. Use the local Flutter SDK and `pubspec.yaml` as the source of truth before writing code.

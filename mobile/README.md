@@ -1,24 +1,19 @@
-# Horse Racing Tournament Management System — Mobile (Expo React Native)
+# Horse Racing Tournament Management System - Mobile (Flutter)
 
 ## Run
 
 ```bash
-npm install
-npm run start
+flutter pub get
+flutter run
 ```
 
-## API hookup
+## Backend API
 
-- If `EXPO_PUBLIC_API_BASE_URL` is **not** set, the app uses in-app mock data.
-- When your Node.js backend is ready, set `EXPO_PUBLIC_API_BASE_URL` (e.g. `http://localhost:3000`) and expose the same routes.
+The Flutter app calls the production backend directly:
 
-Example:
+`https://managerhourse-be.onrender.com`
 
-```bash
-# Windows PowerShell
-$env:EXPO_PUBLIC_API_BASE_URL="http://localhost:3000"
-npm run start
-```
+API integration is implemented with Dio in `lib/core/api`, JWT access tokens are attached by an interceptor, and sessions are persisted with Flutter Secure Storage.
 
 ## Implemented screens (minimal)
 
@@ -27,6 +22,6 @@ npm run start
 - Common: Tournaments, Races
 - Owner: Horses
 - Jockey: Invites
-- Spectator: Predictions
+- Spectator: Predictions, Place Prediction, Race Results, Leaderboard, Notifications
 - Referee: Race Operations, Report (placeholder)
 - Admin: User Management, Scheduling (placeholder)
