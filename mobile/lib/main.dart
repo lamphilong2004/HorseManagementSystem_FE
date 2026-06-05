@@ -1,30 +1,65 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'core/state/mock_app_state.dart';
-import 'core/theme/app_theme.dart';
-import 'features/navigation/presentation/screens/main_navigation_screen.dart';
+import 'core/api/api_client.dart';
+import 'core/api/api_service.dart';
+import 'core/auth/auth_controller.dart';
+import 'core/router/app_router.dart';
+import 'core/storage/session_storage.dart';
 
-void main() {
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => MockAppState()),
-      ],
-      child: const HorseRacingApp(),
-    ),
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final sessionStorage = SessionStorage();
+  final apiClient = ApiClient(sessionStorage: sessionStorage);
+  final apiService = ApiService(apiClient);
+  final authController = AuthController(
+    apiService: apiService,
+    apiClient: apiClient,
+    sessionStorage: sessionStorage,
   );
+  await authController.bootstrap();
+
+  runApp(HorseRacingApp(authController: authController));
 }
 
 class HorseRacingApp extends StatelessWidget {
-  const HorseRacingApp({super.key});
+  HorseRacingApp({super.key, required this.authController})
+    : router = createAppRouter(authController);
+
+  final AuthController authController;
+  final AppRouter router;
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'Horse Racing Tournament',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
-      home: const MainNavigationScreen(),
+      theme: ThemeData(
+        useMaterial3: false,
+        colorScheme: ColorScheme.fromSwatch(
+          primarySwatch: Colors.blue,
+        ),
+        scaffoldBackgroundColor: Colors.white,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          elevation: 1,
+          titleTextStyle: TextStyle(
+            color: Colors.black,
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF2196F3),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ),
+      ),
+      routerConfig: router,
     );
   }
 }
