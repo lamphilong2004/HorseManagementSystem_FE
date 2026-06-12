@@ -207,9 +207,17 @@ export function TournamentsPage() {
                   {/* Card Header */}
                   <div className="flex items-start justify-between gap-3 mb-4">
                     <div className="space-y-1 min-w-0">
-                      <h3 className="text-lg font-bold text-[var(--text)] group-hover:text-emerald-400 transition-colors truncate">
-                        {tournament.name}
-                      </h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-[var(--text)] group-hover:text-emerald-400 transition-colors truncate">
+                          {tournament.name}
+                        </h3>
+                        {['ONGOING', 'ACTIVE'].includes(tournament.status || '') && (
+                          <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-black tracking-wider uppercase animate-pulse shrink-0">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                            TRỰC TIẾP
+                          </span>
+                        )}
+                      </div>
                       {tournament.venue && (
                         <div className="flex items-center gap-1.5 text-sm text-[var(--muted)] font-medium">
                           <MapPin className="w-3.5 h-3.5 shrink-0" />

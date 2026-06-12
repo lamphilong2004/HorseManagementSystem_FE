@@ -795,3 +795,22 @@ export async function getJockeyResults(): Promise<any> {
   const res = await http.get(`${BE_BASE_URL}/jockeys/me/results`)
   return res.data
 }
+
+// ============================================================================
+// 6. STREAM APIs
+// ============================================================================
+
+export async function startRaceStream(raceId: string): Promise<any> {
+  const res = await http.post(`${BE_BASE_URL}/admin/races/${raceId}/stream/start`)
+  return res.data
+}
+
+export async function stopRaceStream(raceId: string): Promise<any> {
+  const res = await http.post(`${BE_BASE_URL}/admin/races/${raceId}/stream/stop`)
+  return res.data
+}
+
+export async function getRaceStreamUrl(raceId: string): Promise<any> {
+  const res = await http.get(`${BE_BASE_URL}/races/${raceId}/stream`)
+  return res.data
+}

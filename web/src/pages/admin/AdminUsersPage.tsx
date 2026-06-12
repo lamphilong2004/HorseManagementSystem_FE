@@ -161,9 +161,15 @@ export function AdminUsersPage() {
   const { toasts, show: showToast } = useToast()
   const [lastModifiedUserId, setLastModifiedUserId] = useState<string | null>(null)
 
-  // Sorting state
+  // Sorting & Filtering state
   const [sortColumn, setSortColumn] = useState<string | undefined>()
   const [sortDirection, setSortDirection] = useState<SortDirection>(null)
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({})
+
+  const handleColumnFilterChange = (columnId: string, value: string) => {
+    setColumnFilters(prev => ({ ...prev, [columnId]: value }))
+    setPage(1)
+  }
 
   // Pagination state
   const [page, setPage] = useState<number>(1)
@@ -254,13 +260,15 @@ export function AdminUsersPage() {
       id: 'name',
       header: 'Người dùng',
       sortable: true,
+      filterable: true,
+      filterType: 'text',
       cell: (row) => (
         <div className="flex-gap-8 items-center" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <div className={`avatar ${avatarColorClass(row.role)}`}>
             {getInitials(row.name)}
           </div>
           <div>
-            <div className="font-semibold text-[var(--text)]">{row.name}</div>
+            <div className="font-bold text-[var(--text)]">{row.name}</div>
             <div className="muted text-xs">{row.email}</div>
           </div>
         </div>
@@ -270,6 +278,15 @@ export function AdminUsersPage() {
       id: 'role',
       header: 'Vai trò',
       sortable: true,
+      filterable: true,
+      filterType: 'select',
+      filterOptions: [
+        { label: 'Admin', value: 'ADMIN' },
+        { label: 'Horse Owner', value: 'OWNER' },
+        { label: 'Jockey', value: 'JOCKEY' },
+        { label: 'Referee', value: 'REFEREE' },
+        { label: 'Spectator', value: 'SPECTATOR' },
+      ],
       cell: (row) => (
         <span className={`badge ${roleBadgeClass(row.role)}`}>
           {roleLabel(row.role)}
@@ -280,18 +297,34 @@ export function AdminUsersPage() {
       id: 'status',
       header: 'Trạng thái',
       sortable: true,
+      filterable: true,
+      filterType: 'select',
+      filterOptions: [
+        { label: 'Hoạt động', value: 'ACTIVE' },
+        { label: 'Đã khóa', value: 'INACTIVE' },
+      ],
       cell: (row) => (
         <span className={`badge ${row.status === 'ACTIVE' ? 'badge-approved' : 'badge-rejected'}`}>
           {row.status === 'ACTIVE' ? '● Hoạt động' : '○ Đã khóa'}
         </span>
       )
     },
-    // {
-    //   id: 'phone',
-    //   header: 'Số điện thoại',
-    //   sortable: true,
-    //   cell: (row) => <span className="muted text-sm">{row.phone || '—'}</span>
-    // },
+    {
+      id: 'phone',
+      header: 'Số điện thoại',
+      sortable: true,
+      filterable: true,
+      filterType: 'text',
+      cell: (row) => <span className="muted text-sm">{row.phone || '—'}</span>
+    },
+    {
+      id: 'address',
+      header: 'Địa chỉ',
+      sortable: true,
+      filterable: true,
+      filterType: 'text',
+      cell: (row) => <span className="muted text-sm">{(row as any).address || '—'}</span>
+    },
     {
       id: 'createdAt',
       header: 'Ngày tạo',
@@ -317,12 +350,30 @@ export function AdminUsersPage() {
     }
   ], [setEditingUser, setSelectedRole, handleToggleStatus, handleDeleteUser])
 
-  // Memoized sorted users list
-  const sortedUsers = useMemo(() => {
+  // Memoized sorted and filtered users list
+  const filteredAndSortedUsers = useMemo(() => {
     if (!users) return null
-    if (!sortColumn || !sortDirection) return users
+    
+    // Apply column filters first
+    let result = users.filter((u) => {
+      if (columnFilters.name) {
+        const query = columnFilters.name.toLowerCase()
+        if (!u.name.toLowerCase().includes(query) && !(u.email || '').toLowerCase().includes(query)) return false
+      }
+      if (columnFilters.phone) {
+        if (!(u.phone || '').toLowerCase().includes(columnFilters.phone.toLowerCase())) return false
+      }
+      if (columnFilters.address) {
+        if (!((u as any).address || '').toLowerCase().includes(columnFilters.address.toLowerCase())) return false
+      }
+      if (columnFilters.role && u.role !== columnFilters.role) return false
+      if (columnFilters.status && u.status !== columnFilters.status) return false
+      return true
+    })
 
-    return [...users].sort((a, b) => {
+    if (!sortColumn || !sortDirection) return result
+
+    return result.sort((a, b) => {
       let aVal: any = a[sortColumn as keyof User]
       let bVal: any = b[sortColumn as keyof User]
 
@@ -346,14 +397,14 @@ export function AdminUsersPage() {
 
       return 0
     })
-  }, [users, sortColumn, sortDirection])
+  }, [users, sortColumn, sortDirection, columnFilters])
 
   // Memoized paginated users list
   const paginatedUsers = useMemo(() => {
-    if (!sortedUsers) return []
+    if (!filteredAndSortedUsers) return []
     const start = (page - 1) * pageSize
-    return sortedUsers.slice(start, start + pageSize)
-  }, [sortedUsers, page, pageSize])
+    return filteredAndSortedUsers.slice(start, start + pageSize)
+  }, [filteredAndSortedUsers, page, pageSize])
 
   // Reset pagination page when data source changes
   useEffect(() => {
@@ -469,6 +520,8 @@ export function AdminUsersPage() {
           sortColumn={sortColumn}
           sortDirection={sortDirection}
           onSort={handleSort}
+          columnFilters={columnFilters}
+          onColumnFilterChange={handleColumnFilterChange}
           emptyMessage={
             <div className="empty-state" style={{ padding: '20px 0' }}>
               <span className="empty-state-icon">👤</span>
@@ -479,7 +532,7 @@ export function AdminUsersPage() {
           pagination={{
             page,
             pageSize,
-            totalItems: sortedUsers?.length || 0,
+            totalItems: filteredAndSortedUsers?.length || 0,
             onPageChange: setPage,
             onPageSizeChange: (size) => { setPageSize(size); setPage(1); }
           }}

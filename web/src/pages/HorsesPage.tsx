@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button'
 import { ScrollReveal } from '@/components/ui/scroll-text'
 import { Magnetic } from '@/components/ui/magnetic'
 import { useAnimatedToast } from '@/components/ui/animated-toast'
+import { AnimatedTable, type ColumnDef, type SortDirection } from '@/components/ui/animated-table'
 import { CalendarRange, Search, Trophy, Activity, FileCheck, Check, X, Users, History, TrendingUp, AlertTriangle, Edit, Trash2, Plus, ShieldCheck } from 'lucide-react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -85,6 +86,20 @@ export function HorsesPage() {
   const [showResultsModal, setShowResultsModal] = useState(false)
   const [horseResults, setHorseResults] = useState<any>(null)
   const [loadingResults, setLoadingResults] = useState(false)
+  const [resultsSortColumn, setResultsSortColumn] = useState<string | undefined>()
+  const [resultsSortDirection, setResultsSortDirection] = useState<SortDirection>(null)
+  const [resultsFilters, setResultsFilters] = useState<Record<string, string>>({})
+  const [resultsPage, setResultsPage] = useState(1)
+
+  const handleResultsSort = (columnId: string, direction: SortDirection) => {
+    setResultsSortColumn(columnId)
+    setResultsSortDirection(direction)
+  }
+
+  const handleResultsFilterChange = (columnId: string, value: string) => {
+    setResultsFilters(prev => ({ ...prev, [columnId]: value }))
+    setResultsPage(1)
+  }
 
   const { addToast } = useAnimatedToast()
   
@@ -941,20 +956,85 @@ export function HorsesPage() {
                     <div className="bg-[var(--bg2)] p-4 rounded-xl text-center border border-blue-500/20 text-blue-500"><div className="text-xs uppercase font-bold mb-1">Tiền Thưởng</div><div className="text-lg font-black">{horseResults.stats.totalPrizes.toLocaleString('vi-VN')} đ</div></div>
                   </div>
                   <div className="rounded-xl border border-[var(--border)] overflow-hidden">
-                    <table className="w-full text-left text-sm">
-                      <thead className="bg-[var(--bg2)] text-[var(--muted)] text-xs uppercase font-bold">
-                        <tr><th className="p-4 border-b border-[var(--border)]">Giải / Ngày</th><th className="p-4 border-b border-[var(--border)] text-center">Vị Trí</th><th className="p-4 border-b border-[var(--border)] text-right">Tiền Thưởng</th></tr>
-                      </thead>
-                      <tbody>
-                        {horseResults.results.map((r: any, i: number) => (
-                          <tr key={i} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--bg2)]/50 transition-colors">
-                            <td className="p-4"><div className="font-bold text-[var(--text)]">{r.raceName}</div><div className="text-xs text-[var(--muted)]">{new Date(r.date).toLocaleDateString('vi-VN')}</div></td>
-                            <td className="p-4 text-center"><Badge variant="outline" className={r.position === 1 ? 'border-amber-500/50 bg-amber-500/10 text-amber-500' : 'border-[var(--border)]'}>#{r.position}</Badge></td>
-                            <td className="p-4 text-right font-bold text-emerald-500">{r.prize.toLocaleString('vi-VN')} đ</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <AnimatedTable
+                      data={(() => {
+                        let res = [...horseResults.results].map((r, i) => ({ ...r, id: i }))
+                        // Filter
+                        res = res.filter(r => {
+                          if (resultsFilters.raceName && !r.raceName.toLowerCase().includes(resultsFilters.raceName.toLowerCase())) return false
+                          if (resultsFilters.position && String(r.position) !== resultsFilters.position) return false
+                          return true
+                        })
+                        // Sort
+                        if (resultsSortColumn && resultsSortDirection) {
+                          res.sort((a, b) => {
+                            let aVal = a[resultsSortColumn]
+                            let bVal = b[resultsSortColumn]
+                            if (resultsSortColumn === 'date') {
+                              aVal = new Date(a.date).getTime()
+                              bVal = new Date(b.date).getTime()
+                            }
+                            if (typeof aVal === 'string' && typeof bVal === 'string') {
+                              return resultsSortDirection === 'asc' ? aVal.localeCompare(bVal, 'vi') : bVal.localeCompare(aVal, 'vi')
+                            }
+                            return resultsSortDirection === 'asc' ? aVal - bVal : bVal - aVal
+                          })
+                        }
+                        return res
+                      })().slice((resultsPage - 1) * 5, resultsPage * 5)}
+                      columns={[
+                        {
+                          id: 'raceName',
+                          header: 'Giải / Ngày',
+                          sortable: true,
+                          filterable: true,
+                          filterType: 'text',
+                          cell: (row: any) => (
+                            <div>
+                              <div className="font-bold text-[var(--text)]">{row.raceName}</div>
+                              <div className="text-xs text-[var(--muted)]">{new Date(row.date).toLocaleDateString('vi-VN')}</div>
+                            </div>
+                          )
+                        },
+                        {
+                          id: 'position',
+                          header: 'Vị Trí',
+                          align: 'center',
+                          sortable: true,
+                          filterable: true,
+                          filterType: 'text',
+                          cell: (row: any) => (
+                            <Badge variant="outline" className={row.position === 1 ? 'border-amber-500/50 bg-amber-500/10 text-amber-500' : 'border-[var(--border)]'}>#{row.position}</Badge>
+                          )
+                        },
+                        {
+                          id: 'prize',
+                          header: 'Tiền Thưởng',
+                          align: 'right',
+                          sortable: true,
+                          cell: (row: any) => (
+                            <span className="font-bold text-emerald-500">{row.prize.toLocaleString('vi-VN')} đ</span>
+                          )
+                        }
+                      ]}
+                      sortColumn={resultsSortColumn}
+                      sortDirection={resultsSortDirection}
+                      onSort={handleResultsSort}
+                      columnFilters={resultsFilters}
+                      onColumnFilterChange={handleResultsFilterChange}
+                      pagination={{
+                        page: resultsPage,
+                        pageSize: 5,
+                        totalItems: (() => {
+                          let res = horseResults.results
+                          if (resultsFilters.raceName) res = res.filter((r: any) => r.raceName.toLowerCase().includes(resultsFilters.raceName.toLowerCase()))
+                          if (resultsFilters.position) res = res.filter((r: any) => String(r.position) === resultsFilters.position)
+                          return res.length
+                        })(),
+                        onPageChange: setResultsPage,
+                        pageSizeOptions: [5, 10, 20]
+                      }}
+                    />
                   </div>
                 </div>
               ) : <div className="text-center p-8 text-[var(--muted)] font-medium">Chưa có kết quả thi đấu nào.</div>}

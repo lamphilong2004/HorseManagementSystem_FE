@@ -18,8 +18,11 @@ import {
   Menu,
   X,
   ChevronDown,
-  ClipboardList
+  ClipboardList,
+  Tv2
 } from 'lucide-react'
+import { useState as useStateReact, useEffect as useEffectReact } from 'react'
+import { getPublicRaces } from '@/api'
 
 const SunIcon = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -67,6 +70,7 @@ function getRoleNav(role: string): NavItem[] {
     { to: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/app/tournaments', label: 'Giải đấu', icon: Trophy },
     { to: '/app/races', label: 'Cuộc đua', icon: Zap },
+    { to: '/app/livestream', label: 'Livestream', icon: Tv2 },
   ]
 
   if (role === 'OWNER') {
@@ -131,6 +135,28 @@ export function AppLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const actualRole = session?.user.role ?? ''
+
+  // Live race count badge
+  const [liveRaceCount, setLiveRaceCount] = useStateReact(0)
+  useEffectReact(() => {
+    getPublicRaces()
+      .then((data: any) => {
+        const list = Array.isArray(data) ? data : (data?.races || data?.data || [])
+        const count = list.filter((r: any) => ['ONGOING', 'LIVE'].includes(r.status || '')).length
+        setLiveRaceCount(count)
+      })
+      .catch(() => {})
+    const interval = setInterval(() => {
+      getPublicRaces()
+        .then((data: any) => {
+          const list = Array.isArray(data) ? data : (data?.races || data?.data || [])
+          const count = list.filter((r: any) => ['ONGOING', 'LIVE'].includes(r.status || '')).length
+          setLiveRaceCount(count)
+        })
+        .catch(() => {})
+    }, 30000)
+    return () => clearInterval(interval)
+  }, [])
 
   // Admin can "view as" another role (Spectator / Referee). Persist choice in localStorage.
   const [adminViewAs, setAdminViewAs] = useState<string | null>(() => {
@@ -581,6 +607,16 @@ export function AppLayout() {
                               className="w-5 h-5 object-contain"
                               alt={item.label}
                             />
+                          ) : item.label === 'Livestream' ? (
+                            <div className="relative">
+                              <Tv2 className={`w-5 h-5 transition-all duration-200 ${isActive ? 'text-red-500 drop-shadow-[0_0_6px_rgba(239,68,68,0.5)]' : 'text-red-400'}`} />
+                              {liveRaceCount > 0 && (
+                                <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
+                                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+                                </span>
+                              )}
+                            </div>
                           ) : (
                             <Icon
                               className={`w-5 h-5 transition-all duration-200 ${isActive ? 'text-amber-500 drop-shadow-[0_0_6px_rgba(245,158,11,0.4)]' : ''
@@ -600,6 +636,11 @@ export function AppLayout() {
                                 }`}
                             >
                               {item.label}
+                              {item.label === 'Livestream' && liveRaceCount > 0 && (
+                                <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-black bg-red-500 text-white leading-none">
+                                  {liveRaceCount}
+                                </span>
+                              )}
                             </motion.span>
                           )}
                         </AnimatePresence>

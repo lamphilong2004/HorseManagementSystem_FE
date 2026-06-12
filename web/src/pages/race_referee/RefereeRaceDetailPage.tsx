@@ -5,7 +5,7 @@ import {
   getPublicRace, getRefereeRaceHorses, getRefereeViolations,
   createViolation, resolveViolation, confirmRaceResult, getRaceResults,
 } from '@/api'
-import { AnimatedTable } from '../../components/ui/animated-table'
+import { AnimatedTable, type ColumnDef, type SortDirection } from '../../components/ui/animated-table'
 import { FileText, Clock3, Ruler, Users, AlertTriangle, ClipboardCheck, Eye, ShieldAlert, Trophy, ChevronLeft, Plus, Scale } from 'lucide-react'
 import { getStatusClassName, getStatusLabel } from '@/lib/status'
 
@@ -65,6 +65,22 @@ export function RefereeRaceDetailPage() {
   const [resultNotes, setResultNotes] = useState('')
   const [confirmLoading, setConfirmLoading] = useState(false)
   const [confirmMsg, setConfirmMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  // Table states
+  const [horsesSortColumn, setHorsesSortColumn] = useState<string | undefined>()
+  const [horsesSortDirection, setHorsesSortDirection] = useState<SortDirection>(null)
+  const [horsesFilters, setHorsesFilters] = useState<Record<string, string>>({})
+  const [horsesPage, setHorsesPage] = useState(1)
+
+  const [resultsSortColumn, setResultsSortColumn] = useState<string | undefined>()
+  const [resultsSortDirection, setResultsSortDirection] = useState<SortDirection>(null)
+  const [resultsFilters, setResultsFilters] = useState<Record<string, string>>({})
+  const [resultsPage, setResultsPage] = useState(1)
+
+  const [violationsSortColumn, setViolationsSortColumn] = useState<string | undefined>()
+  const [violationsSortDirection, setViolationsSortDirection] = useState<SortDirection>(null)
+  const [violationsFilters, setViolationsFilters] = useState<Record<string, string>>({})
+  const [violationsPage, setViolationsPage] = useState(1)
 
   useEffect(() => {
     if (tabParam === 'horses' || tabParam === 'monitor' || tabParam === 'violations' || tabParam === 'results') {
@@ -248,6 +264,9 @@ export function RefereeRaceDetailPage() {
     {
       id: 'name',
       header: 'Tên ngựa',
+      sortable: true,
+      filterable: true,
+      filterType: 'text',
       cell: (h: RaceHorseRegistration) => {
         const horse = (h.horse || h) as any
         return <span className="fw-700">{horse.name}</span>
@@ -256,6 +275,9 @@ export function RefereeRaceDetailPage() {
     {
       id: 'breed',
       header: 'Giống',
+      sortable: true,
+      filterable: true,
+      filterType: 'text',
       cell: (h: RaceHorseRegistration) => {
         const horse = (h.horse || h) as any
         return horse.breed || '—'
@@ -264,6 +286,7 @@ export function RefereeRaceDetailPage() {
     {
       id: 'age',
       header: 'Tuổi',
+      sortable: true,
       cell: (h: RaceHorseRegistration) => {
         const horse = (h.horse || h) as any
         return horse.age ?? '—'
@@ -272,6 +295,7 @@ export function RefereeRaceDetailPage() {
     {
       id: 'weight',
       header: 'Cân nặng',
+      sortable: true,
       cell: (h: RaceHorseRegistration) => {
         const horse = (h.horse || h) as any
         return horse.weight ? `${horse.weight} kg` : '—'
@@ -280,6 +304,7 @@ export function RefereeRaceDetailPage() {
     {
       id: 'color',
       header: 'Màu',
+      sortable: true,
       cell: (h: RaceHorseRegistration) => {
         const horse = (h.horse || h) as any
         return horse.color || '—'
@@ -288,6 +313,7 @@ export function RefereeRaceDetailPage() {
     {
       id: 'gender',
       header: 'Giới tính',
+      sortable: true,
       cell: (h: RaceHorseRegistration) => {
         const horse = (h.horse || h) as any
         return horse.gender || '—'
@@ -296,6 +322,7 @@ export function RefereeRaceDetailPage() {
     {
       id: 'origin',
       header: 'Nguồn gốc',
+      sortable: true,
       cell: (h: RaceHorseRegistration) => {
         const horse = (h.horse || h) as any
         return horse.origin || '—'
@@ -304,6 +331,15 @@ export function RefereeRaceDetailPage() {
     {
       id: 'status',
       header: 'Trạng thái ĐK',
+      sortable: true,
+      filterable: true,
+      filterType: 'select',
+      filterOptions: [
+        { label: 'Chờ duyệt', value: 'PENDING' },
+        { label: 'Đã duyệt', value: 'APPROVED' },
+        { label: 'Đã xác nhận', value: 'CONFIRMED' },
+        { label: 'Từ chối', value: 'REJECTED' },
+      ],
       cell: (h: RaceHorseRegistration) => statusBadge(h.registrationStatus || 'PENDING', 'registration'),
     },
   ]
@@ -341,6 +377,7 @@ export function RefereeRaceDetailPage() {
     {
       id: 'position',
       header: 'Hạng',
+      sortable: true,
       cell: (r: RaceResult, idx: number) => (
         <span className={`position-cell ${idx < 3 ? `rank-${idx + 1}` : ''}`}>
           {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${r.position}`}
@@ -350,21 +387,29 @@ export function RefereeRaceDetailPage() {
     {
       id: 'horse',
       header: 'Ngựa',
+      sortable: true,
+      filterable: true,
+      filterType: 'text',
       cell: (r: RaceResult) => <span className="fw-600">{r.horseId?.name || '—'}</span>,
     },
     {
       id: 'jockey',
       header: 'Nài ngựa',
+      sortable: true,
+      filterable: true,
+      filterType: 'text',
       cell: (r: RaceResult) => r.jockeyId?.fullName || r.jockeyId?.name || '—',
     },
     {
       id: 'time',
       header: 'Thời gian',
+      sortable: true,
       cell: (r: RaceResult) => <span className="fw-600">{r.finishTime || '—'}</span>,
     },
     {
       id: 'status',
       header: 'Trạng thái',
+      sortable: true,
       cell: (r: RaceResult) => statusBadge(r.status || '', 'registration'),
     },
   ]
@@ -373,6 +418,16 @@ export function RefereeRaceDetailPage() {
     {
       id: 'type',
       header: 'Loại',
+      sortable: true,
+      filterable: true,
+      filterType: 'select',
+      filterOptions: [
+        { label: 'Xuất phát lỗi', value: 'FALSE_START' },
+        { label: 'Cản trở', value: 'INTERFERENCE' },
+        { label: 'Quá cân', value: 'OVERWEIGHT' },
+        { label: 'Doping', value: 'DOPING' },
+        { label: 'Khác', value: 'OTHER' },
+      ],
       cell: (v: Violation) => {
         const typeMap: Record<string, string> = {
           'FALSE_START': 'Xuất phát lỗi',
@@ -398,6 +453,14 @@ export function RefereeRaceDetailPage() {
     {
       id: 'penalty',
       header: 'Hình phạt',
+      sortable: true,
+      filterable: true,
+      filterType: 'select',
+      filterOptions: [
+        { label: 'Cảnh cáo', value: 'WARNING' },
+        { label: 'Truất quyền', value: 'DISQUALIFY' },
+        { label: 'Phạt tiền', value: 'FINE' },
+      ],
       cell: (v: Violation) => {
         const penaltyMap: Record<string, string> = {
           'WARNING': 'Cảnh cáo',
@@ -414,11 +477,20 @@ export function RefereeRaceDetailPage() {
     {
       id: 'fine',
       header: 'Phạt tiền',
+      sortable: true,
       cell: (v: Violation) => (v.fineAmount ? formatMoney(v.fineAmount) : '—'),
     },
     {
       id: 'status',
       header: 'Trạng thái',
+      sortable: true,
+      filterable: true,
+      filterType: 'select',
+      filterOptions: [
+        { label: 'Mở', value: 'OPEN' },
+        { label: 'Đã giải quyết', value: 'RESOLVED' },
+        { label: 'Đã đóng', value: 'CLOSED' },
+      ],
       cell: (v: Violation) => statusBadge(v.status, 'violation'),
     },
     {
@@ -592,9 +664,45 @@ export function RefereeRaceDetailPage() {
         {/* ===== TAB 1: Horse Inspection ===== */}
         {activeTab === 'horses' && (
           <AnimatedTable
-            data={horsesWithId}
+            data={(() => {
+              let res = horsesWithId
+              if (horsesFilters.name) res = res.filter(h => ((h.horse || h) as any).name?.toLowerCase().includes(horsesFilters.name.toLowerCase()))
+              if (horsesFilters.breed) res = res.filter(h => ((h.horse || h) as any).breed?.toLowerCase().includes(horsesFilters.breed.toLowerCase()))
+              if (horsesFilters.status) res = res.filter(h => h.registrationStatus === horsesFilters.status)
+              
+              if (horsesSortColumn && horsesSortDirection) {
+                res.sort((a: any, b: any) => {
+                  let aVal = a[horsesSortColumn]
+                  let bVal = b[horsesSortColumn]
+                  if (horsesSortColumn === 'name' || horsesSortColumn === 'breed' || horsesSortColumn === 'age' || horsesSortColumn === 'weight' || horsesSortColumn === 'color' || horsesSortColumn === 'gender' || horsesSortColumn === 'origin') {
+                    aVal = ((a.horse || a) as any)[horsesSortColumn]
+                    bVal = ((b.horse || b) as any)[horsesSortColumn]
+                  } else if (horsesSortColumn === 'status') {
+                    aVal = a.registrationStatus
+                    bVal = b.registrationStatus
+                  }
+                  if (typeof aVal === 'string' && typeof bVal === 'string') {
+                    return horsesSortDirection === 'asc' ? aVal.localeCompare(bVal, 'vi') : bVal.localeCompare(aVal, 'vi')
+                  }
+                  return horsesSortDirection === 'asc' ? aVal - bVal : bVal - aVal
+                })
+              }
+              return res.slice((horsesPage - 1) * 10, horsesPage * 10)
+            })()}
             columns={horseInspectionColumns}
             loading={horsesLoading}
+            sortColumn={horsesSortColumn}
+            sortDirection={horsesSortDirection}
+            onSort={(c, d) => { setHorsesSortColumn(c); setHorsesSortDirection(d) }}
+            columnFilters={horsesFilters}
+            onColumnFilterChange={(c, v) => { setHorsesFilters(prev => ({...prev, [c]: v})); setHorsesPage(1) }}
+            pagination={{
+              page: horsesPage,
+              pageSize: 10,
+              totalItems: horsesWithId.length, // Simplified total items for demo
+              onPageChange: setHorsesPage,
+              pageSizeOptions: [10, 20, 50]
+            }}
             emptyMessage={
               <div className="empty-state py-12 text-center">
                 <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
@@ -663,9 +771,42 @@ export function RefereeRaceDetailPage() {
             </div>
 
             <AnimatedTable
-              data={violationsWithId}
+              data={(() => {
+                let res = violationsWithId
+                if (violationsFilters.type) res = res.filter(v => v.type === violationsFilters.type)
+                if (violationsFilters.penalty) res = res.filter(v => v.penalty === violationsFilters.penalty)
+                if (violationsFilters.status) res = res.filter(v => v.status === violationsFilters.status)
+                
+                if (violationsSortColumn && violationsSortDirection) {
+                  res.sort((a: any, b: any) => {
+                    let aVal = a[violationsSortColumn]
+                    let bVal = b[violationsSortColumn]
+                    if (violationsSortColumn === 'fine') {
+                      aVal = a.fineAmount || 0
+                      bVal = b.fineAmount || 0
+                    }
+                    if (typeof aVal === 'string' && typeof bVal === 'string') {
+                      return violationsSortDirection === 'asc' ? aVal.localeCompare(bVal, 'vi') : bVal.localeCompare(aVal, 'vi')
+                    }
+                    return violationsSortDirection === 'asc' ? aVal - bVal : bVal - aVal
+                  })
+                }
+                return res.slice((violationsPage - 1) * 10, violationsPage * 10)
+              })()}
               columns={violationsColumns}
               loading={violationsLoading}
+              sortColumn={violationsSortColumn}
+              sortDirection={violationsSortDirection}
+              onSort={(c, d) => { setViolationsSortColumn(c); setViolationsSortDirection(d) }}
+              columnFilters={violationsFilters}
+              onColumnFilterChange={(c, v) => { setViolationsFilters(prev => ({...prev, [c]: v})); setViolationsPage(1) }}
+              pagination={{
+                page: violationsPage,
+                pageSize: 10,
+                totalItems: violationsWithId.length, // Simplified total items
+                onPageChange: setViolationsPage,
+                pageSizeOptions: [10, 20, 50]
+              }}
               emptyMessage={
                 <div className="empty-state py-12 text-center">
                   <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">

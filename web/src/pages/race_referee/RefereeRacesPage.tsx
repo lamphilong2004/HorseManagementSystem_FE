@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import type { Race } from '../../types'
 import { getRefereeRaces } from '@/api'
-import { AnimatedTable, type ColumnDef } from '@/components/ui/animated-table'
+import { AnimatedTable, type ColumnDef, type SortDirection } from '@/components/ui/animated-table'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { getStatusClassName, getStatusLabel } from '@/lib/status'
@@ -42,11 +42,69 @@ export function RefereeRacesPage() {
 
   const itemsWithId = useMemo(() => items.map((r, i) => ({ ...r, id: r._id ?? r.id ?? String(i) })), [items])
 
+  const [sortColumn, setSortColumn] = useState<string | undefined>()
+  const [sortDirection, setSortDirection] = useState<SortDirection>(null)
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({})
+  const [page, setPage] = useState(1)
+
+  const handleSort = (columnId: string, direction: SortDirection) => {
+    setSortColumn(columnId)
+    setSortDirection(direction)
+  }
+
+  const handleColumnFilterChange = (columnId: string, value: string) => {
+    setColumnFilters(prev => ({ ...prev, [columnId]: value }))
+    setPage(1)
+  }
+
+  const filteredAndSortedItems = useMemo(() => {
+    let result = [...itemsWithId]
+    
+    // Filters
+    if (columnFilters.name) {
+      result = result.filter(r => r.name?.toLowerCase().includes(columnFilters.name.toLowerCase()))
+    }
+    if (columnFilters.tournament) {
+      result = result.filter(r => (r.tournamentId?.name || '').toLowerCase().includes(columnFilters.tournament.toLowerCase()))
+    }
+    if (columnFilters.status) {
+      result = result.filter(r => r.status === columnFilters.status)
+    }
+
+    // Sort
+    if (sortColumn && sortDirection) {
+      result.sort((a, b) => {
+        let aVal: any = a[sortColumn as keyof typeof a]
+        let bVal: any = b[sortColumn as keyof typeof b]
+        if (sortColumn === 'tournament') {
+          aVal = a.tournamentId?.name || ''
+          bVal = b.tournamentId?.name || ''
+        } else if (sortColumn === 'scheduledAt') {
+          aVal = a.scheduledAt ? new Date(a.scheduledAt).getTime() : 0
+          bVal = b.scheduledAt ? new Date(b.scheduledAt).getTime() : 0
+        }
+        
+        if (typeof aVal === 'string' && typeof bVal === 'string') {
+          return sortDirection === 'asc' ? aVal.localeCompare(bVal, 'vi') : bVal.localeCompare(aVal, 'vi')
+        }
+        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal
+      })
+    }
+    return result
+  }, [itemsWithId, sortColumn, sortDirection, columnFilters])
+
+  const paginatedItems = useMemo(() => {
+    return filteredAndSortedItems.slice((page - 1) * 10, page * 10)
+  }, [filteredAndSortedItems, page])
+
   const columns: ColumnDef<any>[] = [
     {
       id: 'name',
       header: 'Tên cuộc đua',
       accessorKey: 'name',
+      sortable: true,
+      filterable: true,
+      filterType: 'text',
       cell: (r: any) => (
         <Link to={`/referee/races/${r._id ?? r.id}`} className="font-bold hover:underline">
           {r.name}
@@ -57,24 +115,39 @@ export function RefereeRacesPage() {
       id: 'scheduledAt',
       header: 'Thời gian',
       accessorKey: 'scheduledAt',
+      sortable: true,
       cell: (r: any) => formatDateTime(r.scheduledAt),
     },
     {
       id: 'tournament',
       header: 'Giải đấu',
       accessorKey: 'tournamentId',
+      sortable: true,
+      filterable: true,
+      filterType: 'text',
       cell: (r: any) => r.tournamentId?.name || '—',
     },
     {
       id: 'distance',
       header: 'Khoảng cách',
       accessorKey: 'distance',
+      sortable: true,
       cell: (r: any) => (r.distance ? `${r.distance} m` : '—'),
     },
     {
       id: 'status',
       header: 'Trạng thái',
       accessorKey: 'status',
+      sortable: true,
+      filterable: true,
+      filterType: 'select',
+      filterOptions: [
+        { label: 'Sắp tới', value: 'SCHEDULED' },
+        { label: 'Đang diễn ra', value: 'ONGOING' },
+        { label: 'Hoàn thành', value: 'COMPLETED' },
+        { label: 'Xác nhận kết quả', value: 'RESULT_CONFIRMED' },
+        { label: 'Đã hủy', value: 'CANCELLED' },
+      ],
       cell: (r: any) => statusBadge(r.status),
     },
     {
@@ -163,9 +236,21 @@ export function RefereeRacesPage() {
             <div className="loading"><div className="spinner" /></div>
           ) : (
             <AnimatedTable
-              data={itemsWithId}
+              data={paginatedItems}
               columns={columns}
               onRowClick={(r: any) => navigate(`/referee/races/${r._id ?? r.id}`)}
+              sortColumn={sortColumn}
+              sortDirection={sortDirection}
+              onSort={handleSort}
+              columnFilters={columnFilters}
+              onColumnFilterChange={handleColumnFilterChange}
+              pagination={{
+                page,
+                pageSize: 10,
+                totalItems: filteredAndSortedItems.length,
+                onPageChange: setPage,
+                pageSizeOptions: [10, 20, 50]
+              }}
               emptyMessage={
                 <div className="empty-state py-12 text-center">
                   <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">

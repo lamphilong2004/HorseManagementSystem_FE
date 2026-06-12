@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { getPublicRaces } from '@/api'
 import { Badge } from '@/components/ui/badge'
 import type { DateRange } from '@/components/ui/calendar'
@@ -12,7 +12,9 @@ import { getStatusClassName, getStatusLabel, RACE_STATUS_OPTIONS } from '@/lib/s
 import { NumberCounter } from '@/components/ui/number-counter'
 import { ScrollReveal } from '@/components/ui/scroll-text'
 import { Magnetic } from '@/components/ui/magnetic'
-import { Clock3, RefreshCw, Search, ChevronDown, Ruler, Users, Award, Trophy } from 'lucide-react'
+import { Clock3, RefreshCw, Search, ChevronDown, Ruler, Users, Award, Trophy, Radio } from 'lucide-react'
+import { LiveStreamModal } from '@/components/ui/LiveStreamModal'
+import { AnimatePresence, motion } from 'motion/react'
 const TIME_OPTIONS = [
   { value: 'all', label: 'Tất cả thời gian' },
   { value: 'upcoming', label: 'Sắp diễn ra' },
@@ -20,6 +22,7 @@ const TIME_OPTIONS = [
   { value: 'completed', label: 'Đã hoàn tất' },
 ]
 const SORT_OPTIONS = [
+  { value: 'nearest', label: 'Gần nhất trước' },
   { value: 'newest', label: 'Mới nhất' },
   { value: 'oldest', label: 'Cũ nhất' },
 ]
@@ -47,6 +50,7 @@ function formatMoney(n?: number) {
 }
 
 export function RacesPage() {
+  const navigate = useNavigate()
   const [items, setItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -54,8 +58,10 @@ export function RacesPage() {
   const [timeFilter, setTimeFilter] = useState('all')
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
   const [searchQuery, setSearchQuery] = useState('')
-  const [sortOrder, setSortOrder] = useState('newest')
+  const [sortOrder, setSortOrder] = useState('nearest')
   const [reloadKey, setReloadKey] = useState(0)
+  const [selectedRace, setSelectedRace] = useState<any | null>(null)
+  const [notStartedRace, setNotStartedRace] = useState<any | null>(null)
 
   useEffect(() => {
     setLoading(true)
@@ -115,9 +121,33 @@ export function RacesPage() {
       return true
     })
     .sort((a, b) => {
+      const now = Date.now()
+      // "nearest" = upcoming first (sorted by how close to now), then live, then completed
+      if (sortOrder === 'nearest') {
+        const statusOrder = (r: any) => {
+          if (['ONGOING', 'LIVE'].includes(r.status)) return 0
+          if (['SCHEDULED', 'PENDING'].includes(r.status)) return 1
+          return 2
+        }
+        const sDiff = statusOrder(a) - statusOrder(b)
+        if (sDiff !== 0) return sDiff
+        // Within same group, sort by scheduled time ascending (nearest first)
+        return new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
+      }
       const diff = new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
       return sortOrder === 'oldest' ? diff : -diff
     })
+
+  const handleRaceClick = (race: any) => {
+    if (['ONGOING', 'LIVE'].includes(race.status)) {
+      setSelectedRace(race)
+    } else if (['SCHEDULED', 'PENDING'].includes(race.status)) {
+      setNotStartedRace(race)
+    } else {
+      // Completed/cancelled — navigate to detail
+      navigate(`/races/${race._id || race.id}`)
+    }
+  }
 
   const liveCount = items.filter((race) => ['ONGOING', 'LIVE'].includes(race.status)).length
   const upcomingCount = items.filter((race) => ['SCHEDULED', 'PENDING'].includes(race.status)).length
@@ -247,14 +277,25 @@ export function RacesPage() {
         <div className="grid gap-4 lg:grid-cols-2">
           {filteredItems.map((race, index) => (
             <ScrollReveal key={race._id} direction="up" distance={60} duration={0.7} delay={index * 0.1}>
-              <Link to={`/races/${race._id}`} className="group block">
+              <div
+                onClick={() => handleRaceClick(race)}
+                className="group block cursor-pointer"
+              >
                 <Magnetic intensity={0.3} range={120}>
                   <SpotlightCard className="group-hover:-translate-y-1.5 transition-all duration-300">
                     <div className="p-6 space-y-5">
                       <div className="border-b border-white/[0.06] pb-4 flex items-start justify-between gap-4">
                         <div className="space-y-1.5 min-w-0 flex-1">
-                          <div className="text-lg font-black text-[var(--text)] group-hover:text-amber-400 transition-colors duration-200 truncate leading-snug">
-                            {race.name}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <div className="text-lg font-black text-[var(--text)] group-hover:text-amber-400 transition-colors duration-200 truncate leading-snug">
+                              {race.name}
+                            </div>
+                            {['ONGOING', 'LIVE'].includes(race.status) && (
+                              <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-red-500/10 border border-red-500/20">
+                                <Radio className="h-3 w-3 text-red-500 animate-pulse" />
+                                <span className="text-[10px] font-black text-red-400 uppercase tracking-wider">Live</span>
+                              </span>
+                            )}
                           </div>
                           <div className="text-xs text-[var(--muted)]/70 font-bold flex items-center gap-1.5">
                             <Trophy className="h-3.5 w-3.5 text-amber-500/80 shrink-0" />
@@ -314,11 +355,69 @@ export function RacesPage() {
                     </div>
                   </SpotlightCard>
                 </Magnetic>
-              </Link>
+              </div>
             </ScrollReveal>
           ))}
         </div>
       )}
+
+      {/* Livestream Modal */}
+      {selectedRace && (
+        <LiveStreamModal race={selectedRace} onClose={() => setSelectedRace(null)} />
+      )}
+
+      {/* Not Started Modal */}
+      <AnimatePresence>
+        {notStartedRace && (
+          <motion.div
+            className="fixed inset-0 z-[999] flex items-center justify-center p-4"
+            style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setNotStartedRace(null)}
+          >
+            <motion.div
+              className="relative bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-2xl p-8 max-w-md w-full text-center space-y-5"
+              initial={{ scale: 0.9, opacity: 0, y: 16 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 16 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="mx-auto h-16 w-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-3xl">
+                ⏳
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-[var(--text)]">Cuộc đua chưa diễn ra</h3>
+                <p className="text-[var(--muted)] font-semibold text-sm mt-2">
+                  <span className="font-extrabold text-[var(--text)]">{notStartedRace.name}</span> chưa bắt đầu.
+                </p>
+                <div className="mt-3 flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                  <Clock3 className="h-4 w-4 text-blue-400" />
+                  <span className="text-sm font-bold text-blue-400">
+                    Lịch: {notStartedRace.scheduledAt ? new Date(notStartedRace.scheduledAt).toLocaleString('vi-VN') : '—'}
+                  </span>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setNotStartedRace(null)}
+                  className="flex-1 h-10 rounded-xl border border-[var(--border)] bg-[var(--bg2)] text-[var(--text)] font-bold text-sm hover:bg-[var(--surface-strong)] transition-all cursor-pointer"
+                >
+                  Đóng
+                </button>
+                <button
+                  onClick={() => { setNotStartedRace(null); navigate(`/races/${notStartedRace._id || notStartedRace.id}`) }}
+                  className="flex-1 h-10 rounded-xl bg-amber-500 text-white font-bold text-sm hover:bg-amber-600 transition-all cursor-pointer"
+                >
+                  Xem chi tiết
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

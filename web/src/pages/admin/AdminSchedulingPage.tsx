@@ -43,6 +43,7 @@ import {
   settlePredictions,
 } from '@/api'
 import { http } from '../../api/http'
+import { AnimatedTable, type SortDirection } from '@/components/ui/animated-table'
 
 type Tab = 'tournaments' | 'registrations' | 'horses-jockeys' | 'referee-results' | 'predictions'
 
@@ -108,6 +109,86 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
   const [filterRegSearch, setFilterRegSearch] = useState<string>('')
   const [filterRegStatus, setFilterRegStatus] = useState<string>('ALL')
   const [filterRegTourn, setFilterRegTourn] = useState<string>('ALL')
+  
+  // Registrations Table State
+  const [regSortColumn, setRegSortColumn] = useState<string | undefined>()
+  const [regSortDirection, setRegSortDirection] = useState<SortDirection>(null)
+  const [regColumnFilters, setRegColumnFilters] = useState<Record<string, string>>({})
+  const [regPage, setRegPage] = useState(1)
+
+  const handleRegSort = (columnId: string, direction: SortDirection) => {
+    setRegSortColumn(columnId)
+    setRegSortDirection(direction)
+  }
+
+  const handleRegColumnFilterChange = (columnId: string, value: string) => {
+    setRegColumnFilters(prev => ({ ...prev, [columnId]: value }))
+    setRegPage(1)
+  }
+
+  // Horses Table State
+  const [horsesSortColumn, setHorsesSortColumn] = useState<string | undefined>()
+  const [horsesSortDirection, setHorsesSortDirection] = useState<SortDirection>(null)
+  const [horsesColumnFilters, setHorsesColumnFilters] = useState<Record<string, string>>({})
+  const [horsesPage, setHorsesPage] = useState(1)
+
+  const handleHorsesSort = (columnId: string, direction: SortDirection) => {
+    setHorsesSortColumn(columnId)
+    setHorsesSortDirection(direction)
+  }
+
+  const handleHorsesColumnFilterChange = (columnId: string, value: string) => {
+    setHorsesColumnFilters(prev => ({ ...prev, [columnId]: value }))
+    setHorsesPage(1)
+  }
+
+  // Jockeys Table State
+  const [jockeysSortColumn, setJockeysSortColumn] = useState<string | undefined>()
+  const [jockeysSortDirection, setJockeysSortDirection] = useState<SortDirection>(null)
+  const [jockeysColumnFilters, setJockeysColumnFilters] = useState<Record<string, string>>({})
+  const [jockeysPage, setJockeysPage] = useState(1)
+
+  const handleJockeysSort = (columnId: string, direction: SortDirection) => {
+    setJockeysSortColumn(columnId)
+    setJockeysSortDirection(direction)
+  }
+
+  const handleJockeysColumnFilterChange = (columnId: string, value: string) => {
+    setJockeysColumnFilters(prev => ({ ...prev, [columnId]: value }))
+    setJockeysPage(1)
+  }
+
+  // Referee Races Table State
+  const [refRacesSortColumn, setRefRacesSortColumn] = useState<string | undefined>()
+  const [refRacesSortDirection, setRefRacesSortDirection] = useState<SortDirection>(null)
+  const [refRacesColumnFilters, setRefRacesColumnFilters] = useState<Record<string, string>>({})
+  const [refRacesPage, setRefRacesPage] = useState(1)
+
+  const handleRefRacesSort = (columnId: string, direction: SortDirection) => {
+    setRefRacesSortColumn(columnId)
+    setRefRacesSortDirection(direction)
+  }
+
+  const handleRefRacesColumnFilterChange = (columnId: string, value: string) => {
+    setRefRacesColumnFilters(prev => ({ ...prev, [columnId]: value }))
+    setRefRacesPage(1)
+  }
+
+  // Predictions Table State
+  const [predSortColumn, setPredSortColumn] = useState<string | undefined>()
+  const [predSortDirection, setPredSortDirection] = useState<SortDirection>(null)
+  const [predColumnFilters, setPredColumnFilters] = useState<Record<string, string>>({})
+  const [predPage, setPredPage] = useState(1)
+
+  const handlePredSort = (columnId: string, direction: SortDirection) => {
+    setPredSortColumn(columnId)
+    setPredSortDirection(direction)
+  }
+
+  const handlePredColumnFilterChange = (columnId: string, value: string) => {
+    setPredColumnFilters(prev => ({ ...prev, [columnId]: value }))
+    setPredPage(1)
+  }
   
   // Dashboard Stats
   const [adminStats, setAdminStats] = useState({
@@ -1142,42 +1223,103 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
               Không tìm thấy yêu cầu đăng ký nào khớp với điều kiện lọc.
             </div>
           ) : (
-            <div className="admin-table-wrapper">
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>Giải đấu / Cuộc đua</th>
-                    <th>Ngựa thi đấu</th>
-                    <th>Chủ ngựa (Owner)</th>
-                    <th>Trạng thái đăng ký</th>
-                    <th>Ngày yêu cầu</th>
-                    <th style={{ textAlign: 'right' }}>Hành động</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredRegistrations.map((reg) => {
-                    const raceName = reg.raceName || (typeof reg.raceId === 'object' ? reg.raceId?.name : '')
-                    const raceScheduledAt = typeof reg.raceId === 'object' ? reg.raceId?.scheduledAt : undefined
-                    const horseName = reg.horseName || (typeof reg.horseId === 'object' ? reg.horseId?.name : '')
-                    const horseKey = typeof reg.horseId === 'string' ? reg.horseId : reg.horseId?._id || reg.horseId?.id
-                    const ownerInfo = horseKey ? registrationOwners[horseKey] : undefined
-                    const horseOwnerName = ownerInfo?.fullName || reg.ownerName || (typeof reg.horseId === 'object' ? reg.horseId?.ownerId?.fullName || reg.horseId?.ownerId?.name || reg.horseId?.owner?.fullName || reg.horseId?.owner : '')
-                    const horseOwnerPhone = ownerInfo?.phone || (typeof reg.horseId === 'object' ? reg.horseId?.ownerId?.phone : undefined)
+            <div className="admin-table-wrapper w-full overflow-hidden">
+              <AnimatedTable
+                data={(() => {
+                  let res = filteredRegistrations
+                  // Column Filters
+                  res = res.filter(r => {
+                    if (regColumnFilters.raceName) {
+                      const rn = (r.raceName || (typeof r.raceId === 'object' ? r.raceId?.name : '')).toLowerCase()
+                      if (!rn.includes(regColumnFilters.raceName.toLowerCase())) return false
+                    }
+                    if (regColumnFilters.horseName) {
+                      const hn = (r.horseName || (typeof r.horseId === 'object' ? r.horseId?.name : '')).toLowerCase()
+                      if (!hn.includes(regColumnFilters.horseName.toLowerCase())) return false
+                    }
+                    if (regColumnFilters.ownerName) {
+                      const horseKey = typeof r.horseId === 'string' ? r.horseId : r.horseId?._id || r.horseId?.id
+                      const ownerInfo = horseKey ? registrationOwners[horseKey] : undefined
+                      const own = (ownerInfo?.fullName || r.ownerName || (typeof r.horseId === 'object' ? r.horseId?.ownerId?.fullName || r.horseId?.ownerId?.name || r.horseId?.owner?.fullName || r.horseId?.owner : '')).toLowerCase()
+                      if (!own.includes(regColumnFilters.ownerName.toLowerCase())) return false
+                    }
+                    if (regColumnFilters.status && r.status !== regColumnFilters.status) return false
+                    return true
+                  })
 
-                    return (
-                      <tr key={reg.id}>
-                        <td>
+                  // Sort
+                  if (regSortColumn && regSortDirection) {
+                    res.sort((a, b) => {
+                      let aVal: any = a[regSortColumn as keyof RaceRegistration]
+                      let bVal: any = b[regSortColumn as keyof RaceRegistration]
+                      if (regSortColumn === 'raceName') {
+                        aVal = a.raceName || (typeof a.raceId === 'object' ? a.raceId?.name : '')
+                        bVal = b.raceName || (typeof b.raceId === 'object' ? b.raceId?.name : '')
+                      } else if (regSortColumn === 'horseName') {
+                        aVal = a.horseName || (typeof a.horseId === 'object' ? a.horseId?.name : '')
+                        bVal = b.horseName || (typeof b.horseId === 'object' ? b.horseId?.name : '')
+                      } else if (regSortColumn === 'ownerName') {
+                        const hKA = typeof a.horseId === 'string' ? a.horseId : a.horseId?._id || a.horseId?.id
+                        const hKB = typeof b.horseId === 'string' ? b.horseId : b.horseId?._id || b.horseId?.id
+                        aVal = hKA ? registrationOwners[hKA]?.fullName : ''
+                        bVal = hKB ? registrationOwners[hKB]?.fullName : ''
+                      } else if (regSortColumn === 'createdAt') {
+                        aVal = a.createdAt ? new Date(a.createdAt).getTime() : 0
+                        bVal = b.createdAt ? new Date(b.createdAt).getTime() : 0
+                      }
+
+                      if (typeof aVal === 'string' && typeof bVal === 'string') {
+                        return regSortDirection === 'asc' ? aVal.localeCompare(bVal, 'vi') : bVal.localeCompare(aVal, 'vi')
+                      }
+                      return regSortDirection === 'asc' ? aVal - bVal : bVal - aVal
+                    })
+                  }
+                  return res
+                })().slice((regPage - 1) * 10, regPage * 10)}
+                columns={[
+                  {
+                    id: 'raceName',
+                    header: 'Giải đấu / Cuộc đua',
+                    sortable: true,
+                    filterable: true,
+                    filterType: 'text',
+                    cell: (row) => {
+                      const raceName = row.raceName || (typeof row.raceId === 'object' ? row.raceId?.name : '')
+                      const raceScheduledAt = typeof row.raceId === 'object' ? row.raceId?.scheduledAt : undefined
+                      return (
+                        <div>
                           <div style={{ fontWeight: 600 }}>{raceName || 'Cuộc đua chưa rõ'}</div>
                           {raceScheduledAt && (
-                            <div className="muted" style={{ fontSize: '12px' }}>
-                              Ngày đua: {new Date(raceScheduledAt).toLocaleDateString('vi-VN')}
-                            </div>
+                            <div className="muted" style={{ fontSize: '12px' }}>Ngày đua: {new Date(raceScheduledAt).toLocaleDateString('vi-VN')}</div>
                           )}
-                        </td>
-                        <td>
-                          <div style={{ fontWeight: 600 }}>{horseName || 'Ngựa chưa rõ'}</div>
-                        </td>
-                        <td>
+                        </div>
+                      )
+                    }
+                  },
+                  {
+                    id: 'horseName',
+                    header: 'Ngựa thi đấu',
+                    sortable: true,
+                    filterable: true,
+                    filterType: 'text',
+                    cell: (row) => {
+                      const horseName = row.horseName || (typeof row.horseId === 'object' ? row.horseId?.name : '')
+                      return <div style={{ fontWeight: 600 }}>{horseName || 'Ngựa chưa rõ'}</div>
+                    }
+                  },
+                  {
+                    id: 'ownerName',
+                    header: 'Chủ ngựa (Owner)',
+                    sortable: true,
+                    filterable: true,
+                    filterType: 'text',
+                    cell: (row) => {
+                      const horseKey = typeof row.horseId === 'string' ? row.horseId : row.horseId?._id || row.horseId?.id
+                      const ownerInfo = horseKey ? registrationOwners[horseKey] : undefined
+                      const horseOwnerName = ownerInfo?.fullName || row.ownerName || (typeof row.horseId === 'object' ? row.horseId?.ownerId?.fullName || row.horseId?.ownerId?.name || row.horseId?.owner?.fullName || row.horseId?.owner : '')
+                      const horseOwnerPhone = ownerInfo?.phone || (typeof row.horseId === 'object' ? row.horseId?.ownerId?.phone : undefined)
+                      return (
+                        <div>
                           <div>{horseOwnerName || 'Chưa có thông tin chủ ngựa'}</div>
                           {horseOwnerPhone && (
                             <div className="muted flex items-center gap-1" style={{ fontSize: '12px' }}>
@@ -1185,37 +1327,94 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
                               <span>{horseOwnerPhone}</span>
                             </div>
                           )}
-                        </td>
-                        <td>
-                          <span className={`badge badge-status-${reg.status === 'APPROVED' ? 'approved' : reg.status === 'CONFIRMED' ? 'confirmed' : reg.status === 'REJECTED' ? 'rejected' : 'pending'}`}>
-                            {reg.status === 'APPROVED' ? 'Đã duyệt' : reg.status === 'CONFIRMED' ? 'Đã xác nhận' : reg.status === 'REJECTED' ? 'Đã từ chối' : reg.status === 'PENDING_APPROVAL' ? 'Chờ duyệt' : reg.status}
-                          </span>
-                          {reg.status === 'REJECTED' && (reg as any).rejectionReason && (
-                            <div className="text-xs" style={{ marginTop: 4, color: '#ef4444' }}>
-                              Lý do: {(reg as any).rejectionReason}
-                            </div>
-                          )}
-                        </td>
-                        <td>{reg.createdAt ? new Date(reg.createdAt).toLocaleDateString('vi-VN') : ''}</td>
-                        <td style={{ textAlign: 'right' }}>
-                          {reg.status === 'PENDING_APPROVAL' ? (
-                            <div style={{ display: 'inline-flex', gap: 6 }}>
-                              <button className="btn btnPrimary" style={{ fontSize: '13px', padding: '6px 10px' }} onClick={() => handleApproveReg(reg.id)}>
-                                Duyệt
-                              </button>
-                              <button className="btn" style={{ fontSize: '13px', padding: '6px 10px', color: '#ef4444' }} onClick={() => handleRejectReg(reg.id)}>
-                                Từ chối
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-[var(--muted)]">-</span>
-                          )}
-                        </td>
-                      </tr>
+                        </div>
+                      )
+                    }
+                  },
+                  {
+                    id: 'status',
+                    header: 'Trạng thái đăng ký',
+                    sortable: true,
+                    filterable: true,
+                    filterType: 'select',
+                    filterOptions: [
+                      { label: 'Chờ duyệt', value: 'PENDING_APPROVAL' },
+                      { label: 'Đã duyệt', value: 'APPROVED' },
+                      { label: 'Đã xác nhận', value: 'CONFIRMED' },
+                      { label: 'Đã từ chối', value: 'REJECTED' },
+                    ],
+                    cell: (row) => (
+                      <div>
+                        <span className={`badge badge-status-${row.status === 'APPROVED' ? 'approved' : row.status === 'CONFIRMED' ? 'confirmed' : row.status === 'REJECTED' ? 'rejected' : 'pending'}`}>
+                          {row.status === 'APPROVED' ? 'Đã duyệt' : row.status === 'CONFIRMED' ? 'Đã xác nhận' : row.status === 'REJECTED' ? 'Đã từ chối' : row.status === 'PENDING_APPROVAL' ? 'Chờ duyệt' : row.status}
+                        </span>
+                        {row.status === 'REJECTED' && (row as any).rejectionReason && (
+                          <div className="text-xs" style={{ marginTop: 4, color: '#ef4444' }}>Lý do: {(row as any).rejectionReason}</div>
+                        )}
+                      </div>
                     )
-                  })}
-                </tbody>
-              </table>
+                  },
+                  {
+                    id: 'createdAt',
+                    header: 'Ngày yêu cầu',
+                    sortable: true,
+                    cell: (row) => <span>{row.createdAt ? new Date(row.createdAt).toLocaleDateString('vi-VN') : ''}</span>
+                  },
+                  {
+                    id: 'actions',
+                    header: 'Hành động',
+                    align: 'right',
+                    cell: (row) => (
+                      row.status === 'PENDING_APPROVAL' ? (
+                        <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                          <button className="btn btnPrimary" style={{ fontSize: '13px', padding: '6px 10px' }} onClick={() => handleApproveReg(row.id)}>Duyệt</button>
+                          <button className="btn" style={{ fontSize: '13px', padding: '6px 10px', color: '#ef4444' }} onClick={() => handleRejectReg(row.id)}>Từ chối</button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-[var(--muted)]">-</span>
+                      )
+                    )
+                  }
+                ]}
+                sortColumn={regSortColumn}
+                sortDirection={regSortDirection}
+                onSort={handleRegSort}
+                columnFilters={regColumnFilters}
+                onColumnFilterChange={handleRegColumnFilterChange}
+                pagination={{
+                  page: regPage,
+                  pageSize: 10,
+                  totalItems: (() => {
+                    let res = filteredRegistrations
+                    if (regColumnFilters.raceName) {
+                      res = res.filter(r => {
+                        const rn = (r.raceName || (typeof r.raceId === 'object' ? r.raceId?.name : '')).toLowerCase()
+                        return rn.includes(regColumnFilters.raceName.toLowerCase())
+                      })
+                    }
+                    if (regColumnFilters.horseName) {
+                      res = res.filter(r => {
+                        const hn = (r.horseName || (typeof r.horseId === 'object' ? r.horseId?.name : '')).toLowerCase()
+                        return hn.includes(regColumnFilters.horseName.toLowerCase())
+                      })
+                    }
+                    if (regColumnFilters.ownerName) {
+                      res = res.filter(r => {
+                        const horseKey = typeof r.horseId === 'string' ? r.horseId : r.horseId?._id || r.horseId?.id
+                        const ownerInfo = horseKey ? registrationOwners[horseKey] : undefined
+                        const own = (ownerInfo?.fullName || r.ownerName || (typeof r.horseId === 'object' ? r.horseId?.ownerId?.fullName || r.horseId?.ownerId?.name || r.horseId?.owner?.fullName || r.horseId?.owner : '')).toLowerCase()
+                        return own.includes(regColumnFilters.ownerName.toLowerCase())
+                      })
+                    }
+                    if (regColumnFilters.status) {
+                      res = res.filter(r => r.status === regColumnFilters.status)
+                    }
+                    return res.length
+                  })(),
+                  onPageChange: setRegPage,
+                  pageSizeOptions: [10, 20, 50]
+                }}
+              />
             </div>
           )}
         </div>
@@ -1236,67 +1435,149 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
             ) : horses.length === 0 ? (
               <p className="muted">Không có hồ sơ ngựa nào cần duyệt.</p>
             ) : (
-              <div className="admin-table-wrapper">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Tên ngựa</th>
-                      <th>Giống & Đặc điểm</th>
-                      <th>Chủ ngựa</th>
-                      <th>Trạng thái</th>
-                      <th>Hồ sơ sức khỏe</th>
-                      <th style={{ textAlign: 'right' }}>Hành động</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {horses.map((h) => (
-                      <tr key={h.id}>
-                        <td style={{ fontWeight: 600 }}>{h.name}</td>
-                        <td>
-                          <div>Giống: {h.breed} | Màu: {h.color}</div>
-                          <div className="muted" style={{ fontSize: '12px' }}>Nguồn gốc: {h.origin} | Tuổi: {h.age} | Cân nặng: {h.weight}kg</div>
-                        </td>
-                        <td>
-                          <div>{h.ownerId?.fullName || 'Chủ ngựa'}</div>
-                          <div className="muted" style={{ fontSize: '12px' }}>{h.ownerId?.email}</div>
-                        </td>
-                        <td>
-                          <span className={`badge ${h.status === 'APPROVED' ? 'badge-approved' : h.status === 'REJECTED' ? 'badge-rejected' : 'badge-pending'}`}>
-                            {h.status === 'APPROVED' ? 'Đã duyệt' : h.status === 'REJECTED' ? 'Đã từ chối' : h.status === 'PENDING' ? 'Chờ duyệt' : h.status}
+              <div className="admin-table-wrapper w-full overflow-hidden">
+                <AnimatedTable
+                  data={(() => {
+                    let res = horses
+                    // Filters
+                    res = res.filter(h => {
+                      if (horsesColumnFilters.name && !h.name.toLowerCase().includes(horsesColumnFilters.name.toLowerCase())) return false
+                      if (horsesColumnFilters.breed) {
+                        const bStr = `Giống: ${h.breed} | Màu: ${h.color}`.toLowerCase()
+                        if (!bStr.includes(horsesColumnFilters.breed.toLowerCase())) return false
+                      }
+                      if (horsesColumnFilters.ownerId) {
+                        const ownStr = (h.ownerId?.fullName || 'Chủ ngựa').toLowerCase()
+                        if (!ownStr.includes(horsesColumnFilters.ownerId.toLowerCase())) return false
+                      }
+                      if (horsesColumnFilters.status && h.status !== horsesColumnFilters.status) return false
+                      return true
+                    })
+                    // Sort
+                    if (horsesSortColumn && horsesSortDirection) {
+                      res.sort((a, b) => {
+                        let aVal: any = a[horsesSortColumn as keyof Horse]
+                        let bVal: any = b[horsesSortColumn as keyof Horse]
+                        if (horsesSortColumn === 'ownerId') {
+                          aVal = a.ownerId?.fullName || ''
+                          bVal = b.ownerId?.fullName || ''
+                        }
+                        if (typeof aVal === 'string' && typeof bVal === 'string') {
+                          return horsesSortDirection === 'asc' ? aVal.localeCompare(bVal, 'vi') : bVal.localeCompare(aVal, 'vi')
+                        }
+                        return horsesSortDirection === 'asc' ? aVal - bVal : bVal - aVal
+                      })
+                    }
+                    return res
+                  })().slice((horsesPage - 1) * 10, horsesPage * 10)}
+                  columns={[
+                    {
+                      id: 'name',
+                      header: 'Tên ngựa',
+                      sortable: true,
+                      filterable: true,
+                      filterType: 'text',
+                      cell: (row) => <div style={{ fontWeight: 600 }}>{row.name}</div>
+                    },
+                    {
+                      id: 'breed',
+                      header: 'Giống & Đặc điểm',
+                      sortable: true,
+                      filterable: true,
+                      filterType: 'text',
+                      cell: (row) => (
+                        <div>
+                          <div>Giống: {row.breed} | Màu: {row.color}</div>
+                          <div className="muted" style={{ fontSize: '12px' }}>Nguồn gốc: {row.origin} | Tuổi: {row.age} | Cân nặng: {row.weight}kg</div>
+                        </div>
+                      )
+                    },
+                    {
+                      id: 'ownerId',
+                      header: 'Chủ ngựa',
+                      sortable: true,
+                      filterable: true,
+                      filterType: 'text',
+                      cell: (row) => (
+                        <div>
+                          <div>{row.ownerId?.fullName || 'Chủ ngựa'}</div>
+                          <div className="muted" style={{ fontSize: '12px' }}>{row.ownerId?.email}</div>
+                        </div>
+                      )
+                    },
+                    {
+                      id: 'status',
+                      header: 'Trạng thái',
+                      sortable: true,
+                      filterable: true,
+                      filterType: 'select',
+                      filterOptions: [
+                        { label: 'Chờ duyệt', value: 'PENDING' },
+                        { label: 'Đã duyệt', value: 'APPROVED' },
+                        { label: 'Đã từ chối', value: 'REJECTED' },
+                      ],
+                      cell: (row) => (
+                        <div>
+                          <span className={`badge ${row.status === 'APPROVED' ? 'badge-approved' : row.status === 'REJECTED' ? 'badge-rejected' : 'badge-pending'}`}>
+                            {row.status === 'APPROVED' ? 'Đã duyệt' : row.status === 'REJECTED' ? 'Đã từ chối' : row.status === 'PENDING' ? 'Chờ duyệt' : row.status}
                           </span>
-                          {h.status === 'REJECTED' && (h as any).rejectionReason && (
-                            <div className="text-xs" style={{ marginTop: 4, color: '#ef4444' }}>Lý do: {(h as any).rejectionReason}</div>
+                          {row.status === 'REJECTED' && (row as any).rejectionReason && (
+                            <div className="text-xs" style={{ marginTop: 4, color: '#ef4444' }}>Lý do: {(row as any).rejectionReason}</div>
                           )}
-                        </td>
-                        <td>
-                          {h.healthCertUrl ? (
-                            <a href={h.healthCertUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1" style={{ color: 'var(--primary)', fontWeight: 600 }}>
-                              <span>Xem Health Cert</span>
-                              <ExternalLink className="w-3 h-3 shrink-0" />
-                            </a>
-                          ) : (
-                            <span className="danger-text flex items-center gap-1">
-                              <AlertTriangle className="w-3 h-3 text-red-500 shrink-0" />
-                              <span>Thiếu hồ sơ</span>
-                            </span>
-                          )}
-                        </td>
-                        <td style={{ textAlign: 'right' }}>
-                          {h.status === 'PENDING' && (
-                            <div style={{ display: 'inline-flex', gap: 6 }}>
-                              <button className="btn btnPrimary" style={{ fontSize: '12px', padding: '5px 8px' }} onClick={() => handleApproveHorse(h.id)}>
-                                Duyệt
-                              </button>
-                              <button className="btn" style={{ fontSize: '12px', padding: '5px 8px', color: '#ef4444' }} onClick={() => handleRejectHorse(h.id)}>
-                                Từ chối
-                              </button>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+                      )
+                    },
+                    {
+                      id: 'healthCertUrl',
+                      header: 'Hồ sơ sức khỏe',
+                      cell: (row) => (
+                        row.healthCertUrl ? (
+                          <a href={row.healthCertUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1" style={{ color: 'var(--primary)', fontWeight: 600 }}>
+                            <span>Xem Health Cert</span>
+                            <ExternalLink className="w-3 h-3 shrink-0" />
+                          </a>
+                        ) : (
+                          <span className="danger-text flex items-center gap-1">
+                            <AlertTriangle className="w-3 h-3 text-red-500 shrink-0" />
+                            <span>Thiếu hồ sơ</span>
+                          </span>
+                        )
+                      )
+                    },
+                    {
+                      id: 'actions',
+                      header: 'Hành động',
+                      align: 'right',
+                      cell: (row) => (
+                        row.status === 'PENDING' ? (
+                          <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                            <button className="btn btnPrimary" style={{ fontSize: '12px', padding: '5px 8px' }} onClick={() => handleApproveHorse(row.id)}>Duyệt</button>
+                            <button className="btn" style={{ fontSize: '12px', padding: '5px 8px', color: '#ef4444' }} onClick={() => handleRejectHorse(row.id)}>Từ chối</button>
+                          </div>
+                        ) : null
+                      )
+                    }
+                  ]}
+                  sortColumn={horsesSortColumn}
+                  sortDirection={horsesSortDirection}
+                  onSort={handleHorsesSort}
+                  columnFilters={horsesColumnFilters}
+                  onColumnFilterChange={handleHorsesColumnFilterChange}
+                  pagination={{
+                    page: horsesPage,
+                    pageSize: 10,
+                    totalItems: (() => {
+                      let res = horses
+                      if (horsesColumnFilters.name) res = res.filter(h => h.name.toLowerCase().includes(horsesColumnFilters.name.toLowerCase()))
+                      if (horsesColumnFilters.breed) res = res.filter(h => `Giống: ${h.breed} | Màu: ${h.color}`.toLowerCase().includes(horsesColumnFilters.breed.toLowerCase()))
+                      if (horsesColumnFilters.ownerId) res = res.filter(h => (h.ownerId?.fullName || 'Chủ ngựa').toLowerCase().includes(horsesColumnFilters.ownerId.toLowerCase()))
+                      if (horsesColumnFilters.status) res = res.filter(h => h.status === horsesColumnFilters.status)
+                      return res.length
+                    })(),
+                    onPageChange: setHorsesPage,
+                    pageSizeOptions: [10, 20, 50]
+                  }}
+                />
               </div>
             )}
           </div>
@@ -1311,46 +1592,124 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
             ) : jockeys.length === 0 ? (
               <p className="muted">Chưa có kỵ sĩ nào đăng ký.</p>
             ) : (
-              <div className="admin-table-wrapper">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Kỵ sĩ</th>
-                      <th>Kinh nghiệm</th>
-                      <th>Tỉ lệ thắng (Win Rate)</th>
-                      <th>Số trận đã tham gia</th>
-                      <th>Số trận thắng</th>
-                      <th>Sở trường</th>
-                      <th>Trạng thái</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {jockeys.map((j) => (
-                      <tr key={j.id}>
-                        <td>
-                          <div style={{ fontWeight: 600 }}>{j.userId?.fullName || 'Kỵ sĩ'}</div>
-                          <div className="muted" style={{ fontSize: '12px' }}>{j.userId?.email} | 📞 {j.userId?.phone}</div>
-                        </td>
-                        <td>{j.experience} năm</td>
-                        <td style={{ fontWeight: 600, color: 'var(--primary)' }}>{j.winRate}%</td>
-                        <td>{j.races} trận</td>
-                        <td>{j.wins} trận</td>
-                        <td>
-                          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                            {j.specialties?.map((s: string) => (
-                              <span key={s} className="badge badge-scheduled" style={{ fontSize: '10px', padding: '2px 6px' }}>{s}</span>
-                            ))}
-                          </div>
-                        </td>
-                        <td>
-                          <span className={`badge ${j.status === 'AVAILABLE' ? 'badge-approved' : 'badge-rejected'}`}>
-                            {j.status === 'AVAILABLE' ? 'Sẵn sàng' : j.status === 'UNAVAILABLE' ? 'Không sẵn sàng' : j.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="admin-table-wrapper w-full overflow-hidden">
+                <AnimatedTable
+                  data={(() => {
+                    let res = jockeys
+                    // Filters
+                    res = res.filter(j => {
+                      if (jockeysColumnFilters.userId) {
+                        const un = (j.userId?.fullName || 'Kỵ sĩ').toLowerCase()
+                        if (!un.includes(jockeysColumnFilters.userId.toLowerCase())) return false
+                      }
+                      if (jockeysColumnFilters.experience && String(j.experience) !== jockeysColumnFilters.experience) return false
+                      if (jockeysColumnFilters.status && j.status !== jockeysColumnFilters.status) return false
+                      return true
+                    })
+                    // Sort
+                    if (jockeysSortColumn && jockeysSortDirection) {
+                      res.sort((a, b) => {
+                        let aVal: any = a[jockeysSortColumn as keyof Jockey]
+                        let bVal: any = b[jockeysSortColumn as keyof Jockey]
+                        if (jockeysSortColumn === 'userId') {
+                          aVal = a.userId?.fullName || ''
+                          bVal = b.userId?.fullName || ''
+                        }
+                        if (typeof aVal === 'string' && typeof bVal === 'string') {
+                          return jockeysSortDirection === 'asc' ? aVal.localeCompare(bVal, 'vi') : bVal.localeCompare(aVal, 'vi')
+                        }
+                        return jockeysSortDirection === 'asc' ? aVal - bVal : bVal - aVal
+                      })
+                    }
+                    return res
+                  })().slice((jockeysPage - 1) * 10, jockeysPage * 10)}
+                  columns={[
+                    {
+                      id: 'userId',
+                      header: 'Kỵ sĩ',
+                      sortable: true,
+                      filterable: true,
+                      filterType: 'text',
+                      cell: (row) => (
+                        <div>
+                          <div style={{ fontWeight: 600 }}>{row.userId?.fullName || 'Kỵ sĩ'}</div>
+                          <div className="muted" style={{ fontSize: '12px' }}>{row.userId?.email} | 📞 {row.userId?.phone}</div>
+                        </div>
+                      )
+                    },
+                    {
+                      id: 'experience',
+                      header: 'Kinh nghiệm',
+                      sortable: true,
+                      filterable: true,
+                      filterType: 'text',
+                      cell: (row) => <span>{row.experience} năm</span>
+                    },
+                    {
+                      id: 'winRate',
+                      header: 'Tỉ lệ thắng (Win Rate)',
+                      sortable: true,
+                      cell: (row) => <span style={{ fontWeight: 600, color: 'var(--primary)' }}>{row.winRate}%</span>
+                    },
+                    {
+                      id: 'races',
+                      header: 'Số trận đã tham gia',
+                      sortable: true,
+                      cell: (row) => <span>{row.races} trận</span>
+                    },
+                    {
+                      id: 'wins',
+                      header: 'Số trận thắng',
+                      sortable: true,
+                      cell: (row) => <span>{row.wins} trận</span>
+                    },
+                    {
+                      id: 'specialties',
+                      header: 'Sở trường',
+                      cell: (row) => (
+                        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                          {row.specialties?.map((s: string) => (
+                            <span key={s} className="badge badge-scheduled" style={{ fontSize: '10px', padding: '2px 6px' }}>{s}</span>
+                          ))}
+                        </div>
+                      )
+                    },
+                    {
+                      id: 'status',
+                      header: 'Trạng thái',
+                      sortable: true,
+                      filterable: true,
+                      filterType: 'select',
+                      filterOptions: [
+                        { label: 'Sẵn sàng', value: 'AVAILABLE' },
+                        { label: 'Không sẵn sàng', value: 'UNAVAILABLE' },
+                      ],
+                      cell: (row) => (
+                        <span className={`badge ${row.status === 'AVAILABLE' ? 'badge-approved' : 'badge-rejected'}`}>
+                          {row.status === 'AVAILABLE' ? 'Sẵn sàng' : row.status === 'UNAVAILABLE' ? 'Không sẵn sàng' : row.status}
+                        </span>
+                      )
+                    }
+                  ]}
+                  sortColumn={jockeysSortColumn}
+                  sortDirection={jockeysSortDirection}
+                  onSort={handleJockeysSort}
+                  columnFilters={jockeysColumnFilters}
+                  onColumnFilterChange={handleJockeysColumnFilterChange}
+                  pagination={{
+                    page: jockeysPage,
+                    pageSize: 10,
+                    totalItems: (() => {
+                      let res = jockeys
+                      if (jockeysColumnFilters.userId) res = res.filter(j => (j.userId?.fullName || 'Kỵ sĩ').toLowerCase().includes(jockeysColumnFilters.userId.toLowerCase()))
+                      if (jockeysColumnFilters.experience) res = res.filter(j => String(j.experience) === jockeysColumnFilters.experience)
+                      if (jockeysColumnFilters.status) res = res.filter(j => j.status === jockeysColumnFilters.status)
+                      return res.length
+                    })(),
+                    onPageChange: setJockeysPage,
+                    pageSizeOptions: [10, 20, 50]
+                  }}
+                />
               </div>
             )}
           </div>
@@ -1370,75 +1729,161 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
           ) : races.length === 0 ? (
             <p className="muted">Chưa có cuộc đua nào được tạo.</p>
           ) : (
-            <div className="admin-table-wrapper">
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>Giải đấu / Cuộc đua</th>
-                    <th>Cự ly</th>
-                    <th>Ngày giờ thi đấu</th>
-                    <th>Trạng thái</th>
-                    <th>Trọng tài phụ trách</th>
-                    <th style={{ textAlign: 'right' }}>Hành động</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {races.map((r) => (
-                    <tr key={r.id}>
-                      <td>
-                        <div style={{ fontWeight: 600 }}>{r.name}</div>
-                        <div className="muted" style={{ fontSize: '12px' }}>Giải: {typeof r.tournamentId === 'object' ? r.tournamentId.name : 'Giải đấu'}</div>
-                      </td>
-                      <td>{r.distance}m</td>
-                      <td>{new Date(r.scheduledAt).toLocaleString('vi-VN')}</td>
-                      <td>
-                        <span className={`badge ${r.status === 'COMPLETED' ? 'badge-approved' : r.status === 'ONGOING' ? 'badge-ongoing' : r.status === 'CANCELLED' ? 'badge-rejected' : 'badge-scheduled'}`}>
-                          {r.status === 'COMPLETED' ? 'Kết thúc' : r.status === 'ONGOING' ? 'Đang diễn ra' : r.status === 'CANCELLED' ? 'Đã hủy' : r.status === 'SCHEDULED' ? 'Đã lên lịch' : r.status}
+              <div className="admin-table-wrapper w-full overflow-hidden">
+                <AnimatedTable
+                  data={(() => {
+                    let res = races
+                    // Filters
+                    res = res.filter(r => {
+                      if (refRacesColumnFilters.name) {
+                        const n = (r.name || '').toLowerCase()
+                        if (!n.includes(refRacesColumnFilters.name.toLowerCase())) return false
+                      }
+                      if (refRacesColumnFilters.status && r.status !== refRacesColumnFilters.status) return false
+                      if (refRacesColumnFilters.refereeId) {
+                        const refName = (typeof r.refereeId === 'object' ? r.refereeId.fullName : r.refereeId || '').toLowerCase()
+                        if (!refName.includes(refRacesColumnFilters.refereeId.toLowerCase())) return false
+                      }
+                      return true
+                    })
+                    // Sort
+                    if (refRacesSortColumn && refRacesSortDirection) {
+                      res.sort((a, b) => {
+                        let aVal: any = a[refRacesSortColumn as keyof Race]
+                        let bVal: any = b[refRacesSortColumn as keyof Race]
+                        if (refRacesSortColumn === 'name') {
+                          aVal = a.name || ''
+                          bVal = b.name || ''
+                        } else if (refRacesSortColumn === 'scheduledAt') {
+                          aVal = a.scheduledAt ? new Date(a.scheduledAt).getTime() : 0
+                          bVal = b.scheduledAt ? new Date(b.scheduledAt).getTime() : 0
+                        } else if (refRacesSortColumn === 'refereeId') {
+                          aVal = typeof a.refereeId === 'object' ? a.refereeId.fullName : a.refereeId || ''
+                          bVal = typeof b.refereeId === 'object' ? b.refereeId.fullName : b.refereeId || ''
+                        }
+                        if (typeof aVal === 'string' && typeof bVal === 'string') {
+                          return refRacesSortDirection === 'asc' ? aVal.localeCompare(bVal, 'vi') : bVal.localeCompare(aVal, 'vi')
+                        }
+                        return refRacesSortDirection === 'asc' ? aVal - bVal : bVal - aVal
+                      })
+                    }
+                    return res
+                  })().slice((refRacesPage - 1) * 10, refRacesPage * 10)}
+                  columns={[
+                    {
+                      id: 'name',
+                      header: 'Giải đấu / Cuộc đua',
+                      sortable: true,
+                      filterable: true,
+                      filterType: 'text',
+                      cell: (row) => (
+                        <div>
+                          <div style={{ fontWeight: 600 }}>{row.name}</div>
+                          <div className="muted" style={{ fontSize: '12px' }}>Giải: {typeof row.tournamentId === 'object' ? row.tournamentId.name : 'Giải đấu'}</div>
+                        </div>
+                      )
+                    },
+                    {
+                      id: 'distance',
+                      header: 'Cự ly',
+                      sortable: true,
+                      cell: (row) => <span>{row.distance}m</span>
+                    },
+                    {
+                      id: 'scheduledAt',
+                      header: 'Ngày giờ thi đấu',
+                      sortable: true,
+                      cell: (row) => <span>{new Date(row.scheduledAt).toLocaleString('vi-VN')}</span>
+                    },
+                    {
+                      id: 'status',
+                      header: 'Trạng thái',
+                      sortable: true,
+                      filterable: true,
+                      filterType: 'select',
+                      filterOptions: [
+                        { label: 'Đã lên lịch', value: 'SCHEDULED' },
+                        { label: 'Đang diễn ra', value: 'ONGOING' },
+                        { label: 'Kết thúc', value: 'COMPLETED' },
+                        { label: 'Đã hủy', value: 'CANCELLED' },
+                      ],
+                      cell: (row) => (
+                        <span className={`badge ${row.status === 'COMPLETED' ? 'badge-approved' : row.status === 'ONGOING' ? 'badge-ongoing' : row.status === 'CANCELLED' ? 'badge-rejected' : 'badge-scheduled'}`}>
+                          {row.status === 'COMPLETED' ? 'Kết thúc' : row.status === 'ONGOING' ? 'Đang diễn ra' : row.status === 'CANCELLED' ? 'Đã hủy' : row.status === 'SCHEDULED' ? 'Đã lên lịch' : row.status}
                         </span>
-                      </td>
-                      <td>
-                        {r.refereeId ? (
+                      )
+                    },
+                    {
+                      id: 'refereeId',
+                      header: 'Trọng tài phụ trách',
+                      sortable: true,
+                      filterable: true,
+                      filterType: 'text',
+                      cell: (row) => (
+                        row.refereeId ? (
                           <div className="flex items-center gap-1" style={{ fontWeight: 600 }}>
                             <UserIcon className="w-3.5 h-3.5 text-muted shrink-0" />
-                            <span>{typeof r.refereeId === 'object' ? r.refereeId.fullName : r.refereeId}</span>
+                            <span>{typeof row.refereeId === 'object' ? row.refereeId.fullName : row.refereeId}</span>
                           </div>
                         ) : (
                           <span className="danger-text flex items-center gap-1">
                             <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0" />
                             <span>Chưa có trọng tài</span>
                           </span>
-                        )}
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <div style={{ display: 'inline-flex', gap: 6 }}>
-                          {r.status === 'SCHEDULED' && (
+                        )
+                      )
+                    },
+                    {
+                      id: 'actions',
+                      header: 'Hành động',
+                      align: 'right',
+                      cell: (row) => (
+                        <div style={{ display: 'inline-flex', gap: 6, justifyContent: 'flex-end' }}>
+                          {row.status === 'SCHEDULED' && (
                             <>
-                              <button type="button" className="btn" style={{ fontSize: '12px', padding: '5px 8px' }} onClick={() => openRefModal(r.id, r.refereeId && typeof r.refereeId === 'object' ? r.refereeId._id : r.refereeId)}>
+                              <button type="button" className="btn" style={{ fontSize: '12px', padding: '5px 8px' }} onClick={() => openRefModal(row.id, row.refereeId && typeof row.refereeId === 'object' ? row.refereeId._id : row.refereeId)}>
                                 Phân trọng tài
                               </button>
-                              <button className="btn btnPrimary" style={{ fontSize: '12px', padding: '5px 8px' }} onClick={() => openSchedModal(r)}>
+                              <button className="btn btnPrimary" style={{ fontSize: '12px', padding: '5px 8px' }} onClick={() => openSchedModal(row)}>
                                 Lập lịch (Schedule)
                               </button>
                             </>
                           )}
-                          {r.status === 'ONGOING' && (
-                            <button className="btn btnPrimary" style={{ fontSize: '12px', padding: '5px 8px' }} onClick={() => openResultModal(r)}>
+                          {row.status === 'ONGOING' && (
+                            <button className="btn btnPrimary" style={{ fontSize: '12px', padding: '5px 8px' }} onClick={() => openResultModal(row)}>
                               Công bố kết quả
                             </button>
                           )}
-                          {r.status === 'COMPLETED' && (
+                          {row.status === 'COMPLETED' && (
                             <span className="success-text flex items-center gap-1" style={{ fontSize: '12px', fontWeight: 600 }}>
                               <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                               <span>Đã hoàn thành</span>
                             </span>
                           )}
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      )
+                    }
+                  ]}
+                  sortColumn={refRacesSortColumn}
+                  sortDirection={refRacesSortDirection}
+                  onSort={handleRefRacesSort}
+                  columnFilters={refRacesColumnFilters}
+                  onColumnFilterChange={handleRefRacesColumnFilterChange}
+                  pagination={{
+                    page: refRacesPage,
+                    pageSize: 10,
+                    totalItems: (() => {
+                      let res = races
+                      if (refRacesColumnFilters.name) res = res.filter(r => (r.name || '').toLowerCase().includes(refRacesColumnFilters.name.toLowerCase()))
+                      if (refRacesColumnFilters.status) res = res.filter(r => r.status === refRacesColumnFilters.status)
+                      if (refRacesColumnFilters.refereeId) res = res.filter(r => (typeof r.refereeId === 'object' ? r.refereeId.fullName : r.refereeId || '').toLowerCase().includes(refRacesColumnFilters.refereeId.toLowerCase()))
+                      return res.length
+                    })(),
+                    onPageChange: setRefRacesPage,
+                    pageSizeOptions: [10, 20, 50]
+                  }}
+                />
+              </div>
           )}
         </div>
       )}
@@ -1510,42 +1955,146 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
             ) : filteredPredictions.length === 0 ? (
               <p className="muted">Không tìm thấy lượt dự đoán nào phù hợp.</p>
             ) : (
-              <div className="admin-table-wrapper">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Khán giả</th>
-                      <th>Cuộc đua</th>
-                      <th>Ngựa lựa chọn</th>
-                      <th>Số tiền đặt cược (VND)</th>
-                      <th>Tiền thưởng có thể nhận</th>
-                      <th>Trạng thái</th>
-                      <th>Ngày đặt</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredPredictions.map((p) => (
-                      <tr key={p.id}>
-                        <td>
-                          <div style={{ fontWeight: 600 }}>{p.spectatorId?.fullName || p.spectatorId?.name || 'Khán giả'}</div>
-                          <div className="muted" style={{ fontSize: '12px' }}>{p.spectatorId?.email}</div>
-                        </td>
-                        <td>{p.raceId?.name || 'Cuộc đua'}</td>
-                        <td style={{ fontWeight: 600 }}>{p.horseId?.name || 'Ngựa'}</td>
-                        <td>{p.betAmount?.toLocaleString('vi-VN')} VND</td>
-                        <td style={{ color: 'var(--primary)', fontWeight: 600 }}>
-                          {p.prizeAmount?.toLocaleString('vi-VN')} VND
-                        </td>
-                        <td>
-                          <span className={`badge ${p.status === 'WON' ? 'badge-approved' : p.status === 'LOST' ? 'badge-rejected' : p.status === 'CLOSED' ? 'badge-inactive' : 'badge-pending'}`}>
-                            {p.status === 'WON' ? 'Thắng cược' : p.status === 'LOST' ? 'Thua cược' : p.status === 'CLOSED' ? 'Đã đóng' : p.status === 'PENDING' ? 'Chờ xử lý' : p.status}
-                          </span>
-                        </td>
-                        <td>{p.createdAt ? new Date(p.createdAt).toLocaleDateString('vi-VN') : ''}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="admin-table-wrapper w-full overflow-hidden">
+                <AnimatedTable
+                  data={(() => {
+                    let res = filteredPredictions
+                    // Column Filters
+                    res = res.filter(p => {
+                      if (predColumnFilters.spectatorId) {
+                        const spName = (p.spectatorId?.fullName || p.spectatorId?.name || 'Khán giả').toLowerCase()
+                        if (!spName.includes(predColumnFilters.spectatorId.toLowerCase())) return false
+                      }
+                      if (predColumnFilters.raceId) {
+                        const rName = (p.raceId?.name || 'Cuộc đua').toLowerCase()
+                        if (!rName.includes(predColumnFilters.raceId.toLowerCase())) return false
+                      }
+                      if (predColumnFilters.horseId) {
+                        const hName = (p.horseId?.name || 'Ngựa').toLowerCase()
+                        if (!hName.includes(predColumnFilters.horseId.toLowerCase())) return false
+                      }
+                      if (predColumnFilters.status && p.status !== predColumnFilters.status) return false
+                      return true
+                    })
+
+                    // Sort
+                    if (predSortColumn && predSortDirection) {
+                      res.sort((a, b) => {
+                        let aVal: any = a[predSortColumn as keyof Prediction]
+                        let bVal: any = b[predSortColumn as keyof Prediction]
+                        if (predSortColumn === 'spectatorId') {
+                          aVal = a.spectatorId?.fullName || a.spectatorId?.name || ''
+                          bVal = b.spectatorId?.fullName || b.spectatorId?.name || ''
+                        } else if (predSortColumn === 'raceId') {
+                          aVal = a.raceId?.name || ''
+                          bVal = b.raceId?.name || ''
+                        } else if (predSortColumn === 'horseId') {
+                          aVal = a.horseId?.name || ''
+                          bVal = b.horseId?.name || ''
+                        } else if (predSortColumn === 'createdAt') {
+                          aVal = a.createdAt ? new Date(a.createdAt).getTime() : 0
+                          bVal = b.createdAt ? new Date(b.createdAt).getTime() : 0
+                        }
+
+                        if (typeof aVal === 'string' && typeof bVal === 'string') {
+                          return predSortDirection === 'asc' ? aVal.localeCompare(bVal, 'vi') : bVal.localeCompare(aVal, 'vi')
+                        }
+                        return predSortDirection === 'asc' ? aVal - bVal : bVal - aVal
+                      })
+                    }
+                    return res
+                  })().slice((predPage - 1) * 10, predPage * 10)}
+                  columns={[
+                    {
+                      id: 'spectatorId',
+                      header: 'Khán giả',
+                      sortable: true,
+                      filterable: true,
+                      filterType: 'text',
+                      cell: (row) => (
+                        <div>
+                          <div style={{ fontWeight: 600 }}>{row.spectatorId?.fullName || row.spectatorId?.name || 'Khán giả'}</div>
+                          <div className="muted" style={{ fontSize: '12px' }}>{row.spectatorId?.email}</div>
+                        </div>
+                      )
+                    },
+                    {
+                      id: 'raceId',
+                      header: 'Cuộc đua',
+                      sortable: true,
+                      filterable: true,
+                      filterType: 'text',
+                      cell: (row) => <span>{row.raceId?.name || 'Cuộc đua'}</span>
+                    },
+                    {
+                      id: 'horseId',
+                      header: 'Ngựa lựa chọn',
+                      sortable: true,
+                      filterable: true,
+                      filterType: 'text',
+                      cell: (row) => <span style={{ fontWeight: 600 }}>{row.horseId?.name || 'Ngựa'}</span>
+                    },
+                    {
+                      id: 'betAmount',
+                      header: 'Số tiền đặt cược (VND)',
+                      sortable: true,
+                      cell: (row) => <span>{row.betAmount?.toLocaleString('vi-VN')} VND</span>
+                    },
+                    {
+                      id: 'prizeAmount',
+                      header: 'Tiền thưởng có thể nhận',
+                      sortable: true,
+                      cell: (row) => (
+                        <span style={{ color: 'var(--primary)', fontWeight: 600 }}>
+                          {row.prizeAmount?.toLocaleString('vi-VN')} VND
+                        </span>
+                      )
+                    },
+                    {
+                      id: 'status',
+                      header: 'Trạng thái',
+                      sortable: true,
+                      filterable: true,
+                      filterType: 'select',
+                      filterOptions: [
+                        { label: 'Chờ xử lý', value: 'PENDING' },
+                        { label: 'Đã đóng', value: 'CLOSED' },
+                        { label: 'Thắng cược', value: 'WON' },
+                        { label: 'Thua cược', value: 'LOST' },
+                      ],
+                      cell: (row) => (
+                        <span className={`badge ${row.status === 'WON' ? 'badge-approved' : row.status === 'LOST' ? 'badge-rejected' : row.status === 'CLOSED' ? 'badge-inactive' : 'badge-pending'}`}>
+                          {row.status === 'WON' ? 'Thắng cược' : row.status === 'LOST' ? 'Thua cược' : row.status === 'CLOSED' ? 'Đã đóng' : row.status === 'PENDING' ? 'Chờ xử lý' : row.status}
+                        </span>
+                      )
+                    },
+                    {
+                      id: 'createdAt',
+                      header: 'Ngày đặt',
+                      sortable: true,
+                      cell: (row) => <span>{row.createdAt ? new Date(row.createdAt).toLocaleDateString('vi-VN') : ''}</span>
+                    }
+                  ]}
+                  sortColumn={predSortColumn}
+                  sortDirection={predSortDirection}
+                  onSort={handlePredSort}
+                  columnFilters={predColumnFilters}
+                  onColumnFilterChange={handlePredColumnFilterChange}
+                  pagination={{
+                    page: predPage,
+                    pageSize: 10,
+                    totalItems: (() => {
+                      let res = filteredPredictions
+                      if (predColumnFilters.spectatorId) res = res.filter(p => (p.spectatorId?.fullName || p.spectatorId?.name || 'Khán giả').toLowerCase().includes(predColumnFilters.spectatorId.toLowerCase()))
+                      if (predColumnFilters.raceId) res = res.filter(p => (p.raceId?.name || 'Cuộc đua').toLowerCase().includes(predColumnFilters.raceId.toLowerCase()))
+                      if (predColumnFilters.horseId) res = res.filter(p => (p.horseId?.name || 'Ngựa').toLowerCase().includes(predColumnFilters.horseId.toLowerCase()))
+                      if (predColumnFilters.status) res = res.filter(p => p.status === predColumnFilters.status)
+                      return res.length
+                    })(),
+                    onPageChange: setPredPage,
+                    pageSizeOptions: [10, 20, 50]
+                  }}
+                />
               </div>
             )}
           </div>

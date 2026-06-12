@@ -29,6 +29,7 @@ import {
   BarChart3
 } from 'lucide-react'
 import { NumberCounter } from '@/components/ui/number-counter'
+import { AnimatedTable, type SortDirection } from '@/components/ui/animated-table'
 
 // Toast notifications configuration
 type ToastItem = { id: number; type: 'success' | 'error' | 'warning' | 'info'; message: string }
@@ -52,6 +53,23 @@ export function AdminDashboard() {
   const [registrations, setRegistrations] = useState<any[]>([])
   const [registrationOwners, setRegistrationOwners] = useState<Record<string, { fullName?: string; phone?: string }>>({})
   const [predictions, setPredictions] = useState<any[]>([])
+
+  // Dashboard Tables State
+  const [racesSortColumn, setRacesSortColumn] = useState<string | undefined>()
+  const [racesSortDirection, setRacesSortDirection] = useState<SortDirection>(null)
+  
+  const [predsSortColumn, setPredsSortColumn] = useState<string | undefined>()
+  const [predsSortDirection, setPredsSortDirection] = useState<SortDirection>(null)
+
+  const handleRacesSort = (columnId: string, direction: SortDirection) => {
+    setRacesSortColumn(columnId)
+    setRacesSortDirection(direction)
+  }
+
+  const handlePredsSort = (columnId: string, direction: SortDirection) => {
+    setPredsSortColumn(columnId)
+    setPredsSortDirection(direction)
+  }
 
   // Toast functions
   const showToast = (message: string, type: ToastItem['type'] = 'success') => {
@@ -141,14 +159,7 @@ export function AdminDashboard() {
   const netCommission = totalBets - totalPayouts
 
   // Formatter helpers
-  const formatMoney = (n?: number) => {
-    if (n === undefined || n === null) return '—'
-    const rounded = Math.round(n)
-    if (rounded === 0) return '0 VND'
-    if (rounded >= 1000000000) return `${(rounded / 1000000000).toFixed(1)} tỷ VND`
-    if (rounded >= 1000000) return `${(rounded / 1000000).toFixed(1)} triệu VND`
-    return `${new Intl.NumberFormat('vi-VN').format(rounded)} VND`
-  }
+
 
   const formatMoneyCompact = (val: number) => {
     if (val >= 1000000000) return `${(val / 1000000000).toFixed(1)} tỷ`
@@ -1023,39 +1034,62 @@ export function AdminDashboard() {
               Tất cả cuộc đua <ChevronRight className="h-3.5 w-3.5" />
             </Link>
           </CardHeader>
-          <CardContent className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="border-b border-[var(--border)] text-[var(--muted)] font-black">
-                  <th className="pb-3 pr-2">TÊN CUỘC ĐUA</th>
-                  <th className="pb-3 pr-2">CỰ LY</th>
-                  <th className="pb-3 pr-2">PHÂN LOẠI GIẢI ĐẤU</th>
-                  <th className="pb-3 text-right">TRẠNG THÁI</th>
-                </tr>
-              </thead>
-              <tbody>
-                {races.filter(r => ['COMPLETED', 'RESULT_CONFIRMED'].includes(r.status || '')).slice(0, 4).length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="py-8 text-center text-[var(--muted)] font-semibold">
-                      Chưa có cuộc đua nào hoàn tất được ghi nhận từ API.
-                    </td>
-                  </tr>
-                ) : (
-                  races.filter(r => ['COMPLETED', 'RESULT_CONFIRMED'].includes(r.status || '')).slice(0, 4).map((r) => (
-                    <tr key={r.id} className="border-b border-[var(--border)]/50 last:border-0 hover:bg-[var(--bg2)]/20 transition-all">
-                      <td className="py-3 font-extrabold text-[var(--text)]">{r.name}</td>
-                      <td className="py-3 text-[var(--muted)] font-bold">{r.distance}m</td>
-                      <td className="py-3 text-[var(--muted)] font-semibold">{typeof r.tournamentId === 'object' ? r.tournamentId.name : 'Chặng độc lập'}</td>
-                      <td className="py-3 text-right">
-                        <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
-                          Đã hoàn tất
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+          <CardContent className="overflow-hidden">
+            <div className="w-full overflow-hidden">
+              <AnimatedTable
+                data={(() => {
+                  let res = races.filter(r => ['COMPLETED', 'RESULT_CONFIRMED'].includes(r.status || ''))
+                  if (racesSortColumn && racesSortDirection) {
+                    res.sort((a, b) => {
+                      let aVal: any = a[racesSortColumn as keyof any]
+                      let bVal: any = b[racesSortColumn as keyof any]
+                      if (racesSortColumn === 'tournamentId') {
+                        aVal = typeof a.tournamentId === 'object' ? a.tournamentId.name : ''
+                        bVal = typeof b.tournamentId === 'object' ? b.tournamentId.name : ''
+                      }
+                      if (typeof aVal === 'string' && typeof bVal === 'string') {
+                        return racesSortDirection === 'asc' ? aVal.localeCompare(bVal, 'vi') : bVal.localeCompare(aVal, 'vi')
+                      }
+                      return racesSortDirection === 'asc' ? aVal - bVal : bVal - aVal
+                    })
+                  }
+                  return res.slice(0, 4)
+                })()}
+                columns={[
+                  {
+                    id: 'name',
+                    header: 'TÊN CUỘC ĐUA',
+                    sortable: true,
+                    cell: (row) => <span className="font-extrabold text-[var(--text)]">{row.name}</span>
+                  },
+                  {
+                    id: 'distance',
+                    header: 'CỰ LY',
+                    sortable: true,
+                    cell: (row) => <span className="text-[var(--muted)] font-bold">{row.distance}m</span>
+                  },
+                  {
+                    id: 'tournamentId',
+                    header: 'PHÂN LOẠI GIẢI ĐẤU',
+                    sortable: true,
+                    cell: (row) => <span className="text-[var(--muted)] font-semibold">{typeof row.tournamentId === 'object' ? row.tournamentId.name : 'Chặng độc lập'}</span>
+                  },
+                  {
+                    id: 'status',
+                    header: 'TRẠNG THÁI',
+                    align: 'right',
+                    cell: () => (
+                      <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
+                        Đã hoàn tất
+                      </Badge>
+                    )
+                  }
+                ]}
+                sortColumn={racesSortColumn}
+                sortDirection={racesSortDirection}
+                onSort={handleRacesSort}
+              />
+            </div>
           </CardContent>
         </Card>
 
@@ -1068,48 +1102,72 @@ export function AdminDashboard() {
             </div>
             <span className="text-[var(--muted)] text-2xs font-extrabold">LIVE UPDATE</span>
           </CardHeader>
-          <CardContent className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="border-b border-[var(--border)] text-[var(--muted)] font-black">
-                  <th className="pb-3 pr-2">MÃ GIAO DỊCH</th>
-                  <th className="pb-3 pr-2">TIỀN CƯỢC</th>
-                  <th className="pb-3 pr-2">DỰ ĐOÁN HẠNG</th>
-                  <th className="pb-3 text-right">KẾT QUẢ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {predictions.slice(0, 4).length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="py-8 text-center text-[var(--muted)] font-semibold">
-                      Chưa có đơn cược nào được đặt trên hệ thống.
-                    </td>
-                  </tr>
-                ) : (
-                  predictions.slice(0, 4).map((p, idx) => (
-                    <tr key={p.id || idx} className="border-b border-[var(--border)]/50 last:border-0 hover:bg-[var(--bg2)]/20 transition-all">
-                      <td className="py-3 font-extrabold text-[var(--text)]">TX-{p.id?.substring(18).toUpperCase() || 'PRED'}</td>
-                      <td className="py-3 text-emerald-500 font-extrabold">{formatMoney(p.betAmount)}</td>
-                      <td className="py-3 text-[var(--muted)] font-bold">Hạng {p.predictedPosition || 1}</td>
-                      <td className="py-3 text-right">
-                        <Badge 
-                          variant="outline" 
-                          className={`font-bold ${
-                            p.status === 'WON' 
-                              ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' 
-                              : p.status === 'LOST' 
-                              ? 'border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400' 
-                              : 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                          }`}
-                        >
-                          {p.status === 'WON' ? 'THẮNG' : p.status === 'LOST' ? 'THUA' : 'CHỜ KẾT QUẢ'}
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+          <CardContent className="overflow-hidden">
+            <div className="w-full overflow-hidden">
+              <AnimatedTable
+                data={(() => {
+                  let res = [...predictions]
+                  if (predsSortColumn && predsSortDirection) {
+                    res.sort((a, b) => {
+                      let aVal: any = a[predsSortColumn as keyof any]
+                      let bVal: any = b[predsSortColumn as keyof any]
+                      if (predsSortColumn === 'id') {
+                        aVal = a.id?.substring(18) || ''
+                        bVal = b.id?.substring(18) || ''
+                      }
+                      if (typeof aVal === 'string' && typeof bVal === 'string') {
+                        return predsSortDirection === 'asc' ? aVal.localeCompare(bVal, 'vi') : bVal.localeCompare(aVal, 'vi')
+                      }
+                      return predsSortDirection === 'asc' ? aVal - bVal : bVal - aVal
+                    })
+                  }
+                  return res.slice(0, 4)
+                })()}
+                columns={[
+                  {
+                    id: 'id',
+                    header: 'MÃ GIAO DỊCH',
+                    sortable: true,
+                    cell: (row) => <span className="font-extrabold text-[var(--text)]">TX-{row.id?.substring(18).toUpperCase() || 'PRED'}</span>
+                  },
+                  {
+                    id: 'betAmount',
+                    header: 'TIỀN CƯỢC',
+                    sortable: true,
+                    cell: (row) => <span className="text-emerald-500 font-extrabold">{new Intl.NumberFormat('vi-VN').format(row.betAmount || 0)} ₫</span>
+                  },
+                  {
+                    id: 'predictedPosition',
+                    header: 'DỰ ĐOÁN HẠNG',
+                    sortable: true,
+                    cell: (row) => <span className="text-[var(--muted)] font-bold">Hạng {row.predictedPosition || 1}</span>
+                  },
+                  {
+                    id: 'status',
+                    header: 'KẾT QUẢ',
+                    align: 'right',
+                    sortable: true,
+                    cell: (row) => (
+                      <Badge 
+                        variant="outline" 
+                        className={`font-bold ${
+                          row.status === 'WON' 
+                            ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' 
+                            : row.status === 'LOST' 
+                            ? 'border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400' 
+                            : 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                        }`}
+                      >
+                        {row.status === 'WON' ? 'THẮNG' : row.status === 'LOST' ? 'THUA' : 'CHỜ KẾT QUẢ'}
+                      </Badge>
+                    )
+                  }
+                ]}
+                sortColumn={predsSortColumn}
+                sortDirection={predsSortDirection}
+                onSort={handlePredsSort}
+              />
+            </div>
           </CardContent>
         </Card>
       </div>

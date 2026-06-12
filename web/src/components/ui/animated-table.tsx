@@ -14,6 +14,8 @@ export interface ColumnDef<T> {
   cell?: (row: T, index: number) => React.ReactNode;
   sortable?: boolean;
   filterable?: boolean;
+  filterType?: "text" | "select";
+  filterOptions?: { label: string; value: string | number }[];
   align?: "left" | "center" | "right";
   width?: string;
   hideable?: boolean;
@@ -55,6 +57,9 @@ export interface AnimatedTableProps<T extends { id: string | number }> {
   columnVisibility?: boolean;
   visibleColumns?: string[];
   onVisibleColumnsChange?: (columns: string[]) => void;
+  // Column Filters
+  columnFilters?: Record<string, string>;
+  onColumnFilterChange?: (columnId: string, value: string) => void;
 }
 
 // Search Input Component
@@ -473,37 +478,13 @@ const TableHead = React.forwardRef<HTMLTableCellElement, TableHeadProps>(
       <th
         ref={ref}
         className={cn(
-          "h-14 px-6 font-bold text-[var(--muted)] text-xs tracking-wider uppercase",
+          "px-4 py-3 font-bold text-[var(--muted)] text-xs tracking-wider uppercase align-top",
           alignClass,
-          sortable && "cursor-pointer select-none hover:text-[var(--text)]",
           className,
         )}
-        onClick={sortable ? onSort : undefined}
         {...props}
       >
-        <div
-          className={cn(
-            "flex items-center gap-2",
-            align === "center" && "justify-center",
-            align === "right" && "justify-end",
-          )}
-        >
-          <span>{children}</span>
-          {sortable && (
-            <motion.span
-              className="shrink-0 text-[var(--muted)]"
-              animate={sortDirection ? { scale: 1 } : { scale: 0.9 }}
-            >
-              {sortDirection === "asc" ? (
-                <ChevronUp className="h-3.5 w-3.5 text-emerald-500" />
-              ) : sortDirection === "desc" ? (
-                <ChevronDown className="h-3.5 w-3.5 text-emerald-500" />
-              ) : (
-                <ChevronsUpDown className="h-3.5 w-3.5 opacity-40 group-hover:opacity-75" />
-              )}
-            </motion.span>
-          )}
-        </div>
+        {children}
       </th>
     );
   },
@@ -649,6 +630,8 @@ export function AnimatedTable<T extends { id: string | number }>({
   columnVisibility = false,
   visibleColumns: controlledVisibleColumns,
   onVisibleColumnsChange,
+  columnFilters,
+  onColumnFilterChange,
 }: AnimatedTableProps<T>) {
   const [expandedRows, setExpandedRows] = React.useState<Set<string | number>>(new Set());
   const [internalVisibleColumns, setInternalVisibleColumns] = React.useState<string[]>(
@@ -756,13 +739,76 @@ export function AnimatedTable<T extends { id: string | number }>({
               {displayedColumns.map((column) => (
                 <TableHead
                   key={column.id}
-                  sortable={column.sortable && !!onSort}
-                  sortDirection={sortColumn === column.id ? sortDirection : null}
-                  onSort={() => handleSort(column.id)}
                   align={column.align}
                   style={{ width: column.width }}
                 >
-                  {column.header}
+                  <div className="flex flex-col gap-2.5 w-full">
+                    <div 
+                      className={cn(
+                        "flex items-center gap-1.5 w-full",
+                        column.sortable && !!onSort && "cursor-pointer select-none hover:text-[var(--text)] transition-colors",
+                        column.align === "center" && "justify-center",
+                        column.align === "right" && "justify-end",
+                      )}
+                      onClick={column.sortable && !!onSort ? () => handleSort(column.id) : undefined}
+                    >
+                      <div className="truncate font-extrabold">{column.header}</div>
+                      {column.sortable && !!onSort && (
+                        <motion.span
+                          className="shrink-0 text-[var(--muted)]"
+                          animate={sortColumn === column.id && sortDirection ? { scale: 1 } : { scale: 0.9 }}
+                        >
+                          {sortColumn === column.id && sortDirection === "asc" ? (
+                            <ChevronUp className="h-3.5 w-3.5 text-emerald-500" />
+                          ) : sortColumn === column.id && sortDirection === "desc" ? (
+                            <ChevronDown className="h-3.5 w-3.5 text-emerald-500" />
+                          ) : (
+                            <ChevronsUpDown className="h-3.5 w-3.5 opacity-40" />
+                          )}
+                        </motion.span>
+                      )}
+                    </div>
+                    
+                    {column.filterable && onColumnFilterChange && (
+                      <div className="w-full font-normal normal-case tracking-normal">
+                        {column.filterType === 'select' ? (
+                          <div className="relative">
+                            <select
+                              className="w-full h-8 text-[11px] font-semibold px-2 pr-6 py-0 rounded-md border border-[var(--border)] bg-[var(--surface-2)] text-[var(--text)] focus:border-emerald-500 focus:outline-none transition-colors appearance-none cursor-pointer"
+                              value={columnFilters?.[column.id] || ''}
+                              onChange={(e) => onColumnFilterChange(column.id, e.target.value)}
+                            >
+                              <option value="">Tất cả</option>
+                              {column.filterOptions?.map((opt, i) => (
+                                <option key={i} value={opt.value}>{opt.label}</option>
+                              ))}
+                            </select>
+                            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--muted)] pointer-events-none" />
+                          </div>
+                        ) : (
+                          <div className="relative w-full group">
+                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--muted)] group-focus-within:text-emerald-500 transition-colors" />
+                            <input
+                              type="text"
+                              style={{ paddingLeft: '28px' }}
+                              className="w-full h-8 text-[11px] font-semibold pr-7 rounded-md border border-[var(--border)] bg-[var(--surface-2)] text-[var(--text)] placeholder-[var(--muted)]/50 focus:border-emerald-500 focus:outline-none transition-colors"
+                              placeholder={`Lọc ${typeof column.header === 'string' ? column.header.toLowerCase() : '...'}`}
+                              value={columnFilters?.[column.id] || ''}
+                              onChange={(e) => onColumnFilterChange(column.id, e.target.value)}
+                            />
+                            {columnFilters?.[column.id] && (
+                              <button
+                                onClick={() => onColumnFilterChange(column.id, '')}
+                                className="absolute right-1 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full text-[var(--muted)] hover:bg-[var(--surface-3)] hover:text-[var(--text)] transition-colors"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </TableHead>
               ))}
             </tr>

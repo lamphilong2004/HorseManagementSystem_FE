@@ -26,6 +26,7 @@ import { JockeyRaceDetailPage } from './pages/jockey/JockeyRaceDetailPage'
 import { JockeySchedulePage } from './pages/jockey/JockeySchedulePage'
 import { JockeyResultsPage } from './pages/jockey/JockeyResultsPage'
 import { JockeyProfilePage } from './pages/jockey/JockeyProfilePage'
+import { LiveStreamPage } from './pages/LiveStreamPage'
 
 function RequireAuth(props: { children: ReactNode }) {
   const { session } = useSession()
@@ -86,6 +87,7 @@ const router = createBrowserRouter([
       { path: 'jockey/profile', element: <JockeyProfilePage /> },
       { path: 'predictions', element: <PredictionsPage /> },
       { path: 'notifications', element: <NotificationsPage /> },
+      { path: 'livestream', element: <LiveStreamPage /> },
       { path: 'admin/users', element: <AdminUsersPage /> },
       {
         path: 'admin/scheduling',
