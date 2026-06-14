@@ -375,6 +375,17 @@ export async function getAdminUsers(params?: { search?: string; role?: string; s
   }))
 }
 
+export async function createAdminUser(params: { name: string; email: string; password: string; role: Role; phone?: string }): Promise<any> {
+  const res = await http.post(`${BE_BASE_URL}/admin/users`, {
+    fullName: params.name,
+    email: params.email,
+    password: params.password,
+    role: params.role,
+    phone: params.phone,
+  })
+  return res.data
+}
+
 export async function updateUserRole(userId: string, role: Role): Promise<any> {
   const res = await http.patch(`${BE_BASE_URL}/admin/users/${userId}/role`, { role })
   return res.data

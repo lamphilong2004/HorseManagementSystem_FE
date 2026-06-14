@@ -7,12 +7,6 @@ import '../core/models/app_models.dart';
 import '../ui/app_theme.dart';
 import '../ui/app_widgets.dart';
 
-const _registerRoles = [
-  (value: Role.owner,     label: 'Chủ ngựa', icon: Icons.shield_outlined),
-  (value: Role.jockey,    label: 'Kỵ sĩ',      icon: Icons.sports_motorsports_outlined),
-  (value: Role.referee,   label: 'Trọng tài', icon: Icons.gavel_outlined),
-  (value: Role.spectator, label: 'Khán giả',   icon: Icons.visibility_outlined),
-];
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key, required this.auth});
@@ -152,12 +146,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 20),
-
-          // Role
-          Text('Chọn vai trò', style: context.typography.label),
-          const SizedBox(height: 10),
-          _buildRoleSelector(),
           const SizedBox(height: 24),
 
           AppButton(
@@ -168,53 +156,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildRoleSelector() {
-    return Column(
-      children: _registerRoles.map((role) {
-        final selected = _role == role.value;
-        return GestureDetector(
-          onTap: () => setState(() => _role = role.value),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: selected ? context.colors.primaryLight : const Color(0x0AFFFFFF),
-              borderRadius: context.radii.base,
-              border: Border.all(
-                color: selected ? context.colors.primary : context.colors.border,
-                width: selected ? 1.5 : 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  role.icon,
-                  size: 18,
-                  color: selected ? context.colors.primary : context.colors.muted,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    role.label,
-                    style: TextStyle(
-                      fontFamily: context.typography.fontFamily,
-                      fontSize: 14,
-                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                      color: selected ? context.colors.primary : context.colors.text2,
-                    ),
-                  ),
-                ),
-                if (selected)
-                  Icon(Icons.check_circle, size: 18, color: context.colors.primary),
-              ],
-            ),
-          ),
-        );
-      }).toList(),
     );
   }
 

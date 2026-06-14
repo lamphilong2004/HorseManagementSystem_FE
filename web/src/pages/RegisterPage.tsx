@@ -4,12 +4,6 @@ import type { Role } from '../types'
 import { useSession } from '../auth/SessionContext'
 import axios from 'axios'
 
-const roleOptions: Array<{ value: Role; label: string; icon: string; desc: string }> = [
-  { value: 'OWNER', label: 'Chủ Ngựa', icon: '👑', desc: 'Quản lý chiến mã' },
-  { value: 'JOCKEY', label: 'Jockey', icon: '🏇', desc: 'Vận động viên' },
-  { value: 'REFEREE', label: 'Trọng Tài', icon: '⚖️', desc: 'Giám sát cuộc đua' },
-  { value: 'SPECTATOR', label: 'Người Xem', icon: '👀', desc: 'Theo dõi' },
-]
 
 export function RegisterPage() {
   const { register } = useSession()
@@ -19,7 +13,7 @@ export function RegisterPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [role, setRole] = useState<Role>('SPECTATOR')
+  const role: Role = 'SPECTATOR'
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -191,38 +185,6 @@ export function RegisterPage() {
               </div>
             </div>
 
-            {/* Chọn Role */}
-            <div className="space-y-2">
-              <span className="block text-xs font-bold text-slate-700 uppercase tracking-wider" style={{ color: '#475569' }}>
-                Bạn Là Ai?
-              </span>
-              <div className="grid grid-cols-2 gap-2">
-                {roleOptions.map((r) => (
-                  <label
-                    key={r.value}
-                    className={`flex items-center gap-2 p-3 border-2 rounded-2xl cursor-pointer transition-all ${
-                      role === r.value
-                        ? 'border-sky-500 bg-sky-50'
-                        : 'border-slate-200 bg-white hover:border-slate-300'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="role"
-                      value={r.value}
-                      checked={role === r.value}
-                      onChange={() => setRole(r.value)}
-                      className="hidden"
-                    />
-                    <span className="text-xl">{r.icon}</span>
-                    <div className="flex-1">
-                      <div className="font-semibold text-xs text-slate-900">{r.label}</div>
-                      <div className="text-xs text-slate-500">{r.desc}</div>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
 
             {/* Error Message */}
             {error && (

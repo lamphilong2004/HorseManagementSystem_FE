@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, startTransition, useMemo } from 'react'
 import type { Role, User } from '../../types'
-import { getAdminUsers, updateUserRole, toggleUserStatus, deleteUser } from '@/api'
+import { getAdminUsers, createAdminUser, updateUserRole, toggleUserStatus, deleteUser } from '@/api'
 import { AnimatedTable, type ColumnDef, type SortDirection } from '@/components/ui/animated-table'
 import { Users, CheckCircle, Lock, Search, Key, Trash2, Unlock, MoreHorizontal, AlertTriangle } from 'lucide-react'
 
@@ -157,6 +157,14 @@ export function AdminUsersPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [selectedRole, setSelectedRole] = useState<Role | ''>('')
 
+  // Create User Modal
+  const [showCreateModal, setShowCreateModal] = useState<boolean>(false)
+  const [createName, setCreateName] = useState<string>('')
+  const [createEmail, setCreateEmail] = useState<string>('')
+  const [createPassword, setCreatePassword] = useState<string>('')
+  const [createRole, setCreateRole] = useState<Role>('OWNER')
+  const [createPhone, setCreatePhone] = useState<string>('')
+
   // Toast
   const { toasts, show: showToast } = useToast()
   const [lastModifiedUserId, setLastModifiedUserId] = useState<string | null>(null)
@@ -251,6 +259,27 @@ export function AdminUsersPage() {
       fetchUsers(editingUser.id)
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Có lỗi xảy ra', 'error')
+    }
+  }
+
+  const handleCreateUser = async () => {
+    if (!createName || !createEmail || !createPassword || !createRole) {
+      showToast('Vui lòng điền đầy đủ thông tin bắt buộc', 'warning')
+      return
+    }
+    try {
+      await createAdminUser({
+        name: createName,
+        email: createEmail,
+        password: createPassword,
+        role: createRole,
+        phone: createPhone || undefined,
+      })
+      showToast(`Tạo thành công tài khoản cho ${createName}`)
+      setShowCreateModal(false)
+      fetchUsers()
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Có lỗi xảy ra khi tạo tài khoản', 'error')
     }
   }
 
@@ -435,6 +464,20 @@ export function AdminUsersPage() {
             <h1>Quản lý Tài khoản</h1>
             <p className="muted text-sm">Phân quyền, kích hoạt/khóa và quản lý thành viên hệ thống.</p>
           </div>
+          <button
+            className="btn btnPrimary flex items-center gap-1.5"
+            onClick={() => {
+              setCreateName('')
+              setCreateEmail('')
+              setCreatePassword('')
+              setCreateRole('OWNER')
+              setCreatePhone('')
+              setShowCreateModal(true)
+            }}
+          >
+            <Users className="w-4 h-4" />
+            <span>Tạo tài khoản mới</span>
+          </button>
         </div>
 
         {/* Stat Cards */}
@@ -596,6 +639,81 @@ export function AdminUsersPage() {
                 disabled={!selectedRole || selectedRole === editingUser.role}
               >
                 Lưu thay đổi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create User Modal */}
+      {showCreateModal && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowCreateModal(false) }}>
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>👤 Tạo tài khoản mới</h3>
+              <button className="modal-close" onClick={() => setShowCreateModal(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group" style={{ marginBottom: 16 }}>
+                <label>Họ và tên <span style={{ color: 'red' }}>*</span></label>
+                <input
+                  type="text"
+                  placeholder="Nguyễn Văn A"
+                  value={createName}
+                  onChange={(e) => setCreateName(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: 16 }}>
+                <label>Email <span style={{ color: 'red' }}>*</span></label>
+                <input
+                  type="email"
+                  placeholder="name@domain.com"
+                  value={createEmail}
+                  onChange={(e) => setCreateEmail(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: 16 }}>
+                <label>Mật khẩu <span style={{ color: 'red' }}>*</span></label>
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  value={createPassword}
+                  onChange={(e) => setCreatePassword(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: 16 }}>
+                <label>Số điện thoại</label>
+                <input
+                  type="text"
+                  placeholder="0912345678"
+                  value={createPhone}
+                  onChange={(e) => setCreatePhone(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Vai trò <span style={{ color: 'red' }}>*</span></label>
+                <select value={createRole} onChange={(e) => setCreateRole(e.target.value as Role)}>
+                  <option value="OWNER">Chủ ngựa (Horse Owner)</option>
+                  <option value="JOCKEY">Kỵ sĩ (Jockey)</option>
+                  <option value="REFEREE">Trọng tài (Referee)</option>
+                </select>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn" onClick={() => setShowCreateModal(false)}>Hủy</button>
+              <button
+                className="btn btnPrimary"
+                onClick={handleCreateUser}
+                disabled={!createName || !createEmail || !createPassword || !createRole}
+              >
+                Tạo tài khoản
               </button>
             </div>
           </div>
