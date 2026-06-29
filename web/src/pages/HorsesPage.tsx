@@ -28,6 +28,7 @@ import {
   Sparkles, Zap, Clock, MapPin, Star, Send, UserCheck
 } from 'lucide-react'
 import '@/styles/horse-management.css'
+import { socket } from '@/lib/socket'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Tab = 'my-horses' | 'race-registration' | 'hire-jockey' | 'invitations' | 'my-registrations'
@@ -202,6 +203,16 @@ export function HorsesPage() {
   }
 
   useEffect(() => { loadData() }, [])
+
+  // Socket.IO real-time updates
+  useEffect(() => {
+    socket.on('tournament_updated', loadData)
+    socket.on('registration_updated', loadData)
+    return () => {
+      socket.off('tournament_updated', loadData)
+      socket.off('registration_updated', loadData)
+    }
+  }, [])
 
   useEffect(() => {
     if (activeTab === 'invitations') {
@@ -1024,15 +1035,21 @@ export function HorsesPage() {
                               </div>
                             </td>
                             <td className="px-5 py-4">
-                              <button 
-                                onClick={() => {
-                                  setRegisterTargetTournament(t)
-                                  setShowRegisterModal(true)
-                                }} 
-                                className="hm-btn-cta w-full text-xs py-2 shadow-none"
-                              >
-                                <Zap className="w-3.5 h-3.5 mr-1" /> Đăng Ký
-                              </button>
+                              {t.registrationCloseDate && new Date() > new Date(t.registrationCloseDate) ? (
+                                <button disabled className="w-full text-xs py-2 rounded-lg bg-[var(--surface-3)] text-muted cursor-not-allowed font-medium border border-[rgba(255,255,255,0.05)]">
+                                  Đã hết hạn
+                                </button>
+                              ) : (
+                                <button 
+                                  onClick={() => {
+                                    setRegisterTargetTournament(t)
+                                    setShowRegisterModal(true)
+                                  }} 
+                                  className="hm-btn-cta w-full text-xs py-2 shadow-none"
+                                >
+                                  <Zap className="w-3.5 h-3.5 mr-1" /> Đăng Ký
+                                </button>
+                              )}
                             </td>
                           </tr>
                         )

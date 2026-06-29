@@ -10,6 +10,7 @@
   },
   "devDependencies": {
     "@types/react": "^19.2.14",
+    "@types/react-datepicker": "^6.2.0",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.2",
     "msw": "^2.14.6",
@@ -27,8 +28,10 @@
     "lucide-react": "^1.17.0",
     "motion": "^12.40.0",
     "react": "^19.2.6",
+    "react-datepicker": "^9.1.0",
     "react-dom": "^19.2.6",
     "react-router-dom": "^7.15.1",
+    "socket.io-client": "^4.8.3",
     "tailwindcss": "^4.3.0"
   },
   "msw": {

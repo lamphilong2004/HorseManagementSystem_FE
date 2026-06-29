@@ -1,4 +1,7 @@
 import { useEffect, useState, startTransition } from 'react'
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
+import { format } from 'date-fns'
 import { 
   Trophy, 
   ClipboardList, 
@@ -230,7 +233,6 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
     prizePool: 0,
     maxHorses: 8,
     minHorses: 4,
-    registrationOpenDate: '',
     registrationCloseDate: '',
     eliminationType: 'SINGLE_ELIMINATION',
     pairingMethod: 'RANDOM',
@@ -450,8 +452,7 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
         prizePool: t.prizePool || 0,
         maxHorses: t.maxHorses || 8,
         minHorses: t.minHorses || 4,
-        registrationOpenDate: t.registrationOpenDate ? new Date(t.registrationOpenDate).toISOString().slice(0, 16) : '',
-        registrationCloseDate: t.registrationCloseDate ? new Date(t.registrationCloseDate).toISOString().slice(0, 16) : '',
+        registrationCloseDate: t.registrationCloseDate ? new Date(t.registrationCloseDate).toISOString() : '',
         eliminationType: t.eliminationType || 'SINGLE_ELIMINATION',
         pairingMethod: t.pairingMethod || 'RANDOM',
         hasThirdPlaceMatch: t.hasThirdPlaceMatch || false,
@@ -467,7 +468,6 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
         prizePool: 0,
         maxHorses: 8,
         minHorses: 4,
-        registrationOpenDate: '',
         registrationCloseDate: '',
         eliminationType: 'SINGLE_ELIMINATION',
         pairingMethod: 'RANDOM',
@@ -490,14 +490,9 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
       }
     }
 
-    if (tournForm.registrationOpenDate && tournForm.registrationCloseDate) {
-      const rStart = new Date(tournForm.registrationOpenDate).getTime()
+    if (tournForm.registrationCloseDate && tournForm.startDate) {
       const rEnd = new Date(tournForm.registrationCloseDate).getTime()
-      if (rEnd <= rStart) {
-        showToast('Thời gian đóng đăng ký phải sau thời gian mở đăng ký!', 'error')
-        return
-      }
-      if (tournForm.startDate && new Date(tournForm.startDate).getTime() < rEnd) {
+      if (new Date(tournForm.startDate).getTime() < rEnd) {
         showToast('Ngày bắt đầu giải đấu phải diễn ra sau khi đã đóng đăng ký!', 'error')
         return
       }
@@ -2611,11 +2606,23 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
                 <div className="grid-2">
                   <div className="form-group">
                     <label>Ngày bắt đầu</label>
-                    <input type="date" required value={tournForm.startDate} onChange={(e) => setTournForm({ ...tournForm, startDate: e.target.value })} />
+                    <DatePicker 
+                      selected={tournForm.startDate ? new Date(tournForm.startDate) : null}
+                      onChange={(date: Date | null) => setTournForm({ ...tournForm, startDate: date ? format(date, "yyyy-MM-dd") : '' })}
+                      dateFormat="dd/MM/yyyy"
+                      className="w-full h-[42px] px-3 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[var(--surface-2)] text-sm font-medium outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/10 transition-all text-white"
+                      placeholderText="dd/mm/yyyy"
+                    />
                   </div>
                   <div className="form-group">
                     <label>Ngày kết thúc</label>
-                    <input type="date" required value={tournForm.endDate} onChange={(e) => setTournForm({ ...tournForm, endDate: e.target.value })} />
+                    <DatePicker 
+                      selected={tournForm.endDate ? new Date(tournForm.endDate) : null}
+                      onChange={(date: Date | null) => setTournForm({ ...tournForm, endDate: date ? format(date, "yyyy-MM-dd") : '' })}
+                      dateFormat="dd/MM/yyyy"
+                      className="w-full h-[42px] px-3 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[var(--surface-2)] text-sm font-medium outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/10 transition-all text-white"
+                      placeholderText="dd/mm/yyyy"
+                    />
                   </div>
                 </div>
                 <div className="grid-2">
@@ -2649,13 +2656,18 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
                 </div>
                 <div className="grid-2">
                   <div className="form-group">
-                    <label>Ngày mở đăng ký</label>
-                    <input type="datetime-local" required value={tournForm.registrationOpenDate} onChange={(e) => setTournForm({ ...tournForm, registrationOpenDate: e.target.value })} />
-                  </div>
-                  <div className="form-group">
                     <label>Ngày đóng đăng ký</label>
-                    <input type="datetime-local" required value={tournForm.registrationCloseDate} onChange={(e) => setTournForm({ ...tournForm, registrationCloseDate: e.target.value })} />
+                    <DatePicker 
+                      selected={tournForm.registrationCloseDate ? new Date(tournForm.registrationCloseDate) : null}
+                      onChange={(date: Date | null) => setTournForm({ ...tournForm, registrationCloseDate: date ? date.toISOString() : '' })}
+                      showTimeSelect
+                      timeFormat="HH:mm"
+                      dateFormat="dd/MM/yyyy HH:mm"
+                      className="w-full h-[42px] px-3 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[var(--surface-2)] text-sm font-medium outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/10 transition-all text-white"
+                      placeholderText="dd/mm/yyyy --:--"
+                    />
                   </div>
+                  <div className="form-group"></div>
                 </div>
                 <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <input type="checkbox" id="hasThirdPlace" checked={tournForm.hasThirdPlaceMatch} onChange={(e) => setTournForm({ ...tournForm, hasThirdPlaceMatch: e.target.checked })} />
