@@ -3,7 +3,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom'
 import type { Race, RaceHorseRegistration, Violation, RaceResult } from '../../types'
 import {
   getPublicRace, getRefereeRaceHorses, getRefereeViolations,
-  createViolation, resolveViolation, confirmRaceResult, getRaceResults,
+  createViolation, resolveViolation, confirmRaceResult, getRaceResults, getRefereeConfirmedResult,
 } from '@/api'
 import { AnimatedTable, type SortDirection } from '../../components/ui/animated-table'
 import { FileText, Clock3, Ruler, Users, AlertTriangle, ClipboardCheck, Eye, ShieldAlert, Trophy, ChevronLeft, Plus, Scale } from 'lucide-react'
@@ -123,13 +123,27 @@ export function RefereeRaceDetailPage() {
     }
 
     if (activeTab === 'monitor' || activeTab === 'results') {
-      getRaceResults(raceId).then((r) => setResults(Array.isArray(r) ? r : [])).catch(() => setResults([]))
+      if (race?.status === 'COMPLETED' || race?.status === 'RESULT_CONFIRMED') {
+        getRefereeConfirmedResult(raceId)
+          .then((data: any) => {
+            if (data && Array.isArray(data.rankings)) {
+              setResults(data.rankings)
+            } else {
+              setResults([])
+            }
+          })
+          .catch(() => {
+            getRaceResults(raceId).then((r) => setResults(Array.isArray(r) ? r : [])).catch(() => setResults([]))
+          })
+      } else {
+        getRaceResults(raceId).then((r) => setResults(Array.isArray(r) ? r : [])).catch(() => setResults([]))
+      }
       // Also load horses for confirm result
       getRefereeRaceHorses(raceId)
         .then((data: any) => setHorses(data?.horses || []))
         .catch(() => {})
     }
-  }, [raceId, activeTab])
+  }, [raceId, activeTab, race?.status])
 
   // Create violation
   async function handleCreateViolation() {
@@ -250,6 +264,32 @@ export function RefereeRaceDetailPage() {
   // Add ranking row
   function addRankingRow() {
     setRankings([...rankings, { position: rankings.length + 1, horseId: '', jockeyId: '', finishTime: '' }])
+  }
+
+  // Auto-fill random valid rankings
+  function autoFillRankings() {
+    if (horses.length === 0) return
+    const shuffled = [...horses].sort(() => Math.random() - 0.5)
+    let currentTime = 60 + Math.random() * 10
+    
+    const generated = shuffled.map((h, idx) => {
+      const horse = h.horse || h.horseId || h
+      const jockeyInfo = findJockeyForHorse(horse?._id)
+      currentTime += 1 + Math.random() * 3
+      
+      const minutes = Math.floor(currentTime / 60)
+      const seconds = Math.floor(currentTime % 60)
+      const milliseconds = Math.floor((currentTime % 1) * 1000)
+      const formattedTime = `${minutes}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(3, '0')}`
+      
+      return {
+        position: idx + 1,
+        horseId: horse?._id || '',
+        jockeyId: jockeyInfo.id || '',
+        finishTime: formattedTime
+      }
+    })
+    setRankings(generated)
   }
 
   function updateRanking(idx: number, field: string, value: string) {
@@ -410,7 +450,18 @@ export function RefereeRaceDetailPage() {
       sortable: true,
       filterable: true,
       filterType: 'text' as const,
-      cell: (r: RaceResult) => <span className="fw-600">{r.horseId?.name || '—'}</span>,
+      cell: (r: RaceResult) => {
+        if (r.horseId && typeof r.horseId === 'object') {
+          return <span className="fw-600">{(r.horseId as any).name || '—'}</span>
+        }
+        const horseIdStr = String(r.horseId || '')
+        const found = horses.find(h => {
+          const horse = h.horse || h.horseId || h
+          return horse?._id === horseIdStr || horse?.id === horseIdStr
+        })
+        const horseName = ((found?.horse || found) as any)?.name || '—'
+        return <span className="fw-600">{horseName}</span>
+      },
     },
     {
       id: 'jockey',
@@ -418,7 +469,17 @@ export function RefereeRaceDetailPage() {
       sortable: true,
       filterable: true,
       filterType: 'text' as const,
-      cell: (r: RaceResult) => r.jockeyId?.fullName || r.jockeyId?.name || '—',
+      cell: (r: RaceResult) => {
+        if (r.jockeyId && typeof r.jockeyId === 'object') {
+          return (r.jockeyId as any).fullName || (r.jockeyId as any).name || '—'
+        }
+        const horseIdStr = String(r.horseId || '')
+        const found = horses.find(h => {
+          const horse = h.horse || h.horseId || h
+          return horse?._id === horseIdStr || horse?.id === horseIdStr
+        })
+        return found?.jockeyName || '—'
+      },
     },
     {
       id: 'time',
@@ -430,7 +491,7 @@ export function RefereeRaceDetailPage() {
       id: 'status',
       header: 'Trạng thái',
       sortable: true,
-      cell: (r: RaceResult) => statusBadge(r.status || '', 'registration'),
+      cell: (r: RaceResult) => statusBadge(r.status || 'FINISHED', 'registration'),
     },
   ]
 
@@ -950,59 +1011,64 @@ export function RefereeRaceDetailPage() {
               </div>
             )}
 
-            <div>
-              <div className="text-lg font-black text-[var(--text)] mb-4">🏅 Nhập bảng xếp hạng</div>
+            {race?.status !== 'COMPLETED' && race?.status !== 'RESULT_CONFIRMED' && (
+              <>
+                <div>
+                  <div className="text-lg font-black text-[var(--text)] mb-4">🏅 Nhập bảng xếp hạng</div>
 
-              <div className="space-y-3">
-                {rankings.map((r, idx) => (
-                  <div key={idx} className="flex flex-wrap items-end gap-3 rounded-xl bg-white/[0.01] border border-white/[0.03] p-3">
-                    <div className="form-group" style={{ maxWidth: 80 }}>
-                      <label className="text-xs">Hạng</label>
-                      <input className="h-10 rounded-lg text-center" type="number" min="1" value={r.position} onChange={(e) => updateRanking(idx, 'position', e.target.value)} />
-                    </div>
-                    <div className="form-group flex-1 min-w-[150px]">
-                      <label className="text-xs">Ngựa</label>
-                      <select className="h-10 rounded-lg" value={r.horseId} onChange={(e) => updateRanking(idx, 'horseId', e.target.value)}>
-                        <option value="">— Chọn ngựa —</option>
-                        {horses.map((h) => {
-                          const horse = (h.horse || h) as any
-                          return <option key={horse._id} value={horse._id}>{horse.name}</option>
-                        })}
-                      </select>
-                    </div>
-                    <div className="form-group flex-1 min-w-[120px]">
-                      <label className="text-xs">Tên Jockey</label>
-                      <input
-                        className="h-10 rounded-lg bg-white/[0.02] border-white/[0.05] cursor-not-allowed opacity-80"
-                        value={findJockeyForHorse(r.horseId).name || 'Chưa xác định'}
-                        readOnly
-                        placeholder="Tên Jockey"
-                      />
-                    </div>
-                    <div className="form-group flex-1 min-w-[120px]">
-                      <label className="text-xs">Thời gian</label>
-                      <input className="h-10 rounded-lg" value={r.finishTime} onChange={(e) => updateRanking(idx, 'finishTime', e.target.value)} placeholder="1:12.345" />
-                    </div>
-                    <button className="btn btnDanger h-10 w-10 p-0 flex items-center justify-center rounded-lg cursor-pointer shrink-0" onClick={() => removeRanking(idx)}>✕</button>
+                  <div className="space-y-3">
+                    {rankings.map((r, idx) => (
+                      <div key={idx} className="flex flex-wrap items-end gap-3 rounded-xl bg-white/[0.01] border border-white/[0.03] p-3">
+                        <div className="form-group" style={{ maxWidth: 80 }}>
+                          <label className="text-xs">Hạng</label>
+                          <input className="h-10 rounded-lg text-center" type="number" min="1" value={r.position} onChange={(e) => updateRanking(idx, 'position', e.target.value)} />
+                        </div>
+                        <div className="form-group flex-1 min-w-[150px]">
+                          <label className="text-xs">Ngựa</label>
+                          <select className="h-10 rounded-lg" value={r.horseId} onChange={(e) => updateRanking(idx, 'horseId', e.target.value)}>
+                            <option value="">— Chọn ngựa —</option>
+                            {horses.map((h) => {
+                              const horse = (h.horse || h) as any
+                              return <option key={horse._id} value={horse._id}>{horse.name}</option>
+                            })}
+                          </select>
+                        </div>
+                        <div className="form-group flex-1 min-w-[120px]">
+                          <label className="text-xs">Tên Jockey</label>
+                          <input
+                            className="h-10 rounded-lg bg-white/[0.02] border-white/[0.05] cursor-not-allowed opacity-80"
+                            value={findJockeyForHorse(r.horseId).name || 'Chưa xác định'}
+                            readOnly
+                            placeholder="Tên Jockey"
+                          />
+                        </div>
+                        <div className="form-group flex-1 min-w-[120px]">
+                          <label className="text-xs">Thời gian</label>
+                          <input className="h-10 rounded-lg" value={r.finishTime} onChange={(e) => updateRanking(idx, 'finishTime', e.target.value)} placeholder="1:12.345" />
+                        </div>
+                        <button className="btn btnDanger h-10 w-10 p-0 flex items-center justify-center rounded-lg cursor-pointer shrink-0" onClick={() => removeRanking(idx)}>✕</button>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
 
-              <button className="btn rounded-xl h-10 px-4 cursor-pointer mt-4 font-bold" onClick={addRankingRow}>+ Thêm hàng xếp hạng</button>
-            </div>
+                  <button className="btn rounded-xl h-10 px-4 cursor-pointer mt-4 font-bold mr-3" onClick={addRankingRow}>+ Thêm hàng xếp hạng</button>
+                  <button className="btn rounded-xl h-10 px-4 cursor-pointer mt-4 font-bold" style={{ background: '#3b82f6', color: '#fff', border: 'none' }} onClick={autoFillRankings}>⚡ Tự động điền kết quả</button>
+                </div>
 
-            <div className="form-group">
-              <label>Ghi chú cuộc đua</label>
-              <textarea className="rounded-lg p-3" value={resultNotes} onChange={(e) => setResultNotes(e.target.value)} placeholder="Ghi chú về cuộc đua..." rows={2} />
-            </div>
+                <div className="form-group">
+                  <label>Ghi chú cuộc đua</label>
+                  <textarea className="rounded-lg p-3" value={resultNotes} onChange={(e) => setResultNotes(e.target.value)} placeholder="Ghi chú về cuộc đua..." rows={2} />
+                </div>
 
-            <button
-              className="btn btnPrimary rounded-xl h-11 px-6 font-bold cursor-pointer transition-all"
-              disabled={rankings.length === 0 || confirmLoading || openViolations > 0}
-              onClick={handleConfirmResult}
-            >
-              {confirmLoading ? 'Đang xử lý...' : '✅ Xác nhận kết quả cuộc đua'}
-            </button>
+                <button
+                  className="btn btnPrimary rounded-xl h-11 px-6 font-bold cursor-pointer transition-all"
+                  disabled={rankings.length === 0 || confirmLoading || openViolations > 0}
+                  onClick={handleConfirmResult}
+                >
+                  {confirmLoading ? 'Đang xử lý...' : '✅ Xác nhận kết quả cuộc đua'}
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>

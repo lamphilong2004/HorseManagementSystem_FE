@@ -965,6 +965,11 @@ export async function confirmRaceResult(raceId: string, rankings: any[], notes?:
   return res.data
 }
 
+export async function getRefereeConfirmedResult(raceId: string): Promise<any> {
+  const res = await http.get(`${BE_BASE_URL}/referee/races/${raceId}/confirmed-result`)
+  return res.data
+}
+
 export async function getMyNotifications(): Promise<NotificationItem[]> {
   const res = await http.get(`${BE_BASE_URL}/me/notifications`)
   const list = Array.isArray(res.data) ? res.data : (res.data.notifications || res.data.data || [])

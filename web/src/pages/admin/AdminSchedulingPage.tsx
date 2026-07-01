@@ -3094,25 +3094,25 @@ function RaceList({
   const handleStartStream = async (raceId: string) => {
     setStartingStreamId(raceId)
     try {
-      const res = await startRaceStream(raceId)
-      alert(`Bật Stream thành công!\n\nStream Key: ${res.streamKey}\nRTMP URL: rtmp://global-live.mux.com:5222/app\n\nHãy copy Stream Key dán vào phần mềm OBS để phát.`)
+      await startRaceStream(raceId)
+      alert("Đã bắt đầu cuộc đua giả lập thành công! Người xem hiện tại có thể xem giả lập 2D trực tiếp.")
       onRefresh(raceId)
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Không thể bật livestream cho cuộc đua này')
+      alert(err.response?.data?.message || 'Không thể bắt đầu giả lập cho cuộc đua này')
     } finally {
       setStartingStreamId(null)
     }
   }
 
   const handleStopStream = async (raceId: string) => {
-    if (!confirm('Bạn có chắc chắn muốn tắt stream cho cuộc đua này?')) return
+    if (!confirm('Bạn có chắc chắn muốn kết thúc cuộc đua giả lập này?')) return
     setStoppingStreamId(raceId)
     try {
       await stopRaceStream(raceId)
-      alert('Đã tắt livestream thành công!')
+      alert('Đã kết thúc cuộc đua giả lập thành công!')
       onRefresh(raceId)
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Không thể tắt livestream')
+      alert(err.response?.data?.message || 'Không thể kết thúc cuộc đua')
     } finally {
       setStoppingStreamId(null)
     }
@@ -3237,7 +3237,7 @@ function RaceList({
                             onClick={() => handleStartStream(r.id)}
                             disabled={startingStreamId === r.id}
                           >
-                            {startingStreamId === r.id ? 'Đang bật...' : 'Bật Stream'}
+                            {startingStreamId === r.id ? 'Đang chạy...' : 'Bắt Đầu Đua'}
                           </button>
                         ) : (
                           <>
@@ -3247,14 +3247,7 @@ function RaceList({
                               onClick={() => handleStopStream(r.id)}
                               disabled={stoppingStreamId === r.id}
                             >
-                              {stoppingStreamId === r.id ? 'Đang tắt...' : 'Tắt Stream'}
-                            </button>
-                            <button
-                              className="btn"
-                              style={{ fontSize: '11px', padding: '4px 8px' }}
-                              onClick={() => alert(`Stream Key hiện tại: ${r.streamKey}\n\nRTMP URL: rtmp://global-live.mux.com:5222/app`)}
-                            >
-                              Xem Key
+                              {stoppingStreamId === r.id ? 'Đang dừng...' : 'Kết Thúc Đua'}
                             </button>
                           </>
                         )}
