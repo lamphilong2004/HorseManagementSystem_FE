@@ -1,48 +1,105 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { Home, BarChart2, List, Bell, Flag, User as UserIcon, Calendar, Mail, Gavel, Users } from 'lucide-react-native';
+import {
+  BarChart2,
+  Bell,
+  Calendar,
+  Flag,
+  Gavel,
+  Home,
+  Mail,
+  Medal,
+  Trophy,
+  Tv,
+  User as UserIcon,
+  UserCircle,
+  Users,
+} from 'lucide-react-native';
 import { useAuth } from '../../src/context/AuthContext';
-import { Role } from '../../src/types';
 
 export default function TabsLayout() {
   const { user } = useAuth();
   const role = user?.role || 'SPECTATOR';
+  const isSpectator = role === 'SPECTATOR';
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#2563eb', // blue-600
-        tabBarInactiveTintColor: '#94a3b8', // slate-400
+        tabBarActiveTintColor: '#2563eb',
+        tabBarInactiveTintColor: '#94a3b8',
+        tabBarHideOnKeyboard: true,
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '700',
+          marginTop: 2,
+        },
+        tabBarItemStyle: {
+          paddingVertical: 6,
+        },
         tabBarStyle: {
           backgroundColor: '#ffffff',
-          borderTopColor: '#f1f5f9', // slate-100
+          borderTopColor: '#f1f5f9',
+          height: 66,
+          paddingBottom: 8,
+          paddingTop: 6,
         },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Trang chủ',
+          title: 'Dashboard',
           tabBarIcon: ({ color }) => <Home color={color} size={24} />,
         }}
       />
-      
-      {/* SPECTATOR TABS */}
+
+      <Tabs.Screen
+        name="tournaments"
+        options={{
+          title: 'Giai dau',
+          tabBarIcon: ({ color }) => <Trophy color={color} size={24} />,
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="races"
+        options={{
+          title: 'Cuộc đua',
+          tabBarIcon: ({ color }) => <Flag color={color} size={24} />,
+          href: isSpectator || ['OWNER', 'REFEREE', 'ADMIN'].includes(role) ? '/(tabs)/races' : null,
+        }}
+      />
+      <Tabs.Screen
+        name="leaderboard"
+        options={{
+          title: 'BXH',
+          tabBarIcon: ({ color }) => <Medal color={color} size={24} />,
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="livestream"
+        options={{
+          title: 'Live',
+          tabBarIcon: ({ color }) => <Tv color={color} size={24} />,
+          href: isSpectator ? '/(tabs)/livestream' : null,
+        }}
+      />
       <Tabs.Screen
         name="predictions"
         options={{
           title: 'Dự đoán',
           tabBarIcon: ({ color }) => <BarChart2 color={color} size={24} />,
-          href: role === 'SPECTATOR' ? '/(tabs)/predictions' : null,
+          href: isSpectator ? '/(tabs)/predictions' : null,
         }}
       />
       <Tabs.Screen
         name="results"
         options={{
-          title: 'Kết quả',
-          tabBarIcon: ({ color }) => <List color={color} size={24} />,
-          href: role === 'SPECTATOR' ? '/(tabs)/results' : null,
+          title: 'Ket qua',
+          tabBarIcon: ({ color }) => <BarChart2 color={color} size={24} />,
+          href: null,
         }}
       />
       <Tabs.Screen
@@ -50,33 +107,30 @@ export default function TabsLayout() {
         options={{
           title: 'Thông báo',
           tabBarIcon: ({ color }) => <Bell color={color} size={24} />,
-          href: role === 'SPECTATOR' ? '/(tabs)/notifications' : null,
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Hồ sơ',
+          tabBarIcon: ({ color }) => <UserCircle color={color} size={24} />,
+          href: isSpectator ? '/(tabs)/profile' : null,
         }}
       />
 
-      {/* OWNER TABS */}
-      <Tabs.Screen
-        name="races"
-        options={{
-          title: 'Vòng đua',
-          tabBarIcon: ({ color }) => <Flag color={color} size={24} />,
-          href: ['OWNER', 'REFEREE', 'ADMIN'].includes(role) ? '/(tabs)/races' : null,
-        }}
-      />
       <Tabs.Screen
         name="horses"
         options={{
-          title: 'Ngựa đua',
-          tabBarIcon: ({ color }) => <UserIcon color={color} size={24} />, // use Pets icon equivalent
+          title: 'Ngua dua',
+          tabBarIcon: ({ color }) => <UserIcon color={color} size={24} />,
           href: role === 'OWNER' ? '/(tabs)/horses' : null,
         }}
       />
-
-      {/* JOCKEY TABS */}
       <Tabs.Screen
         name="schedule"
         options={{
-          title: 'Lịch trình',
+          title: 'Lich trinh',
           tabBarIcon: ({ color }) => <Calendar color={color} size={24} />,
           href: role === 'JOCKEY' ? '/(tabs)/schedule' : null,
         }}
@@ -84,27 +138,23 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="invites"
         options={{
-          title: 'Lời mời',
+          title: 'Loi moi',
           tabBarIcon: ({ color }) => <Mail color={color} size={24} />,
           href: role === 'JOCKEY' ? '/(tabs)/invites' : null,
         }}
       />
-
-      {/* REFEREE TABS */}
       <Tabs.Screen
         name="referee_races"
         options={{
-          title: 'Trận của tôi',
+          title: 'Tran cua toi',
           tabBarIcon: ({ color }) => <Gavel color={color} size={24} />,
           href: role === 'REFEREE' ? '/(tabs)/referee_races' : null,
         }}
       />
-
-      {/* ADMIN TABS */}
       <Tabs.Screen
         name="admin_users"
         options={{
-          title: 'Thành viên',
+          title: 'Thanh vien',
           tabBarIcon: ({ color }) => <Users color={color} size={24} />,
           href: role === 'ADMIN' ? '/(tabs)/admin_users' : null,
         }}
