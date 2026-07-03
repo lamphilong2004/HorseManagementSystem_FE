@@ -9,6 +9,30 @@ function formatDateTime(d?: string) {
   return new Date(d).toLocaleString('vi-VN')
 }
 
+// Seeded Pseudo-Random Generator (Fnv-1a + LCG)
+function createSeededRandom(seedString: string) {
+  let h = 2166136261 >>> 0
+  for (let i = 0; i < seedString.length; i++) {
+    h = Math.imul(h ^ seedString.charCodeAt(i), 16777619)
+  }
+  let seed = h >>> 0
+  return function() {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
+    return seed / 4294967296
+  }
+}
+
+// Deterministic progress based on elapsed time and stable index
+function getProgressAtTime(elapsedTimeSec: number, index: number, raceId: string) {
+  const random = createSeededRandom(`${raceId}-${index}`)
+  const baseSpeed = 3.8 + random() * 1.8 // 3.8% to 5.6% progress per second
+  const freq = 0.4 + random() * 0.8
+  const amp = 0.5 + random() * 1.5
+
+  let progress = baseSpeed * elapsedTimeSec + Math.sin(elapsedTimeSec * freq) * amp
+  return Math.max(0, progress)
+}
+
 interface LiveStreamModalProps {
   race: any
   onClose: () => void
@@ -116,27 +140,39 @@ export function LiveStreamModal({ race, onClose }: LiveStreamModalProps) {
     return () => clearInterval(interval)
   }, [gameState, horses])
 
-  // Main simulation loop with slower speed
+  // Main simulation loop with slower speed - Deterministic and frame-rate independent
   useEffect(() => {
     if (gameState !== 'running') return
 
     let active = true
-    const speedModifiers = horses.map(() => 0.5 + Math.random() * 0.4) // Custom speeds
+    const raceId = race.id || race._id || 'default-race-id'
+
+    // Get stable index by sorting horse IDs alphabetically
+    const sortedHorseIds = [...horses]
+      .map(h => {
+        const horse = h.horse || h.horseId || h
+        return String(horse?._id || horse?.id || '')
+      })
+      .sort()
 
     const updateSimulation = () => {
       if (!active) return
+
+      const elapsed = (Date.now() - startTimeRef.current) / 1000
 
       setProgress((prev) => {
         const next = { ...prev }
         let allFinished = true
 
-        horses.forEach((h, index) => {
+        horses.forEach((h) => {
+          const horse = h.horse || h.horseId || h
+          const horseId = String(horse?._id || horse?.id || '')
+          const stableIndex = sortedHorseIds.indexOf(horseId)
+
           const currentProgress = next[h.registrationId] || 0
           if (currentProgress < 100) {
             allFinished = false
-            // MUCH SLOWER step increment (multiplied by 0.15 for smooth, tense race)
-            const step = (Math.random() * 0.8 + 0.1) * speedModifiers[index] * 0.15
-            const nextProgress = Math.min(100, currentProgress + step)
+            const nextProgress = Math.min(100, getProgressAtTime(elapsed, stableIndex, raceId))
             next[h.registrationId] = nextProgress
 
             if (nextProgress >= 100) {
@@ -144,8 +180,15 @@ export function LiveStreamModal({ race, onClose }: LiveStreamModalProps) {
                 if (prevFinished.some((f) => f.registrationId === h.registrationId)) {
                   return prevFinished
                 }
-                const timeDiff = ((Date.now() - startTimeRef.current) / 1000).toFixed(2)
-                return [...prevFinished, { ...h, time: timeDiff }]
+                // Deterministic finish time based on when it crossed 100%
+                let crossTime = elapsed
+                for (let t = elapsed - 0.5; t <= elapsed; t += 0.01) {
+                  if (t > 0 && getProgressAtTime(t, stableIndex, raceId) >= 100) {
+                    crossTime = t
+                    break
+                  }
+                }
+                return [...prevFinished, { ...h, time: crossTime.toFixed(3) }]
               })
             }
           }
@@ -169,7 +212,7 @@ export function LiveStreamModal({ race, onClose }: LiveStreamModalProps) {
     return () => {
       active = false
     }
-  }, [gameState, horses])
+  }, [gameState, horses, race])
 
   const restartRace = () => {
     const initProgress: { [key: string]: number } = {}
