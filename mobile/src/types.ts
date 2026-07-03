@@ -8,6 +8,7 @@ export type User = {
   email?: string
   status?: 'ACTIVE' | 'INACTIVE'
   phone?: string
+  balance?: number
   createdAt?: string
 }
 
@@ -28,7 +29,8 @@ export type Tournament = {
   prizePool?: number
   currency?: string
   maxHorses?: number
-  status?: 'DRAFT' | 'PUBLISHED' | 'ONGOING' | 'COMPLETED' | 'CANCELLED'
+  status?: 'DRAFT' | 'PUBLISHED' | 'ONGOING' | 'ACTIVE' | 'SCHEDULED' | 'REGISTRATION_CLOSED' | 'BRACKET_GENERATED' | 'COMPLETED' | 'CANCELLED'
+  createdAt?: string
 }
 
 export type Race = {
@@ -47,6 +49,10 @@ export type Race = {
   results?: any[]
   rankings?: any[]
   confirmedAt?: string
+  isLive?: boolean
+  playbackId?: string
+  streamKey?: string
+  createdAt?: string
 }
 
 export type Horse = {
@@ -128,7 +134,10 @@ export type Prediction = {
   status: 'OPEN' | 'CLOSED' | 'WON' | 'LOST' | 'PENDING'
   prizeAmount?: number
   actualPosition?: number
+  raceName?: string
+  raceScheduledAt?: string
   createdAt?: string
+  updatedAt?: string
   payout?: number
 }
 

@@ -25,6 +25,11 @@ export async function login(params: { email: string; password: string; role?: Ro
   }
 }
 
+export async function getMyProfile(): Promise<any> {
+  const res = await http.get(`${BE_BASE_URL}/auth/me`)
+  return res.data
+}
+
 export async function register(params: { name: string; email: string; password: string; role: Role }): Promise<Session> {
   await http.post(`${BE_BASE_URL}/auth/register`, {
     email: params.email,
@@ -103,6 +108,9 @@ export async function getRaces(tournamentId?: string): Promise<Race[]> {
     results: r.results,
     rankings: r.rankings,
     confirmedAt: r.confirmedAt,
+    isLive: r.isLive,
+    playbackId: r.playbackId,
+    streamKey: r.streamKey,
     createdAt: r.createdAt,
   })).reverse()
 }
@@ -135,6 +143,10 @@ export async function getRace(id: string): Promise<any> {
     results: extractedRankings,
     rankings: extractedRankings,
     confirmedAt: r.confirmedAt,
+    isLive: r.isLive,
+    playbackId: r.playbackId,
+    streamKey: r.streamKey,
+    createdAt: r.createdAt,
   }
 }
 
@@ -423,7 +435,11 @@ export async function getPredictions(): Promise<Prediction[]> {
     status: p.status,
     prizeAmount: p.prizeAmount ?? (p.status === 'WON' ? Math.round((p.betAmount || 0) * 1.8) : 0),
     actualPosition: p.actualPosition,
+    raceName: p.raceName || (p.raceId && typeof p.raceId === 'object' ? p.raceId.name : p.race?.name),
+    raceScheduledAt: p.raceScheduledAt || (p.raceId && typeof p.raceId === 'object' ? p.raceId.scheduledAt : p.race?.scheduledAt),
     createdAt: p.createdAt,
+    updatedAt: p.updatedAt,
+    payout: p.payout,
   }))
 }
 
@@ -679,6 +695,9 @@ export async function getPublicRaces(params?: { status?: string; tournamentId?: 
     results: r.results,
     rankings: r.rankings,
     confirmedAt: r.confirmedAt,
+    isLive: r.isLive,
+    playbackId: r.playbackId,
+    streamKey: r.streamKey,
     createdAt: r.createdAt,
   })).reverse()
 }
