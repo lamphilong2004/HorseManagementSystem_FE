@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { X, Radio, Clock3, Ruler, Users, ExternalLink, Maximize2, RotateCcw, Trophy } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { getRaceHorses } from '@/api'
+import { getRaceHorses, publishRaceResult } from '@/api'
 import {
   buildMockHorses,
   buildRaceSimulationPlans,
@@ -188,6 +188,26 @@ export function LiveStreamModal({ race, onClose }: LiveStreamModalProps) {
       document.body.style.overflow = ''
     }
   }, [])
+
+
+  // Submit results automatically when race finishes
+  useEffect(() => {
+    if (gameState === 'finished' && rankedLeaderboard && rankedLeaderboard.length > 0) {
+      const resultsPayload = rankedLeaderboard.map((horse, index) => ({
+        horseId: horse.horse?._id || horse.horse?.id,
+        registrationId: horse.id || horse.registrationId,
+        rank: index + 1,
+        finishTime: horse.finishTimeSeconds || 0
+      }));
+      
+      const raceId = race?.id || race?._id;
+      if (raceId) {
+        publishRaceResult(raceId, resultsPayload).catch(err => {
+          console.error('Failed to auto-submit race results:', err);
+        });
+      }
+    }
+  }, [gameState, rankedLeaderboard, race]);
 
   const restartRace = () => {
     resetSimulation()
