@@ -889,6 +889,43 @@ export function RefereeRaceDetailPage() {
                   columns={monitorResultsColumns}
                   emptyMessage="Chưa có kết quả"
                 />
+                  {race?.status !== 'RESULT_CONFIRMED' && race?.status !== 'COMPLETED' && (
+                    <div className="mt-6 flex flex-col gap-3 p-4 bg-white/[0.02] border border-white/10 rounded-xl">
+                      <div className="form-group">
+                        <label className="text-emerald-400 font-bold mb-2 block">Duyệt Kết Quả Từ Livestream</label>
+                        <textarea className="rounded-lg p-3 w-full border border-white/10 bg-[#0b1120] text-white" value={resultNotes} onChange={(e) => setResultNotes(e.target.value)} placeholder="Ghi chú về cuộc đua (nếu có)..." rows={2} />
+                      </div>
+                      <button
+                        className="btn btnPrimary rounded-xl h-12 px-6 font-black cursor-pointer transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)]"
+                        style={{ backgroundColor: '#10b981', color: '#fff', border: 'none' }}
+                        disabled={confirmLoading || openViolations > 0}
+                        onClick={async () => {
+                          if (!raceId) return;
+                          setConfirmLoading(true);
+                          setConfirmMsg(null);
+                          try {
+                            const mappedRankings = results.map((r, i) => ({
+                              position: r.position || i + 1,
+                              horseId: (r.horseId as any)?._id || (r.horseId as any)?.id || r.horseId,
+                              finishTime: r.finishTime
+                            }));
+                            await confirmRaceResult(raceId, mappedRankings, resultNotes);
+                            setConfirmMsg({ type: 'success', text: 'Xác nhận kết quả thành công!' });
+                            const updatedRace = await getPublicRace(raceId);
+                            setRace(updatedRace);
+                          } catch (e: any) {
+                            const msg = e?.response?.data?.message || e?.response?.data?.error || 'Lỗi khi xác nhận kết quả';
+                            setConfirmMsg({ type: 'error', text: msg });
+                          } finally {
+                            setConfirmLoading(false);
+                          }
+                        }}
+                      >
+                        {confirmLoading ? 'Đang xử lý...' : '✅ XÁC NHẬN KẾT QUẢ NÀY'}
+                      </button>
+                    </div>
+                  )}
+
               </div>
             )}
           </div>
