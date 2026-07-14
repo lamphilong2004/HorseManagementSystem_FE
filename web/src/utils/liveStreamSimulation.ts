@@ -88,8 +88,7 @@ export function buildRaceSimulationPlans(race: any, horses: any[]): SimulationPl
     const streamId = getStreamHorseId(horse, index)
     const stamina = seededUnit(`${raceKey}|${streamId}|stamina`)
     const breakSpeed = seededUnit(`${raceKey}|${streamId}|break`)
-    const lanePenalty = index * 0.035
-    const finishTime = round2(23 + stamina * 15 + breakSpeed * 4 + lanePenalty)
+    const finishTime = round2(23 + stamina * 15 + breakSpeed * 4)
 
     return {
       streamId,
@@ -102,7 +101,7 @@ export function buildRaceSimulationPlans(race: any, horses: any[]): SimulationPl
 
   const sorted = [...rawPlans].sort((a, b) => {
     if (a.finishTime !== b.finishTime) return a.finishTime - b.finishTime
-    return a.streamId.localeCompare(b.streamId) || a.laneIndex - b.laneIndex
+    return a.streamId.localeCompare(b.streamId)
   })
 
   const finalById = new Map<string, SimulationPlan>()
@@ -152,6 +151,6 @@ export function getRankedStreamHorses(horses: any[], plans: SimulationPlan[], el
       const bPlan = planById.get(b.id)
       const finishDiff = (aPlan?.finishTime || Number.MAX_SAFE_INTEGER) - (bPlan?.finishTime || Number.MAX_SAFE_INTEGER)
       if (finishDiff !== 0) return finishDiff
-      return a.originalIndex - b.originalIndex
+      return a.id.localeCompare(b.id)
     })
 }
