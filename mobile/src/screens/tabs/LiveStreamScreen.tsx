@@ -14,9 +14,17 @@ import Svg, { Circle, G, Line, Path, Text as SvgText } from 'react-native-svg';
 import * as api from '../../api';
 import { Race } from '../../types';
 import { ActionButton, EmptyState, ScreenHeader, StatTile, Surface } from '../../components/MobileUI';
-import { formatDateTime, getHorseId, getHorseName, getRaceId, isLiveRace } from '../../utils/spectator';
+import { formatDateTime, getRaceId, isLiveRace } from '../../utils/spectator';
+import {
+  buildMockHorses as buildSyncedMockHorses,
+  buildRaceSimulationPlans,
+  getProgressAtElapsed,
+  getRankedStreamHorses,
+  getStreamHorseId as getSyncedStreamHorseId,
+  getStreamHorseName as getSyncedStreamHorseName,
+  getStreamJockeyName as getSyncedStreamJockeyName,
+} from '../../utils/liveStreamSimulation';
 
-type ProgressMap = Record<string, number>;
 type GameState = 'countdown' | 'running' | 'finished';
 
 const LANE_COLORS = [
@@ -31,22 +39,6 @@ const LANE_COLORS = [
   '#38bdf8',
   '#f43f5e',
 ];
-
-function getStreamHorseId(horse: any, index: number) {
-  return String(horse?.registrationId || horse?.id || horse?._id || getHorseId(horse) || `horse-${index}`);
-}
-
-function buildMockHorses(count = 6) {
-  return Array.from({ length: count }).map((_, index) => ({
-    registrationId: `mock-reg-${index}`,
-    horse: {
-      _id: `mock-horse-${index}`,
-      name: `Hỏa Phong ${index + 1}`,
-      breed: 'Thần Mã',
-    },
-    jockeyName: `Nài ngựa ${index + 1}`,
-  }));
-}
 
 function getTrackGeometry(totalHorses: number) {
   const startX = 260;
@@ -95,19 +87,28 @@ function getHorseCoords(totalHorses: number, laneIndex: number, progress: number
 
 export default function LiveStreamScreen() {
   const startTimeRef = useRef(0);
-  const speedMapRef = useRef<Record<string, number>>({});
   const [races, setRaces] = useState<Race[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRace, setSelectedRace] = useState<Race | null>(null);
   const [streamHorses, setStreamHorses] = useState<any[]>([]);
-  const [progress, setProgress] = useState<ProgressMap>({});
-  const [finishedHorses, setFinishedHorses] = useState<any[]>([]);
   const [gameState, setGameState] = useState<GameState>('countdown');
   const [countdown, setCountdown] = useState<number | string>(3);
   const [elapsed, setElapsed] = useState(0);
   const [loadingStream, setLoadingStream] = useState(false);
 
   const liveRaces = useMemo(() => races.filter(isLiveRace), [races]);
+  const simulationPlans = useMemo(
+    () => buildRaceSimulationPlans(selectedRace, streamHorses),
+    [selectedRace, streamHorses],
+  );
+  const planById = useMemo(
+    () => new Map(simulationPlans.map((plan) => [plan.streamId, plan])),
+    [simulationPlans],
+  );
+  const maxFinishTime = useMemo(
+    () => simulationPlans.reduce((max, plan) => Math.max(max, plan.finishTime), 0),
+    [simulationPlans],
+  );
 
   const fetchRaces = async () => {
     setLoading(true);
@@ -135,16 +136,7 @@ export default function LiveStreamScreen() {
   }, []);
 
   const resetSimulation = (horses: any[]) => {
-    const nextProgress: ProgressMap = {};
-    const nextSpeeds: Record<string, number> = {};
-    horses.forEach((horse, index) => {
-      const id = getStreamHorseId(horse, index);
-      nextProgress[id] = 0;
-      nextSpeeds[id] = 0.65 + Math.random() * 0.55;
-    });
-    speedMapRef.current = nextSpeeds;
-    setProgress(nextProgress);
-    setFinishedHorses([]);
+    if (horses.length === 0) return;
     setElapsed(0);
     setGameState('countdown');
     setCountdown(3);
@@ -159,13 +151,13 @@ export default function LiveStreamScreen() {
       try {
         const list = await api.getRaceHorses(getRaceId(selectedRace));
         if (!mounted) return;
-        const nextHorses = Array.isArray(list) && list.length > 0 ? list : buildMockHorses(6);
+        const nextHorses = Array.isArray(list) && list.length > 0 ? list : buildSyncedMockHorses(6);
         setStreamHorses(nextHorses);
         resetSimulation(nextHorses);
       } catch (error) {
         console.error('Failed to load stream horses, using mock list', error);
         if (mounted) {
-          const mockHorses = buildMockHorses(6);
+          const mockHorses = buildSyncedMockHorses(6);
           setStreamHorses(mockHorses);
           resetSimulation(mockHorses);
         }
@@ -204,87 +196,35 @@ export default function LiveStreamScreen() {
   useEffect(() => {
     if (gameState !== 'running') return;
 
-    const elapsedTimer = setInterval(() => {
-      setElapsed(Math.max(0, Math.floor((Date.now() - startTimeRef.current) / 1000)));
-    }, 500);
-
     const simulationTimer = setInterval(() => {
-      setProgress((current) => {
-        const next = { ...current };
-        let allFinished = true;
-
-        streamHorses.forEach((horse, index) => {
-          const id = getStreamHorseId(horse, index);
-          const currentValue = next[id] || 0;
-          if (currentValue >= 100) {
-            next[id] = 100;
-            return;
-          }
-
-          allFinished = false;
-          const speed = speedMapRef.current[id] || 1;
-          const step = (Math.random() * 0.9 + 0.15) * speed * 0.35;
-          const nextValue = Math.min(100, currentValue + step);
-          next[id] = nextValue;
-
-          if (nextValue >= 100) {
-            const finishTime = ((Date.now() - startTimeRef.current) / 1000).toFixed(2);
-            setFinishedHorses((currentFinished) => {
-              if (currentFinished.some((finished) => finished.streamId === id)) {
-                return currentFinished;
-              }
-              return [...currentFinished, { ...horse, finishTime, streamId: id }];
-            });
-          }
-        });
-
-        if (allFinished) {
-          setGameState('finished');
-        }
-
-        return next;
-      });
+      const nextElapsed = Math.max(0, (Date.now() - startTimeRef.current) / 1000);
+      if (maxFinishTime > 0 && nextElapsed >= maxFinishTime) {
+        setElapsed(maxFinishTime);
+        setGameState('finished');
+        clearInterval(simulationTimer);
+        return;
+      }
+      setElapsed(nextElapsed);
     }, 90);
 
     return () => {
-      clearInterval(elapsedTimer);
       clearInterval(simulationTimer);
     };
-  }, [gameState, streamHorses]);
+  }, [gameState, maxFinishTime]);
 
   const rankedHorses = useMemo(() => {
-    return [...streamHorses]
-      .map((horse, index) => {
-        const id = getStreamHorseId(horse, index);
-        const finishIndex = finishedHorses.findIndex((finished) => finished.streamId === id);
-        return {
-          horse,
-          id,
-          progress: progress[id] || 0,
-          finishIndex,
-          finishTime: finishIndex >= 0 ? finishedHorses[finishIndex].finishTime : undefined,
-          originalIndex: index,
-        };
-      })
-      .sort((a, b) => {
-        if (a.finishIndex >= 0 && b.finishIndex >= 0) return a.finishIndex - b.finishIndex;
-        if (a.finishIndex >= 0) return -1;
-        if (b.finishIndex >= 0) return 1;
-        return b.progress - a.progress;
-      });
-  }, [finishedHorses, progress, streamHorses]);
+    return getRankedStreamHorses(streamHorses, simulationPlans, elapsed);
+  }, [elapsed, simulationPlans, streamHorses]);
 
   const closeStream = () => {
     setSelectedRace(null);
     setStreamHorses([]);
-    setProgress({});
-    setFinishedHorses([]);
     setElapsed(0);
     setGameState('countdown');
   };
 
   const restartRace = () => {
-    resetSimulation(streamHorses.length > 0 ? streamHorses : buildMockHorses(6));
+    resetSimulation(streamHorses.length > 0 ? streamHorses : buildSyncedMockHorses(6));
   };
 
   const raceCard = (race: Race) => (
@@ -355,8 +295,8 @@ export default function LiveStreamScreen() {
             </SvgText>
 
             {streamHorses.map((horse, index) => {
-              const id = getStreamHorseId(horse, index);
-              const value = progress[id] || 0;
+              const id = getSyncedStreamHorseId(horse, index);
+              const value = getProgressAtElapsed(planById.get(id), elapsed);
               const { x, y } = getHorseCoords(streamHorses.length, index, value);
               const color = LANE_COLORS[index % LANE_COLORS.length];
               return (
@@ -383,9 +323,9 @@ export default function LiveStreamScreen() {
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-3">
           {streamHorses.map((horse, index) => (
-            <View key={`legend-${getStreamHorseId(horse, index)}`} className="mr-2 px-3 py-2 rounded-full bg-black/25 flex-row items-center">
+            <View key={`legend-${getSyncedStreamHorseId(horse, index)}`} className="mr-2 px-3 py-2 rounded-full bg-black/25 flex-row items-center">
               <View className="w-2.5 h-2.5 rounded-full mr-2" style={{ backgroundColor: LANE_COLORS[index % LANE_COLORS.length] }} />
-              <Text className="text-emerald-50 text-[11px] font-bold" numberOfLines={1}>Làn {index + 1}: {getHorseName(horse)}</Text>
+              <Text className="text-emerald-50 text-[11px] font-bold" numberOfLines={1}>Làn {index + 1}: {getSyncedStreamHorseName(horse, index)}</Text>
             </View>
           ))}
         </ScrollView>
@@ -438,7 +378,7 @@ export default function LiveStreamScreen() {
             <View className="flex-1 pr-3">
               <Text className="text-white text-xl font-extrabold" numberOfLines={1}>{selectedRace?.name || 'Livestream'}</Text>
               <Text className="text-slate-400 text-sm mt-1">
-                {gameState === 'finished' ? 'Đã kết thúc' : `${elapsed}s`} - {selectedRace?.distance || 0}m
+                {gameState === 'finished' ? 'Đã kết thúc' : `${Math.floor(elapsed)}s`} - {selectedRace?.distance || 0}m
               </Text>
             </View>
             <TouchableOpacity onPress={closeStream} className="w-11 h-11 rounded-full bg-white/10 items-center justify-center">
@@ -471,9 +411,9 @@ export default function LiveStreamScreen() {
                       <View className="flex-1">
                         <View className="flex-row items-center">
                           <View className="w-2.5 h-2.5 rounded-full mr-2" style={{ backgroundColor: color }} />
-                          <Text className="text-sm font-extrabold text-slate-900 flex-1" numberOfLines={1}>{getHorseName(entry.horse)}</Text>
+                          <Text className="text-sm font-extrabold text-slate-900 flex-1" numberOfLines={1}>{getSyncedStreamHorseName(entry.horse, entry.originalIndex)}</Text>
                         </View>
-                        <Text className="text-xs text-slate-500 mt-0.5">Nài ngựa: {entry.horse.jockey?.user?.fullName || entry.horse.jockeyName || 'Chưa rõ'}</Text>
+                        <Text className="text-xs text-slate-500 mt-0.5">Nài ngựa: {getSyncedStreamJockeyName(entry.horse) || 'Chưa rõ'}</Text>
                       </View>
                       <Text className="text-sm font-extrabold text-blue-700">
                         {entry.finishTime ? `${entry.finishTime}s` : `${Math.round(entry.progress)}%`}
