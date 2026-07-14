@@ -266,22 +266,79 @@ export function RefereeRaceDetailPage() {
     setRankings([...rankings, { position: rankings.length + 1, horseId: '', jockeyId: '', finishTime: '' }])
   }
 
-  // Auto-fill random valid rankings
+  // Seeded Pseudo-Random Generator (Fnv-1a + LCG)
+  function createSeededRandom(seedString: string) {
+    let h = 2166136261 >>> 0
+    for (let i = 0; i < seedString.length; i++) {
+      h = Math.imul(h ^ seedString.charCodeAt(i), 16777619)
+    }
+    let seed = h >>> 0
+    return function() {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
+      return seed / 4294967296
+    }
+  }
+
+  function getProgressAtTime(elapsedTimeSec: number, index: number, rId: string) {
+    const random = createSeededRandom(`${rId}-${index}`)
+    const baseSpeed = 3.8 + random() * 1.8 // Matches simulation speed modifier
+    const freq = 0.4 + random() * 0.8
+    const amp = 0.5 + random() * 1.5
+
+    let progress = baseSpeed * elapsedTimeSec + Math.sin(elapsedTimeSec * freq) * amp
+    return Math.max(0, progress)
+  }
+
+  function getDeterministicFinishTime(index: number, rId: string): number {
+    for (let t = 0; t < 120; t += 0.01) {
+      if (getProgressAtTime(t, index, rId) >= 100) {
+        return t
+      }
+    }
+    return 20.0
+  }
+
+  // Auto-fill random valid rankings deterministically matching the live simulation
   function autoFillRankings() {
     if (horses.length === 0) return
-    const shuffled = [...horses].sort(() => Math.random() - 0.5)
-    let currentTime = 60 + Math.random() * 10
-    
-    const generated = shuffled.map((h, idx) => {
+    const rId = raceId || 'default-race-id'
+
+    // Sort horse list alphabetically by _id to obtain a stable index
+    const sortedHorses = [...horses].sort((a, b) => {
+      const aHorse = a.horse || a.horseId || a
+      const bHorse = b.horse || b.horseId || b
+      const aId = String(aHorse?._id || aHorse?.id || '')
+      const bId = String(bHorse?._id || bHorse?.id || '')
+      return aId.localeCompare(bId)
+    })
+
+    const sortedHorseIds = sortedHorses.map(h => {
       const horse = h.horse || h.horseId || h
+      return String(horse?._id || horse?.id || '')
+    })
+
+    // Compute finish times for all horses using stable index
+    const horseResults = horses.map((h) => {
+      const horse = h.horse || h.horseId || h
+      const horseId = String(horse?._id || horse?.id || '')
+      const stableIndex = sortedHorseIds.indexOf(horseId)
+      const finishTimeSec = getDeterministicFinishTime(stableIndex, rId)
+      return { h, finishTimeSec }
+    })
+
+    // Sort horses by finish time (ascending: fastest first)
+    horseResults.sort((a, b) => a.finishTimeSec - b.finishTimeSec)
+
+    const generated = horseResults.map((item, idx) => {
+      const horse = item.h.horse || item.h.horseId || item.h
       const jockeyInfo = findJockeyForHorse(horse?._id)
-      currentTime += 1 + Math.random() * 3
       
+      const currentTime = item.finishTimeSec
       const minutes = Math.floor(currentTime / 60)
       const seconds = Math.floor(currentTime % 60)
       const milliseconds = Math.floor((currentTime % 1) * 1000)
       const formattedTime = `${minutes}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(3, '0')}`
-      
+
       return {
         position: idx + 1,
         horseId: horse?._id || '',
@@ -289,6 +346,7 @@ export function RefereeRaceDetailPage() {
         finishTime: formattedTime
       }
     })
+
     setRankings(generated)
   }
 
@@ -1011,7 +1069,7 @@ export function RefereeRaceDetailPage() {
               </div>
             )}
 
-            {race?.status !== 'COMPLETED' && race?.status !== 'RESULT_CONFIRMED' && (
+            {results.length === 0 && (
               <>
                 <div>
                   <div className="text-lg font-black text-[var(--text)] mb-4">🏅 Nhập bảng xếp hạng</div>

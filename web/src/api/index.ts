@@ -736,14 +736,14 @@ export async function getAdminJockeys(params?: { status?: string; page?: number;
 
 // --- CÔNG BỐ KẾT QUẢ ---
 export async function publishRaceResult(raceId: string, results: any[]): Promise<any> {
-  const res = await http.post(`${BE_BASE_URL}/admin/races/${raceId}/publish-result`, { results })
+  const res = await http.post(`${BE_BASE_URL}/results/admin/races/${raceId}/publish`, { results })
   return res.data
 }
 
 export async function getRaceResults(raceId: string): Promise<any> {
   try {
-    const res = await http.get(`${BE_BASE_URL}/races/${raceId}/results`)
-    return res.data
+    const res = await http.get(`${BE_BASE_URL}/results/races/${raceId}`)
+    return res.data.results || []
   } catch (err: any) {
     if (err?.response?.status === 404) {
       console.warn('Fallback to getRace for results due to 404');
