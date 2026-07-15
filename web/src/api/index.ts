@@ -224,38 +224,22 @@ export async function registerHorseForTournament(horseId: string, tournamentId: 
   const hId = String(horseId || '').trim()
   const tId = String(tournamentId || '').trim()
 
-  // Lấy danh sách race thuộc tournament
-  const racesRes = await http.get(`${BE_BASE_URL}/races?tournamentId=${tId}&limit=1000`)
-  const rawRaces = racesRes.data.races || racesRes.data.data || (Array.isArray(racesRes.data) ? racesRes.data : [])
-  const scheduledRaces = rawRaces.filter((r: any) => r.status === 'SCHEDULED')
-  const targetRaces = scheduledRaces.filter((r: any) => r.name?.toLowerCase().includes('vòng bảng'))
-
-  if (targetRaces.length === 0) {
-    throw new Error('Giải đấu này hiện chưa có Vòng bảng để đăng ký.')
-  }
-
   const success: { raceId: string; raceName: string }[] = []
   const alreadyRegistered: { raceId: string; raceName: string }[] = []
   const failed: { raceId: string; raceName: string; error: string }[] = []
 
-  await Promise.all(
-    targetRaces.map(async (race: any) => {
-      const rId = String(race._id || race.id || '').trim()
-      const raceName = race.name || 'Vòng đua'
-      try {
-        await http.post(`${BE_BASE_URL}/horses/${hId}/register-race`, { raceId: rId })
-        success.push({ raceId: rId, raceName })
-      } catch (err: any) {
-        const status = err?.response?.status
-        const msg = err?.response?.data?.message || ''
-        if (status === 409 || msg === 'HORSE_ALREADY_REGISTERED' || msg.toLowerCase().includes('already')) {
-          alreadyRegistered.push({ raceId: rId, raceName })
-        } else {
-          failed.push({ raceId: rId, raceName, error: msg || 'Lỗi không xác định' })
-        }
-      }
-    })
-  )
+  try {
+    await http.post(`${BE_BASE_URL}/tournaments/${tId}/register`, { horseId: hId })
+    success.push({ raceId: tId, raceName: 'Giải đấu' })
+  } catch (err: any) {
+    const status = err?.response?.status
+    const msg = err?.response?.data?.message || ''
+    if (status === 409 || msg === 'HORSE_ALREADY_REGISTERED' || msg.toLowerCase().includes('already')) {
+      alreadyRegistered.push({ raceId: tId, raceName: 'Giải đấu' })
+    } else {
+      failed.push({ raceId: tId, raceName: 'Giải đấu', error: msg || 'Lỗi không xác định' })
+    }
+  }
 
   return { success, alreadyRegistered, failed }
 }
