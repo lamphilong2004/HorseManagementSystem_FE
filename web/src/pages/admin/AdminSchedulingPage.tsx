@@ -1091,7 +1091,17 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
         draftBracket: draftBracket // Send draftBracket to BE so they can extract custom names and inject raceIds
       }
 
-      await http.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/admin/tournaments/${filterRegTourn}/generate-bracket`, payload)
+      const res = await http.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/admin/tournaments/${filterRegTourn}/generate-bracket`, payload)
+      
+      if (res.data && res.data.bracket) {
+        await updateTournament(filterRegTourn, { bracket: res.data.bracket })
+      } else if (res.data && res.data.tournament && res.data.tournament.bracket) {
+        // Just in case it returns the full tournament object
+        await updateTournament(filterRegTourn, { bracket: res.data.tournament.bracket })
+      } else {
+        // Fallback to draft bracket if BE didn't return the modified one
+        await updateTournament(filterRegTourn, { bracket: { rounds: draftBracket } })
+      }
       
       showToast(`Đã chốt chia bảng thành công và xếp cổng!`, 'success')
       setDraftApprovals({})
