@@ -304,7 +304,7 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
     if (!hasOngoingTournament) return
 
     const interval = setInterval(() => {
-      loadTabData()
+      loadTabData(undefined, undefined, undefined, undefined, true)
     }, 8000) // Refresh every 8 seconds
 
     return () => clearInterval(interval)
@@ -333,9 +333,10 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
     highlightTournId?: string,
     highlightRaceId?: string,
     highlightRegId?: string,
-    highlightHorseId?: string
+    highlightHorseId?: string,
+    isBackground: boolean = false
   ) => {
-    setLoading(true)
+    if (!isBackground) setLoading(true)
     setError(null)
     const targetTournId = highlightTournId || lastModifiedTournId
     const targetRaceId = highlightRaceId || lastModifiedRaceId
