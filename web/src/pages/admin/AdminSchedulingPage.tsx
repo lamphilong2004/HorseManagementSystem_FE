@@ -42,10 +42,8 @@ import {
   approveHorse,
   rejectHorse,
   getAdminJockeys,
-  publishRaceResult,
   getAdminPredictions,
   closePredictions,
-  settlePredictions,
   startRaceStream,
   stopRaceStream,
   closeTournamentRegistration,
@@ -1105,34 +1103,6 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
     }
   }
 
-      alert('Không thể lấy danh sách ngựa đã đăng ký cho cuộc đua: ' + (err.response?.data?.message || err.message))
-    }
-  }
-
-  const handleSaveResult = async () => {
-    if (!resultRace) return
-    try {
-      // Build results matching backend schema — guard null jockeyId
-      const resultsPayload = resultRankings.map((r) => ({
-        horseId: r.horseId,
-        jockeyId: r.jockeyId?._id || r.jockeyId || undefined,
-        position: parseInt(r.position),
-        finishTime: parseFloat(r.finishTime),
-        status: r.status,
-        prizeAmount: parseFloat(r.prizeAmount),
-        notes: resultNotes,
-      }))
-
-      await publishRaceResult(resultRace.id, resultsPayload)
-      setLastModifiedRaceId(resultRace.id)
-      showToast('Công bố kết quả cuộc đua thành công!')
-      setShowResultModal(false)
-      loadTabData(undefined, resultRace.id, undefined, undefined)
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Không thể công bố kết quả', 'error')
-    }
-  }
-
   // ---------------------------------------------------------
   // PREDICTION ACTIONS
   // ---------------------------------------------------------
@@ -1147,16 +1117,6 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
     }
   }
 
-  const handleSettlePredictions = async (raceId: string) => {
-    try {
-      await settlePredictions(raceId)
-      setLastModifiedRaceId(raceId)
-      showToast('Đã tất toán dự đoán và gửi thông báo thắng/thua!')
-      loadTabData(undefined, raceId, undefined, undefined)
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Không thể tất toán dự đoán', 'error')
-    }
-  }
 
   const handleViewPredictionStats = async (raceId: string) => {
     setPredStats(null)
