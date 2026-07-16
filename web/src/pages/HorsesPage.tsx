@@ -149,6 +149,7 @@ export function HorsesPage() {
   // Modal states for Registration
   const [showRegisterModal, setShowRegisterModal] = useState(false)
   const [registerTargetTournament, setRegisterTargetTournament] = useState<any>(null)
+  const [selectedHorsesForRegister, setSelectedHorsesForRegister] = useState<Set<string>>(new Set())
 
   // Modal states for Jockey Invitation
   const [showInviteModal, setShowInviteModal] = useState(false)
@@ -417,24 +418,40 @@ export function HorsesPage() {
    * FE tự động đăng ký ngựa vào tất cả các Race SCHEDULED thuộc giải đó.
    * Admin sau đó sẽ phân bổ ngựa vào các vòng đấu cụ thể.
    */
-  const handleRegisterTournament = async (tournament: Tournament, targetHorseId?: string) => {
-    const finalHorseId = targetHorseId || selectedHorseId
-    if (!finalHorseId) return showToast('Vui lòng chọn ngựa', 'warning')
-    const horse = horses.find((h) => String(h.id || h._id) === finalHorseId)
-    if (horse?.status !== 'APPROVED') return showToast('Chỉ ngựa đã được Admin duyệt mới có thể đăng ký giải', 'warning')
+  const handleRegisterTournament = async (tournament: Tournament, targetHorseIds?: string[]) => {
+    const finalHorseIds = targetHorseIds && targetHorseIds.length > 0 ? targetHorseIds : (selectedHorseId ? [selectedHorseId] : [])
+    if (finalHorseIds.length === 0) return showToast('Vui lòng chọn ít nhất một ngựa', 'warning')
+    
     try {
-      const result = await registerHorseForTournament(finalHorseId, String(tournament.id))
-      const totalNew = result.success.length
-      const totalAlready = result.alreadyRegistered.length
-      const totalFailed = result.failed.length
-      if (totalNew > 0) {
-        showToast(`Đã gửi đăng ký tham gia giải "${tournament.name}". Admin sẽ phân bổ vào vòng đấu phù hợp.`, 'success')
-      } else if (totalAlready > 0 && totalNew === 0) {
-        showToast(`Ngựa đã có đăng ký trong giải "${tournament.name}" trước đó rồi.`, 'info')
-      } else if (totalFailed > 0 && totalNew === 0) {
-        showToast(`Không thể đăng ký ngựa vào giải "${tournament.name}". Vui lòng thử lại.`, 'error')
+      let totalSuccess = 0
+      let totalAlready = 0
+      let totalFailed = 0
+      
+      for (const horseId of finalHorseIds) {
+        const horse = horses.find((h) => String(h.id || h._id) === horseId)
+        if (horse?.status !== 'APPROVED') {
+          totalFailed++
+          continue
+        }
+        
+        const result = await registerHorseForTournament(horseId, String(tournament.id))
+        totalSuccess += result.success.length
+        totalAlready += result.alreadyRegistered.length
+        totalFailed += result.failed.length
+      }
+      
+      if (totalSuccess > 0) {
+        showToast(`✅ Đã gửi đăng ký ${totalSuccess} ngựa cho giải "${tournament.name}". Admin sẽ phân bổ vào vòng đấu phù hợp.`, 'success')
+      } else if (totalAlready > 0 && totalSuccess === 0) {
+        showToast(`ℹ️ Các ngựa đã có đăng ký trong giải "${tournament.name}" trước đó rồi.`, 'info')
+      } else {
+        showToast(`❌ Không thể đăng ký ngựa vào giải "${tournament.name}". Vui lòng thử lại.`, 'error')
         return
       }
+      
+      // Reset selected horses and reload data
+      setSelectedHorsesForRegister(new Set())
+      setSelectedHorseId('')
       loadData()
     } catch (err: any) {
       showToast(err.message || err.response?.data?.message || 'Không thể đăng ký giải đấu', 'error')
@@ -1748,7 +1765,7 @@ export function HorsesPage() {
               Giải đấu: <strong className="text-[color:var(--text)]">{registerTargetTournament.name}</strong>
             </p>
             <label className="text-xs font-bold uppercase mb-2 tracking-wider block" style={{ color: 'var(--text-muted)' }}>
-              Chọn ngựa thi đấu (chỉ ngựa đã được duyệt)
+              ✓ Chọn nhiều ngựa cùng lúc (chỉ ngựa đã được duyệt)
             </label>
             <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 hm-sidebar-horses">
               {horses.filter(h => h.status === 'APPROVED').length === 0 ? (
@@ -1757,46 +1774,64 @@ export function HorsesPage() {
                 </div>
               ) : (
                 horses.filter(h => h.status === 'APPROVED').map((h) => {
-                  const isActive = String(h.id || h._id) === selectedHorseId
+                  const horseId = String(h.id || h._id)
+                  const isSelected = selectedHorsesForRegister.has(horseId)
                   const tId = String(registerTargetTournament.id)
                   // Check if already registered
-                  const alreadyRegistered = registrations.some(r => String(r.horseId) === String(h.id || h._id) && String(r.race.tournamentId) === tId)
+                  const alreadyRegistered = registrations.some(r => String(r.horseId) === horseId && String(r.race.tournamentId) === tId)
                   
                   return (
                     <div
-                      key={h.id}
-                      className={`hm-horse-vertical-item ${isActive ? 'active' : ''} ${alreadyRegistered ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      onClick={() => { if (!alreadyRegistered) setSelectedHorseId(String(h.id || h._id)) }}
+                      key={horseId}
+                      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border ${isSelected ? 'bg-violet-500/20 border-violet-500/40' : alreadyRegistered ? 'bg-gray-500/10 border-gray-500/20 opacity-60 cursor-not-allowed' : 'bg-white/[0.01] border-white/[0.05] hover:bg-white/[0.05] hover:border-white/[0.1]'}`}
+                      onClick={() => {
+                        if (!alreadyRegistered) {
+                          const newSet = new Set(selectedHorsesForRegister)
+                          if (newSet.has(horseId)) {
+                            newSet.delete(horseId)
+                          } else {
+                            newSet.add(horseId)
+                          }
+                          setSelectedHorsesForRegister(newSet)
+                        }
+                      }}
                     >
+                      <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${isSelected ? 'bg-violet-500 border-violet-600' : 'border-white/30'}`}>
+                        {isSelected && <Check className="w-3 h-3 text-white" />}
+                      </div>
                       <img src={horseAvatarUrl(h.name)} alt={h.name} className="w-9 h-9 rounded-lg object-cover shrink-0 border border-white/10" />
                       <div className="flex-1 min-w-0">
                         <div className="font-extrabold text-sm text-[color:var(--text)] truncate">{h.name}</div>
-                        {alreadyRegistered && <div className="text-[10px] text-amber-400 font-bold">Đã gửi đăng ký giải này</div>}
+                        {alreadyRegistered && <div className="text-[10px] text-amber-400 font-bold">✓ Đã đăng ký giải này</div>}
                       </div>
-                      {isActive && !alreadyRegistered && (
-                        <div className="w-5 h-5 rounded-full bg-violet-500/20 flex items-center justify-center border border-violet-500/40 shrink-0">
-                          <Check className="w-3 h-3 text-violet-400" />
-                        </div>
-                      )}
                     </div>
                   )
                 })
               )}
             </div>
+            {selectedHorsesForRegister.size > 0 && (
+              <div className="mt-3 p-3 bg-violet-500/10 border border-violet-500/30 rounded-lg text-sm text-violet-300 font-semibold">
+                Đã chọn {selectedHorsesForRegister.size} ngựa
+              </div>
+            )}
           </div>
           <div className="p-4 flex justify-end gap-3 border-t border-[var(--border)]">
-            <button type="button" onClick={() => setShowRegisterModal(false)} className="px-4 py-2 rounded-xl text-sm font-bold transition-all text-[var(--text-2)] hover:bg-[var(--surface-2)] bg-transparent">Hủy</button>
+            <button type="button" onClick={() => {
+              setShowRegisterModal(false)
+              setSelectedHorsesForRegister(new Set())
+            }} className="px-4 py-2 rounded-xl text-sm font-bold transition-all text-[var(--text-2)] hover:bg-[var(--surface-2)] bg-transparent">Hủy</button>
             <button 
               type="button" 
               className="hm-btn-cta violet"
-              disabled={!selectedHorseId || registrations.some(r => String(r.horseId) === selectedHorseId && String(r.race.tournamentId) === String(registerTargetTournament.id))}
-              style={(!selectedHorseId || registrations.some(r => String(r.horseId) === selectedHorseId && String(r.race.tournamentId) === String(registerTargetTournament.id))) ? { opacity: 0.5, cursor: 'not-allowed', boxShadow: 'none' } : {}}
+              disabled={selectedHorsesForRegister.size === 0}
+              style={selectedHorsesForRegister.size === 0 ? { opacity: 0.5, cursor: 'not-allowed', boxShadow: 'none' } : {}}
               onClick={() => {
-                handleRegisterTournament(registerTargetTournament)
+                handleRegisterTournament(registerTargetTournament, Array.from(selectedHorsesForRegister))
                 setShowRegisterModal(false)
+                setSelectedHorsesForRegister(new Set())
               }}
             >
-              <Zap className="w-4 h-4 mr-1.5" /> Xác Nhận Đăng Ký
+              <Zap className="w-4 h-4 mr-1.5" /> Đăng Ký ({selectedHorsesForRegister.size}) Ngựa
             </button>
           </div>
         </div>
