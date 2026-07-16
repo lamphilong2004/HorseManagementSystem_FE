@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useNavigate } from 'react-router-dom'
 import { useSession } from '../auth/SessionContext'
 import type { Race, RaceResult } from '../types'
 import { getPublicRace, getRaceHorses, getRaceResults, checkPredictionOpen, placePrediction, splitRaceIntoHeats } from '@/api'
@@ -62,6 +62,7 @@ async function shareRaceResult(raceName: string) {
 
 export function RaceDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const { session, balance, refreshBalance, updateBalance } = useSession()
   const isSpectator = session?.user.role === 'SPECTATOR'
   const isAdmin = session?.user.role === 'ADMIN'
@@ -145,7 +146,7 @@ export function RaceDetailPage() {
       await splitRaceIntoHeats(id!, maxHorses)
       alert('✅ Đã phân bổ và chia bảng thành công!')
       // Redirect back to scheduling page since this race is deleted
-      window.location.href = '/app/admin/scheduling/tournaments'
+      navigate('/app/admin/scheduling/tournaments', { replace: true })
     } catch (e: any) {
       alert(e?.response?.data?.message || 'Không thể chia bảng')
     }
