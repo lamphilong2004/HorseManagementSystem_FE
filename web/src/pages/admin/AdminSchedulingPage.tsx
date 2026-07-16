@@ -994,7 +994,8 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
     let totalRounds = 1
     while (tempHorses > maxHorses) {
       const numRaces = Math.ceil(tempHorses / maxHorses)
-      tempHorses = numRaces * 2 // topAdvance
+      const topAdv = Math.floor(maxHorses / numRaces) || 1
+      tempHorses = numRaces * topAdv
       totalRounds++
     }
 
@@ -1007,7 +1008,7 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
 
     while (currentHorses > maxHorses) {
       const numRaces = Math.ceil(currentHorses / maxHorses)
-      const topAdvance = 2 // Advance top 2 by default
+      const topAdvance = Math.floor(maxHorses / numRaces) || 1
       
       let roundNameStr = `Vòng ${roundNum}`
       if (totalRounds - roundNum === 1) roundNameStr = 'Bán Kết'
