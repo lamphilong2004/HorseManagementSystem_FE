@@ -2773,10 +2773,7 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
                   </div>
                   <div className="form-group"></div>
                 </div>
-                <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <input type="checkbox" id="hasThirdPlace" checked={tournForm.hasThirdPlaceMatch} onChange={(e) => setTournForm({ ...tournForm, hasThirdPlaceMatch: e.target.checked })} />
-                  <label htmlFor="hasThirdPlace" style={{ marginBottom: 0 }}>Tổ chức trận tranh hạng ba</label>
-                </div>
+
                 <div className="form-group">
                   <label>Trạng thái giải đấu</label>
                   <select value={tournForm.status} onChange={(e) => setTournForm({ ...tournForm, status: e.target.value })}>
