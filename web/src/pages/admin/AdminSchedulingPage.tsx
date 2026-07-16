@@ -14,7 +14,7 @@ import {
   CheckCircle,
   HelpCircle,
   Lock,
-  Coins,
+  TrendingUp,
   Phone,
   ExternalLink,
   User as UserIcon,
@@ -1621,7 +1621,6 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
                             setViewBracketTournament(t)
                             setViewBracketRaces(tournRaces)
                           }}
-                          onOpenResultModal={openResultModal}
                           onRefresh={(rId) => {
                             if (rId) setLastModifiedRaceId(rId)
                             loadTabData(undefined, rId, undefined, undefined)
@@ -2476,9 +2475,7 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
             <PredictionRaceList
               predictions={predictions}
               onClosePred={handleClosePredictions}
-              onSettlePred={handleSettlePredictions}
               onViewStats={handleViewPredictionStats}
-              onOpenResultModal={openResultModal}
               lastModifiedRaceId={lastModifiedRaceId}
             />
           </div>
@@ -3237,14 +3234,12 @@ function RaceList({
   races,
   onEditRace,
   onViewRace,
-  onOpenResultModal,
   onRefresh,
   lastModifiedRaceId,
 }: {
   races: Race[]
   onEditRace: (race: Race) => void
   onViewRace: (race: Race) => void
-  onOpenResultModal: (race: Race) => void
   onRefresh: (highlightRaceId?: string) => void
   lastModifiedRaceId?: string | null
 }) {
@@ -3439,16 +3434,12 @@ function RaceList({
 function PredictionRaceList({
   predictions,
   onClosePred,
-  onSettlePred,
   onViewStats,
-  onOpenResultModal,
   lastModifiedRaceId,
 }: {
   predictions: any[]
   onClosePred: (raceId: string) => void
-  onSettlePred: (raceId: string) => void
   onViewStats: (raceId: string) => void
-  onOpenResultModal: (race: Race) => void
   lastModifiedRaceId?: string | null
 }) {
   const [races, setRaces] = useState<Race[]>([])
