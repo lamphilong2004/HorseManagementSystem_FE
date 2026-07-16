@@ -195,8 +195,9 @@ export function LiveStreamModal({ race, onClose }: LiveStreamModalProps) {
     if (gameState === 'finished' && rankedLeaderboard && rankedLeaderboard.length > 0) {
       const resultsPayload = rankedLeaderboard.map((horse, index) => ({
         horseId: horse.horse?._id || horse.horse?.id,
+        jockeyId: horse.horse?.jockey?._id || horse.horse?.jockey?.id || horse.horse?.jockeyId || '',
         registrationId: horse.id || (horse as any).registrationId,
-        rank: index + 1,
+        position: index + 1,
         finishTime: horse.finishTimeSeconds || 0
       }));
       

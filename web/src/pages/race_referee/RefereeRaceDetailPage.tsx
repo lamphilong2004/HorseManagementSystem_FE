@@ -48,6 +48,7 @@ export function RefereeRaceDetailPage() {
   const [violations, setViolations] = useState<Violation[]>([])
   const [violationsLoading, setViolationsLoading] = useState(false)
   const [results, setResults] = useState<RaceResult[]>([])
+  const [resultsSource, setResultsSource] = useState<'ADMIN_PUBLISHED' | 'REFEREE_CONFIRMED' | null>(null)
 
   // Violation form
   const [showViolationForm, setShowViolationForm] = useState(false)
@@ -128,15 +129,58 @@ export function RefereeRaceDetailPage() {
           .then((data: any) => {
             if (data && Array.isArray(data.rankings)) {
               setResults(data.rankings)
+              setResultsSource('REFEREE_CONFIRMED')
             } else {
-              setResults([])
+              getRaceResults(raceId).then((r: any) => {
+                if (Array.isArray(r?.rankings)) {
+                  setResults(r.rankings)
+                  setResultsSource(r.source || 'ADMIN_PUBLISHED')
+                } else if (Array.isArray(r)) {
+                  setResults(r)
+                  setResultsSource('ADMIN_PUBLISHED')
+                } else {
+                  setResults([])
+                  setResultsSource(null)
+                }
+              }).catch(() => {
+                setResults([])
+                setResultsSource(null)
+              })
             }
           })
           .catch(() => {
-            getRaceResults(raceId).then((r) => setResults(Array.isArray(r) ? r : [])).catch(() => setResults([]))
+            getRaceResults(raceId).then((r: any) => {
+              if (Array.isArray(r?.rankings)) {
+                setResults(r.rankings)
+                setResultsSource(r.source || 'ADMIN_PUBLISHED')
+              } else if (Array.isArray(r)) {
+                setResults(r)
+                setResultsSource('ADMIN_PUBLISHED')
+              } else {
+                setResults([])
+                setResultsSource(null)
+              }
+            }).catch(() => {
+              setResults([])
+              setResultsSource(null)
+            })
           })
       } else {
-        getRaceResults(raceId).then((r) => setResults(Array.isArray(r) ? r : [])).catch(() => setResults([]))
+        getRaceResults(raceId).then((r: any) => {
+          if (Array.isArray(r?.rankings)) {
+            setResults(r.rankings)
+            setResultsSource(r.source || 'ADMIN_PUBLISHED')
+          } else if (Array.isArray(r)) {
+            setResults(r)
+            setResultsSource('ADMIN_PUBLISHED')
+          } else {
+            setResults([])
+            setResultsSource(null)
+          }
+        }).catch(() => {
+          setResults([])
+          setResultsSource(null)
+        })
       }
       // Also load horses for confirm result
       getRefereeRaceHorses(raceId)
@@ -883,16 +927,23 @@ export function RefereeRaceDetailPage() {
 
             {results.length > 0 && (
               <div>
-                <div className="text-lg font-black text-[var(--text)] mb-3">Kết quả hiện tại</div>
+                <div className="text-lg font-black text-[var(--text)] mb-3">
+                  Kết quả hiện tại {resultsSource === 'ADMIN_PUBLISHED' ? '(Từ Livestream)' : ''}
+                </div>
+                {resultsSource === 'ADMIN_PUBLISHED' && (
+                  <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-sm text-emerald-300">
+                    ✅ Kết quả đã được tự động ghi nhận từ livestream. Không cần xác nhận lại.
+                  </div>
+                )}
                 <AnimatedTable
                   data={resultsWithId}
                   columns={monitorResultsColumns}
                   emptyMessage="Chưa có kết quả"
                 />
-                  {race?.status !== 'RESULT_CONFIRMED' && race?.status !== 'COMPLETED' && (
+                  {resultsSource !== 'ADMIN_PUBLISHED' && race?.status !== 'RESULT_CONFIRMED' && race?.status !== 'COMPLETED' && (
                     <div className="mt-6 flex flex-col gap-3 p-4 bg-white/[0.02] border border-white/10 rounded-xl">
                       <div className="form-group">
-                        <label className="text-emerald-400 font-bold mb-2 block">Duyệt Kết Quả Từ Livestream</label>
+                        <label className="text-emerald-400 font-bold mb-2 block">Duyệt Kết Quả</label>
                         <textarea className="rounded-lg p-3 w-full border border-white/10 bg-[#0b1120] text-white" value={resultNotes} onChange={(e) => setResultNotes(e.target.value)} placeholder="Ghi chú về cuộc đua (nếu có)..." rows={2} />
                       </div>
                       <button
@@ -1094,10 +1145,17 @@ export function RefereeRaceDetailPage() {
               </div>
             )}
 
-            {/* Existing results */}
-            {results.length > 0 && (
+            {/* Livestream results - read only */}
+            {results.length > 0 && (resultsSource === 'ADMIN_PUBLISHED' || resultsSource === 'REFEREE_CONFIRMED') && (
               <div>
-                <div className="text-lg font-black text-[var(--text)] mb-3">📊 Kết quả hiện tại</div>
+                <div className="text-lg font-black text-[var(--text)] mb-3">
+                  📊 Kết quả cuộc đua {resultsSource === 'ADMIN_PUBLISHED' ? '(Từ Livestream)' : '(Đã xác nhận)'}
+                </div>
+                {resultsSource === 'ADMIN_PUBLISHED' && (
+                  <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-sm text-emerald-300">
+                    ✅ Kết quả đã được tự động ghi nhận từ livestream. Bạn chỉ cần xem và không cần phải xác nhận lại.
+                  </div>
+                )}
                 <AnimatedTable
                   data={resultsWithId}
                   columns={monitorResultsColumns}
@@ -1106,6 +1164,7 @@ export function RefereeRaceDetailPage() {
               </div>
             )}
 
+            {/* Manual entry form - only show if no livestream results */}
             {results.length === 0 && (
               <>
                 <div>

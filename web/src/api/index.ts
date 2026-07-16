@@ -727,12 +727,12 @@ export async function publishRaceResult(raceId: string, results: any[]): Promise
 export async function getRaceResults(raceId: string): Promise<any> {
   try {
     const res = await http.get(`${BE_BASE_URL}/results/races/${raceId}`)
-    return res.data.results || []
+    return res.data
   } catch (err: any) {
     if (err?.response?.status === 404) {
       console.warn('Fallback to getRace for results due to 404');
       const r = await getRace(raceId);
-      return r.results || r.rankings || [];
+      return { rankings: r.results || r.rankings || [], source: 'FALLBACK' };
     }
     throw err;
   }
