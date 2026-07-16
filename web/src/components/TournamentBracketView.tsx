@@ -13,17 +13,39 @@ export function TournamentBracketView({ bracket, races, onGenerateNextRound, loa
     const roundGroups = new Map<string, any[]>();
     races.forEach(r => {
        const parts = r.name.split(' - ');
-       const roundName = parts.length > 1 ? parts[0] : 'Vòng 1';
+       const roundName = parts.length > 1 ? parts[0] : (r.name.includes('Chung Kết') ? 'Chung Kết' : 'Vòng 1');
        if (!roundGroups.has(roundName)) roundGroups.set(roundName, []);
-       roundGroups.get(roundName)!.push({ name: r.name, horseCount: 8, topAdvance: 2 });
+       roundGroups.get(roundName)!.push({ name: r.name, horseCount: r.maxHorses || 8, topAdvance: 2 });
     });
     
-    displayBracket = {
-      rounds: Array.from(roundGroups.entries()).map(([name, rList]) => ({
-        name,
-        races: rList
-      }))
-    };
+    const generatedRounds = Array.from(roundGroups.entries()).map(([name, rList]) => ({
+      name,
+      races: rList
+    }));
+
+    // Predict future rounds if they are missing
+    let lastRound = generatedRounds[generatedRounds.length - 1];
+    let rNum = generatedRounds.length + 1;
+    while (lastRound && lastRound.races.length > 1 && !lastRound.name.includes('Chung Kết')) {
+      const nextHorsesCount = lastRound.races.length * 2; // Assume top 2 advance
+      let nextRacesCount = Math.ceil(nextHorsesCount / 4); // Assume max 4 per heat
+      if (nextRacesCount === 1 && nextHorsesCount > 8) nextRacesCount = 2; // Max 8 per final race
+
+      const nextRoundName = nextRacesCount === 1 ? 'Chung Kết' : `Vòng ${rNum}`;
+      const nextRound = {
+        name: nextRoundName,
+        races: Array.from({length: nextRacesCount}).map((_, i) => ({
+          name: nextRacesCount === 1 ? 'Chung Kết' : `Vòng ${rNum} - Bảng ${i+1}`,
+          horseCount: nextRacesCount === 1 ? nextHorsesCount : 4,
+          topAdvance: nextRacesCount === 1 ? 1 : 2
+        }))
+      };
+      generatedRounds.push(nextRound);
+      lastRound = nextRound;
+      rNum++;
+    }
+
+    displayBracket = { rounds: generatedRounds };
   }
 
   useEffect(() => {
