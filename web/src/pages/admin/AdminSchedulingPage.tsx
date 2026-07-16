@@ -796,8 +796,17 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
     setGeneratingNextRound(true)
     try {
       const bracket = viewBracketTournament.bracket;
+      if (!bracket?.rounds || bracket.rounds.length === 0) {
+        showToast('Sơ đồ thi đấu chưa được khởi tạo', 'error')
+        return
+      }
       const prevRound = bracket.rounds[roundIdx - 1];
       const nextRound = bracket.rounds[roundIdx];
+      
+      if (!prevRound || !nextRound) {
+        showToast('Vòng không tồn tại trong sơ đồ thi đấu', 'error')
+        return
+      }
       
       const prevRaces = prevRound.races.map((br: any) => viewBracketRaces.find(r => r.name === br.name));
       if (prevRaces.some((r: any) => !r)) {

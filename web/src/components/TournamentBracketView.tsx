@@ -7,9 +7,9 @@ export function TournamentBracketView({ bracket, races, onGenerateNextRound, loa
   const [raceHorses, setRaceHorses] = useState<Record<string, any[]>>({})
   const [loading, setLoading] = useState(false)
 
-  let displayBracket = bracket;
+  let displayBracket = bracket || { rounds: [] };
   
-  if ((!bracket || !bracket.rounds || bracket.rounds.length === 0) && races && races.length > 0) {
+  if ((!displayBracket || !displayBracket.rounds || displayBracket.rounds.length === 0) && races && races.length > 0) {
     const roundGroups = new Map<string, any[]>();
     races.forEach(r => {
        const parts = r.name.split(' - ');
@@ -96,8 +96,8 @@ export function TournamentBracketView({ bracket, races, onGenerateNextRound, loa
       ) : (
         <div className="overflow-x-auto pb-12">
           <div className="flex gap-16 min-w-max p-4 justify-center items-stretch">
-            {displayBracket.rounds.map((round: any, rIdx: number) => {
-              const totalRounds = displayBracket.rounds.length;
+            {displayBracket?.rounds?.map((round: any, rIdx: number) => {
+              const totalRounds = displayBracket?.rounds?.length || 0;
               const distanceToFinal = totalRounds - 1 - rIdx;
               
               let roundName = round.name || `Vòng ${rIdx + 1}`;
@@ -133,7 +133,7 @@ export function TournamentBracketView({ bracket, races, onGenerateNextRound, loa
                     {onGenerateNextRound && rIdx > 0 && 
                       // if this round has no actual races yet, and previous round does
                       !round.races?.some((br: any) => races?.find(r => r.name === br.name)) &&
-                      bracket.rounds[rIdx - 1]?.races?.some((br: any) => races?.find(r => r.name === br.name)) && (
+                      displayBracket?.rounds?.[rIdx - 1]?.races?.some((br: any) => races?.find(r => r.name === br.name)) && (
                       <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-max">
                         <button 
                           className="btn btnPrimary h-8 px-4 text-xs font-bold rounded-full shadow-lg"
