@@ -571,7 +571,7 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
 
   const handleQuickStatusChange = async (id: string, name: string, newStatus: string) => {
     // Optimistic UI
-    setTournaments(prev => prev.map(t => t.id === id ? { ...t, status: newStatus } : t))
+    setTournaments(prev => prev.map(t => t.id === id ? { ...t, status: newStatus as any } : t))
     
     try {
       await updateTournament(id, { status: newStatus } as any)

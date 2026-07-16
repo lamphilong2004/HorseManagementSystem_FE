@@ -256,8 +256,8 @@ export function HorsesPage() {
     }
   }, [selectedHorseId, activeTab, registrations])
 
-  const loadData = async () => {
-    setLoading(true)
+  const loadData = async (isBackground = false) => {
+    if (!isBackground && horses.length === 0) setLoading(true)
     setError(null)
     const partialErrors: string[] = []
     try {
@@ -391,7 +391,7 @@ export function HorsesPage() {
         showToast(`Đã thêm ngựa ${horseForm.name} — Đang chờ Admin duyệt`)
       }
       setShowHorseModal(false)
-      loadData()
+      loadData(true)
     } catch (err: any) {
       let errorMsg = err.response?.data?.message;
       if (Array.isArray(errorMsg)) {
@@ -403,12 +403,17 @@ export function HorsesPage() {
 
   const handleDeleteHorse = async (id: string, name: string) => {
     if (!window.confirm(`Xóa ngựa "${name}"?`)) return
+    
+    // Optimistic UI
+    setHorses(prev => prev.filter(h => h.id !== id))
+    
     try {
       await deleteHorse(id)
       showToast(`Đã xóa ngựa ${name}`)
-      loadData()
+      loadData(true)
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Không thể xóa (Ngựa đang tham gia cuộc đua)', 'error')
+      loadData(true) // rollback
     }
   }
 
@@ -452,7 +457,7 @@ export function HorsesPage() {
       // Reset selected horses and reload data
       setSelectedHorsesForRegister(new Set())
       setSelectedHorseId('')
-      loadData()
+      loadData(true)
     } catch (err: any) {
       showToast(err.message || err.response?.data?.message || 'Không thể đăng ký giải đấu', 'error')
     }
@@ -563,7 +568,7 @@ export function HorsesPage() {
 
       // Wait briefly to allow backend DB transactions and hooks to finish
       await new Promise(resolve => setTimeout(resolve, 500))
-      await loadData()
+      await loadData(true)
       
       let newInvites: any[] = []
       if (activeTab === 'invitations') {
@@ -592,10 +597,9 @@ export function HorsesPage() {
 
   const handleConfirmRace = async (horseId: string, raceId: string) => {
     try {
-      setLoading(true)
       await confirmRaceParticipation(horseId, raceId)
       showToast('Đã xác nhận tham gia đua thành công!')
-      loadData()
+      loadData(true)
     } catch (err: any) {
       showToast(err.response?.data?.message || err.message, 'error')
     } finally {
