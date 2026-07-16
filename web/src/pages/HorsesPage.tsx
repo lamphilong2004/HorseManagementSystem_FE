@@ -826,7 +826,7 @@ export function HorsesPage() {
                 </button>
               </Magnetic>
             )}
-            <button onClick={loadData} disabled={loading} className="hm-btn-cta bg-[var(--surface-3)] text-[var(--text-2)] shadow-none border border-[var(--border)] hover:bg-[var(--surface-2)]">
+            <button onClick={() => loadData()} disabled={loading} className="hm-btn-cta bg-[var(--surface-3)] text-[var(--text-2)] shadow-none border border-[var(--border)] hover:bg-[var(--surface-2)]">
               <RefreshCw className={`w-4 h-4 text-[var(--text-2)] ${loading ? 'animate-spin' : ''}`} />
             </button>
           </div>
