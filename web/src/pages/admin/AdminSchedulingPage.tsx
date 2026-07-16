@@ -1730,7 +1730,8 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
                     filterable: true,
                     filterType: 'select',
                     filterOptions: [
-                      { label: 'Chờ duyệt', value: 'PENDING_APPROVAL' },
+                      { label: 'Chờ duyệt', value: 'PENDING' },
+                      { label: 'Chờ duyệt (Alt)', value: 'PENDING_APPROVAL' },
                       { label: 'Đã duyệt', value: 'APPROVED' },
                       { label: 'Đã xác nhận', value: 'CONFIRMED' },
                       { label: 'Đã từ chối', value: 'REJECTED' },
@@ -1756,7 +1757,7 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
                       return (
                         <div>
                           <span className={`badge badge-status-${row.status === 'APPROVED' ? 'approved' : row.status === 'CONFIRMED' ? 'confirmed' : row.status === 'REJECTED' ? 'rejected' : 'pending'}`}>
-                            {row.status === 'APPROVED' ? 'Đã duyệt' : row.status === 'CONFIRMED' ? 'Đã xác nhận' : row.status === 'REJECTED' ? 'Đã từ chối' : row.status === 'PENDING_APPROVAL' ? 'Chờ duyệt' : row.status}
+                            {row.status === 'APPROVED' ? 'Đã duyệt' : row.status === 'CONFIRMED' ? 'Đã xác nhận' : row.status === 'REJECTED' ? 'Đã từ chối' : (row.status === 'PENDING_APPROVAL' || row.status === 'PENDING') ? 'Chờ duyệt' : row.status}
                           </span>
                           {row.status === 'REJECTED' && (row as any).rejectionReason && (
                             <div className="text-xs" style={{ marginTop: 4, color: '#ef4444' }}>Lý do: {(row as any).rejectionReason}</div>
@@ -1776,7 +1777,7 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
                     header: 'Hành động',
                     align: 'right',
                     cell: (row) => (
-                      row.status === 'PENDING_APPROVAL' ? (
+                      (row.status === 'PENDING_APPROVAL' || row.status === 'PENDING') ? (
                         <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                           <button className="btn btnPrimary" style={{ fontSize: '13px', padding: '6px 10px' }} onClick={() => handleApproveReg(row.id)}>Duyệt</button>
                           <button className="btn" style={{ fontSize: '13px', padding: '6px 10px', color: '#ef4444' }} onClick={() => handleRejectReg(row.id)}>Từ chối</button>
