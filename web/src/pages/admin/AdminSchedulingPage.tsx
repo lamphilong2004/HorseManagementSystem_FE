@@ -2349,7 +2349,7 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
                       align: 'right',
                       cell: (row) => (
                         <div style={{ display: 'inline-flex', gap: 6, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                          {row.status === 'SCHEDULED' && (
+                          {(row.status === 'SCHEDULED' || row.status === 'PENDING') && (
                             <>
                               <button type="button" className="btn" style={{ fontSize: '12px', padding: '5px 8px' }} onClick={() => openRefModal(row.id, row.refereeId && typeof row.refereeId === 'object' ? row.refereeId._id : row.refereeId)}>
                                 Phân trọng tài
