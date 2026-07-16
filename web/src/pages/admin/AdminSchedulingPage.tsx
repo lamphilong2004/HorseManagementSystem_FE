@@ -3413,9 +3413,16 @@ function RaceList({
                         {!r.isLive ? (
                           <button
                             className="btn"
-                            style={{ fontSize: '11px', padding: '4px 8px', background: '#10b981', color: '#fff', border: 'none' }}
-                            onClick={() => handleStartStream(r.id)}
-                            disabled={startingStreamId === r.id}
+                            style={{ fontSize: '11px', padding: '4px 8px', background: !r.refereeId ? '#6b7280' : '#10b981', color: '#fff', border: 'none', cursor: !r.refereeId ? 'not-allowed' : 'pointer' }}
+                            onClick={() => {
+                              if (!r.refereeId) {
+                                showToast('Vui lòng phân công trọng tài trước khi bắt đầu cuộc đua!', 'error');
+                                return;
+                              }
+                              handleStartStream(r.id);
+                            }}
+                            disabled={startingStreamId === r.id || !r.refereeId}
+                            title={!r.refereeId ? "Cần phân công trọng tài" : ""}
                           >
                             {startingStreamId === r.id ? 'Đang chạy...' : 'Bắt Đầu Đua'}
                           </button>
