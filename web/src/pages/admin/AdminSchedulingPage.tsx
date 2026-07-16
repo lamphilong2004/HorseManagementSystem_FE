@@ -3416,7 +3416,7 @@ function RaceList({
                             style={{ fontSize: '11px', padding: '4px 8px', background: !r.refereeId ? '#6b7280' : '#10b981', color: '#fff', border: 'none', cursor: !r.refereeId ? 'not-allowed' : 'pointer' }}
                             onClick={() => {
                               if (!r.refereeId) {
-                                showToast('Vui lòng phân công trọng tài trước khi bắt đầu cuộc đua!', 'error');
+                                alert('Vui lòng phân công trọng tài trước khi bắt đầu cuộc đua!');
                                 return;
                               }
                               handleStartStream(r.id);
