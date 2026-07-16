@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { getHorsesByRace } from '@/api'
+import { Trophy, ChevronRight } from 'lucide-react'
+
 export function TournamentBracketView({ bracket, races, onGenerateNextRound, loadingNextRound, draftHorsesRecord }: { bracket: any, races?: any[], onGenerateNextRound?: (roundIdx: number) => void, loadingNextRound?: boolean, draftHorsesRecord?: Record<string, any[]> }) {
+  const [raceHorses, setRaceHorses] = useState<Record<string, any[]>>({})
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
