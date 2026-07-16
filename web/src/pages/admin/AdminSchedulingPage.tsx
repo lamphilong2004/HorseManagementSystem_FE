@@ -554,17 +554,25 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
   }
 
   const handleDeleteTourn = async (id: string, name: string) => {
-    if (!window.confirm(`Bạn có chắc muốn xóa giải đấu "${name}"?`)) return
+    if (!window.confirm(`Bạn có chắc muốn xóa giải đấu ${name} không? Thao tác này không thể hoàn tác.`)) return
+    
+    // Optimistic UI
+    setTournaments(prev => prev.filter(t => t.id !== id))
+    
     try {
       await deleteTournament(id)
       showToast(`Đã xóa giải đấu ${name}`)
-      loadTabData()
+      loadTabData(undefined, undefined, undefined, undefined, true) // Background sync
     } catch (err: any) {
-      showToast(err.response?.data?.message || 'Không thể xóa giải đấu', 'error')
+      showToast(err.response?.data?.message || 'Có lỗi xảy ra khi xóa', 'error')
+      loadTabData(undefined, undefined, undefined, undefined, true) // Rollback
     }
   }
 
   const handleQuickStatusChange = async (id: string, name: string, newStatus: string) => {
+    // Optimistic UI
+    setTournaments(prev => prev.map(t => t.id === id ? { ...t, status: newStatus } : t))
+    
     try {
       await updateTournament(id, { status: newStatus } as any)
       const statusLabel: Record<string, string> = {
@@ -576,11 +584,11 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
         COMPLETED: 'Đã kết thúc',
         CANCELLED: 'Đã hủy',
       }
-      setLastModifiedTournId(id)
       showToast(`"${name}" → ${statusLabel[newStatus] || newStatus}`)
-      loadTabData(id, undefined, undefined, undefined)
+      loadTabData(id, undefined, undefined, undefined, true) // Background sync
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Không thể đổi trạng thái', 'error')
+      loadTabData(id, undefined, undefined, undefined, true) // Rollback
     }
   }
 
@@ -599,12 +607,16 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
 
       if (!window.confirm(msg)) return
 
+      // Optimistic UI
+      setTournaments(prev => prev.map(t => t.id === id ? { ...t, status: 'REGISTRATION_CLOSED' } : t))
+
       await closeTournamentRegistration(id)
       setLastModifiedTournId(id)
       showToast('Đã đóng cổng đăng ký thành công')
-      loadTabData(id, undefined, undefined, undefined)
+      loadTabData(id, undefined, undefined, undefined, true)
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Không thể đóng cổng đăng ký', 'error')
+      loadTabData(id, undefined, undefined, undefined, true) // Rollback
     }
   }
 
@@ -1092,26 +1104,35 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
   // HORSE APPROVAL ACTIONS
   // ---------------------------------------------------------
   const handleApproveHorse = async (horseId: string) => {
+    // Optimistic UI
+    setHorses(prev => prev.map(h => h.id === horseId ? { ...h, status: 'APPROVED' } : h))
+
     try {
       await approveHorse(horseId)
       setLastModifiedHorseId(horseId)
       showToast('Đã duyệt hồ sơ ngựa thành công')
-      loadTabData(undefined, undefined, undefined, horseId)
+      loadTabData(undefined, undefined, undefined, horseId, true)
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Không thể duyệt ngựa', 'error')
+      loadTabData(undefined, undefined, undefined, horseId, true) // Rollback
     }
   }
 
   const handleRejectHorse = async (horseId: string) => {
     const reason = window.prompt('Nhập lý do từ chối hồ sơ ngựa (có thể để trống):')
     if (reason === null) return // user cancelled
+    
+    // Optimistic UI
+    setHorses(prev => prev.map(h => h.id === horseId ? { ...h, status: 'REJECTED' } : h))
+    
     try {
       await rejectHorse(horseId, reason)
       setLastModifiedHorseId(horseId)
       showToast('Đã từ chối hồ sơ ngựa', 'warning')
-      loadTabData(undefined, undefined, undefined, horseId)
+      loadTabData(undefined, undefined, undefined, horseId, true)
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Không thể từ chối ngựa', 'error')
+      loadTabData(undefined, undefined, undefined, horseId, true) // Rollback
     }
   }
 

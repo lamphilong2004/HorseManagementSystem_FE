@@ -167,8 +167,8 @@ export function AdminUsersPage() {
     setSortDirection(direction)
   }
 
-  const fetchUsers = (highlightId?: string) => {
-    setLoading(true)
+  const fetchUsers = (highlightId?: string, isBackground = false) => {
+    if (!isBackground && users.length === 0) setLoading(true)
     setError(null)
     const targetId = highlightId || lastModifiedUserId
     getAdminUsers({
@@ -206,38 +206,54 @@ export function AdminUsersPage() {
     if (user.role === 'ADMIN') return showToast('Không thể thay đổi trạng thái của Admin', 'warning')
     const isActive = user.status === 'ACTIVE'
     if (!window.confirm(`${isActive ? 'Khóa' : 'Mở khóa'} tài khoản của ${user.name}?`)) return
+    
+    // Optimistic UI
+    setUsers(prev => prev.map(u => u.id === user.id ? { ...u, status: isActive ? 'INACTIVE' : 'ACTIVE' } : u))
+    
     try {
       await toggleUserStatus(user.id, !isActive)
       setLastModifiedUserId(user.id)
       showToast(`Đã ${isActive ? 'khóa' : 'mở khóa'} tài khoản ${user.name}`)
-      fetchUsers(user.id)
+      fetchUsers(user.id, true) // background sync
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Có lỗi xảy ra', 'error')
+      fetchUsers(user.id, true) // rollback
     }
   }
 
   const handleDeleteUser = async (user: User) => {
     if (user.role === 'ADMIN') return showToast('Không thể xóa tài khoản Admin', 'warning')
     if (!window.confirm(`Xóa tài khoản của ${user.name}? Thao tác này không thể hoàn tác.`)) return
+    
+    // Optimistic UI
+    setUsers(prev => prev.filter(u => u.id !== user.id))
+    
     try {
       await deleteUser(user.id)
       showToast(`Đã xóa tài khoản ${user.name}`)
-      fetchUsers()
+      fetchUsers(undefined, true) // background sync
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Có lỗi xảy ra', 'error')
+      fetchUsers(undefined, true) // rollback
     }
   }
 
   const handleSaveRole = async () => {
     if (!editingUser || !selectedRole) return
+    
+    const targetUserId = editingUser.id
+    // Optimistic UI
+    setUsers(prev => prev.map(u => u.id === targetUserId ? { ...u, role: selectedRole as any } : u))
+    setEditingUser(null)
+    
     try {
-      await updateUserRole(editingUser.id, selectedRole)
-      setLastModifiedUserId(editingUser.id)
+      await updateUserRole(targetUserId, selectedRole)
+      setLastModifiedUserId(targetUserId)
       showToast(`Đã phân quyền ${roleLabel(selectedRole)} cho ${editingUser.name}`)
-      setEditingUser(null)
-      fetchUsers(editingUser.id)
+      fetchUsers(targetUserId, true) // background sync
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Có lỗi xảy ra', 'error')
+      fetchUsers(targetUserId, true) // rollback
     }
   }
 
