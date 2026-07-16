@@ -24,6 +24,8 @@ import {
   getRaceName,
   getTournamentId,
   isPredictionRaceStatus,
+  sortRacesByScheduledAt,
+  sortTournamentsByStartDate,
 } from '../../utils/spectator';
 
 const QUICK_BETS = [100000, 200000, 500000];
@@ -57,7 +59,7 @@ export default function PredictionsScreen() {
     const filtered = selectedTournamentId === 'all'
       ? races
       : races.filter((race) => getTournamentId(race) === selectedTournamentId);
-    return filtered.filter((race) => isPredictionRaceStatus(race.status));
+    return sortRacesByScheduledAt(filtered.filter((race) => isPredictionRaceStatus(race.status)));
   }, [races, selectedTournamentId]);
 
   const filteredHistory = useMemo(() => {
@@ -105,9 +107,9 @@ export default function PredictionsScreen() {
         if (id) raceMap.set(id, race);
       });
 
-      const nextRaces = Array.from(raceMap.values());
+      const nextRaces = sortRacesByScheduledAt(Array.from(raceMap.values()));
       setPredictions(history);
-      setTournaments(tournamentList);
+      setTournaments(sortTournamentsByStartDate(tournamentList));
       setRaces(nextRaces);
 
       if (!selectedRaceId && nextRaces.length > 0) {

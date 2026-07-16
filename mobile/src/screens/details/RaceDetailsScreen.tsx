@@ -54,13 +54,13 @@ export default function RaceDetailsScreen() {
       const [raceData, horsesData, openData] = await Promise.all([
         api.getRace(raceId),
         api.getRaceHorses(raceId).catch(() => []),
-        api.checkPredictionOpen(raceId).catch(() => ({ isOpen: null as any })),
-        refreshBalance().catch(() => balance),
+        isSpectator ? api.checkPredictionOpen(raceId).catch(() => ({ isOpen: null as any })) : Promise.resolve({ isOpen: false }),
+        isSpectator ? refreshBalance().catch(() => balance) : Promise.resolve(balance),
       ]);
       setRace(raceData);
       setHorses(Array.isArray(horsesData) ? horsesData : []);
       const fallbackOpen = isPredictionRaceStatus(raceData?.status);
-      setPredictionOpen(typeof openData?.isOpen === 'boolean' ? openData.isOpen : fallbackOpen);
+      setPredictionOpen(isSpectator && (typeof openData?.isOpen === 'boolean' ? openData.isOpen : fallbackOpen));
     } catch (error) {
       console.error('Failed to fetch race details', error);
       Alert.alert('Lỗi', 'Không thể tải chi tiết cuộc đua.');
@@ -154,11 +154,13 @@ export default function RaceDetailsScreen() {
               <View className="px-3 py-1.5 rounded-full bg-white/10">
                 <Text className="text-white text-xs font-extrabold">{statusLabel(race.status)}</Text>
               </View>
-              <View className={`px-3 py-1.5 rounded-full ${predictionOpen ? 'bg-emerald-500' : 'bg-rose-500'}`}>
-                <Text className="text-white text-xs font-extrabold">
-                  {predictionOpen ? 'Dự đoán mở' : 'Dự đoán đóng'}
-                </Text>
-              </View>
+              {isSpectator ? (
+                <View className={`px-3 py-1.5 rounded-full ${predictionOpen ? 'bg-emerald-500' : 'bg-rose-500'}`}>
+                  <Text className="text-white text-xs font-extrabold">
+                    {predictionOpen ? 'Dự đoán mở' : 'Dự đoán đóng'}
+                  </Text>
+                </View>
+              ) : null}
             </View>
             <Text className="text-white text-2xl font-extrabold" numberOfLines={2}>{race.name}</Text>
             <View className="flex-row flex-wrap gap-2 mt-4">
@@ -181,7 +183,7 @@ export default function RaceDetailsScreen() {
           <View className="flex-row gap-3 mb-5">
             <StatTile icon={Award} label="Top 1" value={formatPoints(race.prizeFirst)} tone="amber" />
             <StatTile icon={Award} label="Top 2" value={formatPoints(race.prizeSecond)} tone="slate" />
-            <StatTile icon={Wallet} label="Số dư" value={formatPoints(balance)} tone="blue" />
+            {isSpectator ? <StatTile icon={Wallet} label="Số dư" value={formatPoints(balance)} tone="blue" /> : null}
           </View>
 
           <View className="flex-row items-center justify-between mb-3">
