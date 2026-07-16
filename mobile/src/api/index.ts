@@ -214,37 +214,28 @@ export async function registerHorseForTournament(horseId: string, tournamentId: 
   const hId = String(horseId || '').trim()
   const tId = String(tournamentId || '').trim()
 
-  const racesRes = await http.get(`${BE_BASE_URL}/races?tournamentId=${tId}&limit=1000`)
-  const rawRaces = racesRes.data.races || racesRes.data.data || (Array.isArray(racesRes.data) ? racesRes.data : [])
-  const scheduledRaces = rawRaces.filter((r: any) => String(r.status || '').toUpperCase() === 'SCHEDULED')
-  const targetRaces = scheduledRaces.filter((r: any) => String(r.name || '').toLowerCase().includes('vong bang') || String(r.name || '').toLowerCase().includes('vòng bảng'))
-
-  if (targetRaces.length === 0) {
-    throw new Error('Giải đấu này hiện chưa có vòng bảng để đăng ký.')
-  }
-
   const success: { raceId: string; raceName: string }[] = []
   const alreadyRegistered: { raceId: string; raceName: string }[] = []
   const failed: { raceId: string; raceName: string; error: string }[] = []
 
-  await Promise.all(
-    targetRaces.map(async (race: any) => {
-      const rId = String(race._id || race.id || '').trim()
-      const raceName = race.name || 'Vòng đua'
-      try {
-        await http.post(`${BE_BASE_URL}/horses/${hId}/register-race`, { raceId: rId })
-        success.push({ raceId: rId, raceName })
-      } catch (err: any) {
-        const status = err?.response?.status
-        const msg = err?.response?.data?.message || ''
-        if (status === 409 || msg === 'HORSE_ALREADY_REGISTERED' || String(msg).toLowerCase().includes('already')) {
-          alreadyRegistered.push({ raceId: rId, raceName })
-        } else {
-          failed.push({ raceId: rId, raceName, error: msg || 'Lỗi không xác định' })
-        }
-      }
-    })
-  )
+  try {
+    await http.post(`${BE_BASE_URL}/tournaments/${tId}/register`, { horseId: hId })
+    success.push({ raceId: tId, raceName: 'Giải đấu' })
+  } catch (err: any) {
+    const status = err?.response?.status
+    const data = err?.response?.data
+    const message = typeof data === 'string'
+      ? data
+      : Array.isArray(data?.message)
+        ? data.message.join('\n')
+        : data?.message || data?.error || ''
+
+    if (status === 409 || message === 'HORSE_ALREADY_REGISTERED' || String(message).toLowerCase().includes('already')) {
+      alreadyRegistered.push({ raceId: tId, raceName: 'Giải đấu' })
+    } else {
+      failed.push({ raceId: tId, raceName: 'Giải đấu', error: message || 'Lỗi không xác định' })
+    }
+  }
 
   return { success, alreadyRegistered, failed }
 }
@@ -606,6 +597,67 @@ export async function getRaceRegistrations(status?: string, raceId?: string): Pr
     rejectionReason: r.rejectionReason,
     ownerName: r.ownerName || r.ownerFullName || (r.horse && typeof r.horse === 'object' ? (r.horse.ownerId?.fullName || r.horse.ownerId?.name || r.horse.owner?.fullName || r.horse.owner) : undefined) || (r.horseId && typeof r.horseId === 'object' ? (r.horseId?.ownerId?.fullName || r.horseId?.ownerId?.name || r.horseId?.owner?.fullName || r.horseId?.owner) : undefined) || r.owner,
   })).reverse()
+}
+
+function listFromResponse(data: any): any[] {
+  if (Array.isArray(data)) return data
+  return data?.registrations
+    || data?.tournamentRegistrations
+    || data?.items
+    || data?.docs
+    || data?.results
+    || data?.data
+    || []
+}
+
+function normalizeTournamentRegistration(r: any, fallbackTournamentId = '') {
+  const horseObj = r.horse || r.horseId || r.horse_id || r.horseID || {}
+  const hasHorseObj = typeof horseObj === 'object' && horseObj !== null && !Array.isArray(horseObj)
+  const tournamentObj = r.tournament || r.tournamentId || r.tournament_id || r.tournId || {}
+  const hasTournamentObj = typeof tournamentObj === 'object' && tournamentObj !== null && !Array.isArray(tournamentObj)
+
+  return {
+    id: String(r.registrationId || r.regId || r._id || r.id || '').trim(),
+    _id: String(r._id || r.id || r.registrationId || r.regId || '').trim(),
+    registrationId: String(r.registrationId || r.regId || r._id || r.id || '').trim(),
+    horseId: hasHorseObj ? (horseObj._id || horseObj.id) : (r.horseId || r.horse_id || r.horseID || r.horse),
+    horseName: r.horseName || horseObj.name,
+    status: r.status || r.registrationStatus || r.approvalStatus || 'PENDING',
+    confirmedByOwner: r.confirmedByOwner,
+    rejectionReason: r.rejectionReason,
+    tournamentId: hasTournamentObj ? (tournamentObj._id || tournamentObj.id) : (r.tournamentId || r.tournament_id || r.tournId || fallbackTournamentId),
+    tournamentName: r.tournamentName || tournamentObj.name,
+    createdAt: r.createdAt,
+  }
+}
+
+export async function getMyTournamentRegistrations(): Promise<any[]> {
+  const paths = [
+    '/horses/me/tournament-registrations',
+    '/me/tournament-registrations',
+    '/tournaments/me/registrations',
+  ]
+  let lastError: any
+
+  for (const path of paths) {
+    try {
+      const res = await http.get(`${BE_BASE_URL}${path}`)
+      return listFromResponse(res.data).map((registration: any) => normalizeTournamentRegistration(registration)).reverse()
+    } catch (error: any) {
+      lastError = error
+      if (![404, 405].includes(error?.response?.status)) break
+    }
+  }
+
+  throw lastError
+}
+
+export async function getTournamentRegistrations(tournamentId: string, status?: string): Promise<any[]> {
+  const tId = String(tournamentId || '').trim()
+  const res = await http.get(`${BE_BASE_URL}/admin/tournaments/${tId}/registrations`, {
+    params: { status },
+  })
+  return listFromResponse(res.data).map((registration: any) => normalizeTournamentRegistration(registration, tId)).reverse()
 }
 
 export async function approveRaceRegistration(regId: string): Promise<any> {
