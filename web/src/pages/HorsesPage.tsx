@@ -24,7 +24,7 @@ import { useAnimatedToast } from '@/components/ui/animated-toast'
 import { AnimatedTable, type SortDirection } from '@/components/ui/animated-table'
 import {
   CalendarRange, Search, Trophy, Activity, FileCheck, Check, X, Users,
-  TrendingUp, AlertTriangle, Edit, Trash2, Plus, ShieldCheck, RefreshCw,
+  TrendingUp, AlertTriangle, Edit, Trash2, Plus,  RefreshCw,
   Sparkles, Zap, Clock, MapPin, Star, Send, UserCheck
 } from 'lucide-react'
 import '@/styles/horse-management.css'
@@ -203,7 +203,7 @@ export function HorsesPage() {
     addToast({ message, type })
   }
 
-  useEffect(() => { loadData() }, [])
+  useEffect(() => { loadData() }, [activeTab])
 
   // Socket.IO real-time updates
   useEffect(() => {
@@ -261,51 +261,9 @@ export function HorsesPage() {
     setError(null)
     const partialErrors: string[] = []
     try {
+      // 1. Luôn tải danh sách ngựa của user (nhanh và cần thiết cho mọi tab)
       const hList = await getHorses().catch(() => { partialErrors.push('Không tải được danh sách ngựa'); return [] })
       setHorses(hList)
-
-      // Load tournaments & races song song
-      const [tList, rList] = await Promise.all([
-        getTournaments().catch(() => { partialErrors.push('Không tải được danh sách giải đấu'); return [] as Tournament[] }),
-        getRaces().catch(() => { partialErrors.push('Không tải được danh sách vòng đua'); return [] as Race[] }),
-      ])
-      // Chỉ hiển thị giải đấu đang mở đăng ký (PUBLISHED / ONGOING)
-      const openTournaments = tList.filter((t) => ['PUBLISHED', 'ONGOING', 'DRAFT'].includes(t.status?.toUpperCase?.() || ''))
-      setTournaments(openTournaments)
-
-      const jList = await searchJockeys({ limit: 100 }).catch(() => { partialErrors.push('Không tải được danh sách nài ngựa'); return [] })
-      setJockeys(jList)
-      
-      // Load registrations for our horses in all races for synchronization
-      const myHorseIds = new Set(hList.map((h) => String(h.id || h._id)))
-      const regs: { race: Race; horseId: string; horseName: string; status: string; rejectionReason?: string; confirmedByOwner?: boolean; registrationId?: string; jockeyId?: any }[] = []
-      
-      await Promise.all(
-        rList.map(async (race) => {
-          try {
-            const matched = await getRaceHorses(race.id)
-            matched.forEach((entry: any) => {
-              const horseId = String(entry.horseId || '').trim()
-              if (myHorseIds.has(horseId)) {
-                const matchedHorse = hList.find((h) => String(h.id || h._id) === horseId)
-                regs.push({
-                  race,
-                  horseId,
-                  horseName: matchedHorse?.name || entry.horse?.name || 'Ngựa',
-                  status: entry.status || entry.registrationStatus || 'PENDING',
-                  confirmedByOwner: entry.confirmedByOwner,
-                  rejectionReason: entry.rejectionReason,
-                  registrationId: entry.registrationId || entry.id || entry._id,
-                  jockeyId: entry.jockeyId || entry.jockey?._id || entry.jockey?.id || entry.jockey
-                })
-              }
-            })
-          } catch {
-            console.warn(`Error loading horses for race ${race.id}`)
-          }
-        })
-      )
-      setRegistrations(regs)
 
       if (hList.length > 0) {
         const firstId = String(hList[0].id || hList[0]._id || '')
@@ -315,24 +273,68 @@ export function HorsesPage() {
         })
       }
 
-      if (activeTab === 'hire-jockey') {
+      // 2. Chỉ tải dữ liệu theo từng Tab
+      if (activeTab === 'race-registration') {
+        const [tList, rList] = await Promise.all([
+          getTournaments().catch(() => { partialErrors.push('Không tải được danh sách giải đấu'); return [] as Tournament[] }),
+          getRaces().catch(() => { partialErrors.push('Không tải được danh sách vòng đua'); return [] as Race[] }),
+        ])
+        const openTournaments = tList.filter((t) => ['PUBLISHED', 'ONGOING', 'DRAFT'].includes(t.status?.toUpperCase?.() || ''))
+        setTournaments(openTournaments)
+        setRaces(rList)
+      } 
+      else if (activeTab === 'my-registrations') {
+        const rList = await getRaces().catch(() => { partialErrors.push('Không tải được danh sách vòng đua'); return [] as Race[] })
+        setRaces(rList)
+        
+        const myHorseIds = new Set(hList.map((h) => String(h.id || h._id)))
+        const regs: any[] = []
+        await Promise.all(
+          rList.map(async (race) => {
+            try {
+              const matched = await getRaceHorses(race.id)
+              matched.forEach((entry: any) => {
+                const horseId = String(entry.horseId || '').trim()
+                if (myHorseIds.has(horseId)) {
+                  const matchedHorse = hList.find((h) => String(h.id || h._id) === horseId)
+                  regs.push({
+                    race,
+                    horseId,
+                    horseName: matchedHorse?.name || entry.horse?.name || 'Ngựa',
+                    status: entry.status || entry.registrationStatus || 'PENDING',
+                    confirmedByOwner: entry.confirmedByOwner,
+                    rejectionReason: entry.rejectionReason,
+                    registrationId: entry.registrationId || entry.id || entry._id,
+                    jockeyId: entry.jockeyId || entry.jockey?._id || entry.jockey?.id || entry.jockey
+                  })
+                }
+              })
+            } catch {
+              console.warn(`Error loading horses for race ${race.id}`)
+            }
+          })
+        )
+        setRegistrations(regs)
+      }
+      else if (activeTab === 'hire-jockey') {
+        const [rList, jList] = await Promise.all([
+          getRaces().catch(() => { partialErrors.push('Không tải được danh sách vòng đua'); return [] as Race[] }),
+          searchJockeys({ limit: 100 }).catch(() => { partialErrors.push('Không tải được danh sách nài ngựa'); return [] })
+        ])
+        setJockeys(jList)
         const availableRaces = rList.filter((race) => ['SCHEDULED', 'CONFIRMED', 'UPCOMING'].includes(race.status?.toUpperCase() || ''))
         setRaces(availableRaces)
+        
         if (availableRaces.length > 0 && !inviteRaceId) {
           setInviteRaceId(String(availableRaces[0].id || availableRaces[0]._id))
         }
-        if (selectedHorseId) {
-          const iList = await getHorseJockeys(selectedHorseId).catch(() => { partialErrors.push('Không tải được lời mời'); return [] })
-          setInvitations(iList)
-        }
-      } else if (activeTab === 'invitations') {
-        const results = await Promise.all(
-          hList.map((h: any) => getHorseJockeys(String(h.id || h._id)).then(invs => invs.map((inv: any) => ({ ...inv, horseId: String(h.id || h._id) }))))
-        ).catch(() => { partialErrors.push('Không tải được lời mời'); return [] })
-        setInvitations(results?.flat() || [])
+        
+        // Let the useEffect handle loading invitations for selected horse
+      }
+      else if (activeTab === 'invitations') {
+        const rList = await getRaces().catch(() => { partialErrors.push('Không tải được danh sách vòng đua'); return [] as Race[] })
         setRaces(rList)
-      } else {
-        setRaces(rList)
+        // Let the useEffect handle loading all invitations
       }
 
       if (partialErrors.length > 0) {
@@ -916,13 +918,7 @@ export function HorsesPage() {
 
                         {/* Footer Actions */}
                         <div className="mt-auto px-5 py-3.5 flex items-center justify-between" style={{ borderTop: '1px solid var(--text-muted)' }}>
-                          {h.healthCertUrl ? (
-                            <a href={h.healthCertUrl} target="_blank" rel="noreferrer" className="text-xs font-bold flex items-center gap-1 transition-colors hover:opacity-80" style={{ color: '#34d399' }}>
-                              <ShieldCheck className="w-4 h-4" /> Sức Khỏe
-                            </a>
-                          ) : (
-                            <span className="text-xs font-bold flex items-center gap-1" style={{ color: '#fbbf24' }}><AlertTriangle className="w-4 h-4" /> Chưa duyệt</span>
-                          )}
+                          <div></div>
                           <div className="flex gap-1.5">
                             <button className="p-1.5 rounded-lg transition-all hover:scale-110" style={{ color: '#a78bfa', background: 'rgba(139,92,246,0.08)' }} onClick={() => openHorseResults(h.id, h.name)} title="Kết quả">
                               <TrendingUp className="w-4 h-4" />
@@ -1738,10 +1734,7 @@ export function HorsesPage() {
                   <input placeholder="Anh Quốc..." value={horseForm.origin} onChange={(e) => setHorseForm({ ...horseForm, origin: e.target.value })} />
                 </div>
               </div>
-              <div>
-                <label className="text-xs font-bold uppercase mb-1.5 tracking-wider block" style={{ color: 'var(--text-muted)' }}>URL Giấy khám sức khỏe</label>
-                <input placeholder="https://example.com/certificate.pdf" value={horseForm.healthCertUrl} onChange={(e) => setHorseForm({ ...horseForm, healthCertUrl: e.target.value })} />
-              </div>
+
               <div className="pt-4 flex justify-end gap-3 border-t border-[var(--border)]">
                 <button type="button" onClick={() => setShowHorseModal(false)} className="px-4 py-2 rounded-xl text-sm font-bold transition-all text-[var(--text-2)] hover:bg-[var(--surface-2)] bg-transparent">Hủy</button>
                 <button type="submit" className="hm-btn-cta violet">Lưu Thông Tin</button>

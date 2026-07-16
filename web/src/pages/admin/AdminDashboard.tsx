@@ -82,30 +82,48 @@ export function AdminDashboard() {
   const fetchAllStats = async () => {
     try {
       setError(null)
-      const [tData, rData, uData, hData, regData, pData] = await Promise.all([
+      // Dữ liệu luôn cần cho KPI phía trên: Tournaments, Registrations, Predictions
+      const globalPromises = [
         getTournaments().catch(() => []),
-        getRaces().catch(() => []),
-        getAdminUsers().catch(() => []),
-        getAdminHorses().catch(() => []),
         getRaceRegistrations().catch(() => []),
         getAdminPredictions().catch(() => []),
-      ])
+      ]
+
+      let tData: any = [], regData: any = [], pData: any = []
+      
+      if (activeTab === 'financial') {
+        [tData, regData, pData] = await Promise.all(globalPromises)
+      } else if (activeTab === 'operations') {
+        const [gTData, gRegData, gPData, rData, hData] = await Promise.all([
+          ...globalPromises,
+          getRaces().catch(() => []),
+          getAdminHorses().catch(() => []),
+        ])
+        tData = gTData; regData = gRegData; pData = gPData;
+        setRaces(rData)
+
+        const ownerMap: Record<string, { fullName?: string; phone?: string }> = {}
+        hData.forEach((horse: any) => {
+          const ownerData = typeof horse.ownerId === 'object' ? horse.ownerId : { fullName: horse.ownerId }
+          ownerMap[horse.id] = {
+            fullName: ownerData?.fullName || ownerData?.name || '',
+            phone: ownerData?.phone || ownerData?.email || ''
+          }
+        })
+        setRegistrationOwners(ownerMap)
+      } else if (activeTab === 'members') {
+        const [gTData, gRegData, gPData, uData] = await Promise.all([
+          ...globalPromises,
+          getAdminUsers().catch(() => []),
+        ])
+        tData = gTData; regData = gRegData; pData = gPData;
+        setUsers(uData)
+      }
 
       setTournaments(tData)
-      setRaces(rData)
-      setUsers(uData)
       setRegistrations(regData)
       setPredictions(pData)
 
-      const ownerMap: Record<string, { fullName?: string; phone?: string }> = {}
-      hData.forEach((horse: any) => {
-        const ownerData = typeof horse.ownerId === 'object' ? horse.ownerId : { fullName: horse.ownerId }
-        ownerMap[horse.id] = {
-          fullName: ownerData?.fullName || ownerData?.name || '',
-          phone: ownerData?.phone || ownerData?.email || ''
-        }
-      })
-      setRegistrationOwners(ownerMap)
     } catch (err: any) {
       console.error(err)
       setError('Lỗi kết nối đến máy chủ. Không thể đồng bộ số liệu thời gian thực.')
@@ -117,7 +135,7 @@ export function AdminDashboard() {
 
   useEffect(() => {
     fetchAllStats()
-  }, [])
+  }, [activeTab])
 
   const handleRefresh = () => {
     setIsRefreshing(true)

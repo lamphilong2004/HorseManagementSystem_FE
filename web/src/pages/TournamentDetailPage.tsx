@@ -58,22 +58,25 @@ export function TournamentDetailPage() {
     if (showLoading) setLoading(true)
     setRefreshing(true)
     try {
-      const [t, r, lb, br] = await Promise.all([
-        getPublicTournament(id).catch(() => null),
-        getPublicRaces({ tournamentId: id }).catch(() => [] as any),
-        getTournamentLeaderboard(id).catch(() => [] as any),
-        getTournamentBracket(id).catch(() => null),
-      ])
+      const t = await getPublicTournament(id).catch(() => null)
       if (!t) {
         setError('Không tìm thấy giải đấu')
       } else {
         setTournament(t)
       }
-      const raceList = Array.isArray(r) ? r : (r?.races || r?.data || [])
-      setRaces(raceList)
-      const lbList = Array.isArray(lb) ? lb : (lb?.data || lb?.leaderboard || [])
-      setLeaderboard(lbList)
-      setBracket(br?.bracket || br?.data || br || null)
+
+      if (activeTab === 'races') {
+        const r = await getPublicRaces({ tournamentId: id }).catch(() => [] as any)
+        const raceList = Array.isArray(r) ? r : (r?.races || r?.data || [])
+        setRaces(raceList)
+      } else if (activeTab === 'leaderboard') {
+        const lb = await getTournamentLeaderboard(id).catch(() => [] as any)
+        const lbList = Array.isArray(lb) ? lb : (lb?.data || lb?.leaderboard || [])
+        setLeaderboard(lbList)
+      } else if (activeTab === 'bracket') {
+        const br = await getTournamentBracket(id).catch(() => null)
+        setBracket(br?.bracket || br?.data || br || null)
+      }
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -82,13 +85,7 @@ export function TournamentDetailPage() {
 
   useEffect(() => {
     fetchData()
-  }, [id])
-
-  useEffect(() => {
-    if (activeTab === 'bracket') {
-      fetchData(false)
-    }
-  }, [activeTab, id])
+  }, [id, activeTab])
 
   if (loading) return (
     <div className="space-y-6">
