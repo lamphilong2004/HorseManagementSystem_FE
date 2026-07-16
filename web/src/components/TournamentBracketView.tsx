@@ -36,6 +36,18 @@ export function TournamentBracketView({ bracket, races, onGenerateNextRound, loa
       races: rList
     }));
 
+    // Sort rounds logically: Vòng 1 -> ... -> Tứ Kết -> Bán Kết -> Chung Kết
+    const roundPriority = (name: string) => {
+      const n = name.toLowerCase();
+      if (n.includes('chung kết')) return 999;
+      if (n.includes('bán kết')) return 998;
+      if (n.includes('tứ kết')) return 997;
+      const match = n.match(/(\d+)/);
+      if (match) return parseInt(match[1]);
+      return 500;
+    };
+    generatedRounds.sort((a, b) => roundPriority(a.name) - roundPriority(b.name));
+
     // Predict future rounds if they are missing
     let lastRound = generatedRounds[generatedRounds.length - 1];
     let rNum = generatedRounds.length + 1;
@@ -165,7 +177,13 @@ export function TournamentBracketView({ bracket, races, onGenerateNextRound, loa
                       const actualRace = races?.find(r => r.name === bRace.name)
                       const actualHorses = actualRace ? (raceHorses[actualRace._id || actualRace.id] || []) : []
                       const isDraft = !actualRace && draftHorsesRecord && draftHorsesRecord[bRace.name] && draftHorsesRecord[bRace.name].length > 0;
-                      const displayHorses = actualRace ? actualHorses : (isDraft ? draftHorsesRecord![bRace.name] : []);
+                      let displayHorses = actualRace ? actualHorses : (isDraft ? draftHorsesRecord![bRace.name] : []);
+                      
+                      displayHorses = [...displayHorses].sort((a: any, b: any) => {
+                        const rankA = a.rank || a.position || a.actualPosition || 999;
+                        const rankB = b.rank || b.position || b.actualPosition || 999;
+                        return rankA - rankB;
+                      });
                       const isFinal = distanceToFinal === 0;
 
                       return (
