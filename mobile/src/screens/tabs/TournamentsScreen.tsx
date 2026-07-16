@@ -2,17 +2,35 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Calendar, ChevronRight, Flag, MapPin, Search, Trophy } from 'lucide-react-native';
+import { ChevronDown, ChevronRight, ChevronUp, Flag, MapPin, Search, Trophy } from 'lucide-react-native';
 import * as api from '../../api';
 import { Race, Tournament } from '../../types';
 import { Chip, EmptyState, ScreenHeader, StatTile, Surface } from '../../components/MobileUI';
-import { formatDateTime, formatPoints, getRaceId, getTournamentId, isActiveTournament } from '../../utils/spectator';
+import {
+  formatDateTime,
+  formatPoints,
+  dateTimeValue,
+  getRaceId,
+  getTournamentId,
+  isActiveTournament,
+  sortRacesByScheduledAt,
+} from '../../utils/spectator';
 
-const FILTERS = [
-  { value: 'all', label: 'Tất cả' },
-  { value: 'active', label: 'Đang diễn ra' },
-  { value: 'published', label: 'Đã công bố' },
-  { value: 'completed', label: 'Hoàn thành' },
+const STATUS_FILTERS = [
+  { value: 'all', label: 'Tất cả trạng thái' },
+  { value: 'DRAFT', label: 'Bản nháp' },
+  { value: 'PUBLISHED', label: 'Đang mở đăng ký' },
+  { value: 'REGISTRATION_CLOSED', label: 'Đã đóng đăng ký' },
+  { value: 'BRACKET_GENERATED', label: 'Đã chia bảng' },
+  { value: 'ONGOING', label: 'Đang diễn ra' },
+  { value: 'COMPLETED', label: 'Đã kết thúc' },
+  { value: 'CANCELLED', label: 'Đã hủy' },
+];
+
+const SORT_OPTIONS = [
+  { value: 'nearest', label: 'Gần nhất trước' },
+  { value: 'newest', label: 'Mới nhất' },
+  { value: 'oldest', label: 'Cũ nhất' },
 ];
 
 export default function TournamentsScreen() {
@@ -21,7 +39,9 @@ export default function TournamentsScreen() {
   const [races, setRaces] = useState<Race[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sortOrder, setSortOrder] = useState('nearest');
+  const [collapsedTournamentIds, setCollapsedTournamentIds] = useState<Record<string, boolean>>({});
 
   const fetchData = async () => {
     setLoading(true);
@@ -45,21 +65,34 @@ export default function TournamentsScreen() {
 
   const filteredTournaments = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    return tournaments.filter((tournament) => {
-      const status = (tournament.status || '').toLowerCase();
-      const matchesFilter =
-        filter === 'all'
-        || (filter === 'active' ? isActiveTournament(tournament) : status === filter);
+    const now = Date.now();
+    const filtered = tournaments.filter((tournament) => {
+      const status = String(tournament.status || '').toUpperCase();
+      const matchesFilter = statusFilter === 'all' || status === statusFilter;
       const matchesQuery =
         !normalizedQuery
         || tournament.name.toLowerCase().includes(normalizedQuery)
         || (tournament.venue || '').toLowerCase().includes(normalizedQuery)
         || (tournament.description || '').toLowerCase().includes(normalizedQuery);
-      return matchesFilter && matchesQuery;
+      const endDate = new Date(tournament.endDate);
+      endDate.setHours(23, 59, 59, 999);
+      const matchesDefaultTimeWindow = endDate.getTime() >= now;
+      return matchesFilter && matchesQuery && matchesDefaultTimeWindow;
     });
-  }, [filter, query, tournaments]);
+    if (sortOrder === 'newest') {
+      return [...filtered].sort((a, b) => dateTimeValue(b.startDate, 0) - dateTimeValue(a.startDate, 0));
+    }
+    return [...filtered].sort((a, b) => dateTimeValue(a.startDate) - dateTimeValue(b.startDate));
+  }, [query, sortOrder, statusFilter, tournaments]);
 
   const activeCount = tournaments.filter(isActiveTournament).length;
+
+  const toggleTournamentRaces = (tournamentId: string) => {
+    setCollapsedTournamentIds((current) => ({
+      ...current,
+      [tournamentId]: current[tournamentId] === false ? true : false,
+    }));
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50">
@@ -85,9 +118,27 @@ export default function TournamentsScreen() {
           />
         </View>
 
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3">
+          {STATUS_FILTERS.map((item) => (
+            <Chip
+              key={item.value}
+              label={item.label}
+              active={statusFilter === item.value}
+              onPress={() => setStatusFilter(item.value)}
+              tone="emerald"
+            />
+          ))}
+        </ScrollView>
+
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-5">
-          {FILTERS.map((item) => (
-            <Chip key={item.value} label={item.label} active={filter === item.value} onPress={() => setFilter(item.value)} />
+          {SORT_OPTIONS.map((item) => (
+            <Chip
+              key={item.value}
+              label={item.label}
+              active={sortOrder === item.value}
+              onPress={() => setSortOrder(item.value)}
+              tone="emerald"
+            />
           ))}
         </ScrollView>
 
@@ -100,12 +151,22 @@ export default function TournamentsScreen() {
         ) : (
           filteredTournaments.map((tournament) => {
             const tournamentId = getTournamentId(tournament);
-            const tournamentRaces = races.filter((race) => getTournamentId(race) === tournamentId);
+            const tournamentRaces = sortRacesByScheduledAt(races.filter((race) => getTournamentId(race) === tournamentId));
+            const isLiveTournament = ['ONGOING', 'ACTIVE'].includes(String(tournament.status || '').toUpperCase());
+            const isCollapsed = collapsedTournamentIds[tournamentId] !== false;
             return (
               <Surface key={tournamentId || tournament.id} className="p-4 mb-4">
                 <View className="flex-row items-start justify-between mb-3">
                   <View className="flex-1 pr-3">
-                    <Text className="text-lg font-extrabold text-slate-900" numberOfLines={2}>{tournament.name}</Text>
+                    <View className="flex-row items-center flex-wrap">
+                      <Text className="text-lg font-extrabold text-slate-900 mr-2" numberOfLines={2}>{tournament.name}</Text>
+                      {isLiveTournament ? (
+                        <View className="px-2 py-1 rounded-full bg-red-50 border border-red-200 flex-row items-center">
+                          <View className="w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5" />
+                          <Text className="text-[10px] font-extrabold text-red-600 uppercase">Trực tiếp</Text>
+                        </View>
+                      ) : null}
+                    </View>
                     <View className="flex-row items-center mt-2">
                       <MapPin size={15} color="#64748b" />
                       <Text className="text-sm text-slate-500 ml-1 flex-1" numberOfLines={1}>{tournament.venue || 'Chưa rõ địa điểm'}</Text>
@@ -130,12 +191,22 @@ export default function TournamentsScreen() {
                 <View className="h-px bg-slate-100 mb-3" />
                 <View className="flex-row items-center justify-between mb-2">
                   <Text className="text-xs font-extrabold text-slate-500 uppercase">Cuộc đua ({tournamentRaces.length})</Text>
-                  <Calendar size={14} color="#94a3b8" />
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => toggleTournamentRaces(tournamentId)}
+                    className="w-8 h-8 rounded-full bg-slate-50 border border-slate-100 items-center justify-center"
+                  >
+                    {isCollapsed ? (
+                      <ChevronDown size={17} color="#94a3b8" />
+                    ) : (
+                      <ChevronUp size={17} color="#94a3b8" />
+                    )}
+                  </TouchableOpacity>
                 </View>
 
                 {tournamentRaces.length === 0 ? (
                   <Text className="text-sm text-slate-400">Chưa có cuộc đua được lên lịch.</Text>
-                ) : (
+                ) : isCollapsed ? null : (
                   tournamentRaces.slice(0, 4).map((race) => (
                     <TouchableOpacity
                       activeOpacity={0.84}

@@ -12,6 +12,48 @@ export function formatDateTime(value?: string) {
   return `${date.toLocaleDateString('vi-VN')} ${date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
 }
 
+export function dateTimeValue(value?: string, fallback = Number.MAX_SAFE_INTEGER) {
+  if (!value) return fallback;
+  const time = new Date(value).getTime();
+  return Number.isFinite(time) ? time : fallback;
+}
+
+function compareStableName(a: any, b: any) {
+  const nameDiff = String(a?.name || '').localeCompare(String(b?.name || ''), 'vi');
+  if (nameDiff !== 0) return nameDiff;
+  return String(a?._id || a?.id || '').localeCompare(String(b?._id || b?.id || ''));
+}
+
+export function sortTournamentsByStartDate<T extends { startDate?: string; name?: string; id?: any; _id?: any }>(items: T[]) {
+  return [...items].sort((a, b) => {
+    const diff = dateTimeValue(a.startDate) - dateTimeValue(b.startDate);
+    return diff !== 0 ? diff : compareStableName(a, b);
+  });
+}
+
+export function sortRacesByScheduledAt<T extends { scheduledAt?: string; name?: string; id?: any; _id?: any }>(items: T[]) {
+  return [...items].sort((a, b) => {
+    const diff = dateTimeValue(a.scheduledAt) - dateTimeValue(b.scheduledAt);
+    return diff !== 0 ? diff : compareStableName(a, b);
+  });
+}
+
+export function sortRacesByWebNearest<T extends { status?: string; scheduledAt?: string; name?: string; id?: any; _id?: any }>(items: T[]) {
+  const statusOrder = (race: T) => {
+    const status = String(race.status || '').toUpperCase();
+    if (['ONGOING', 'LIVE'].includes(status)) return 0;
+    if (['SCHEDULED', 'PENDING'].includes(status)) return 1;
+    return 2;
+  };
+
+  return [...items].sort((a, b) => {
+    const statusDiff = statusOrder(a) - statusOrder(b);
+    if (statusDiff !== 0) return statusDiff;
+    const timeDiff = dateTimeValue(a.scheduledAt) - dateTimeValue(b.scheduledAt);
+    return timeDiff !== 0 ? timeDiff : compareStableName(a, b);
+  });
+}
+
 export function getId(value: any) {
   if (!value) return '';
   if (typeof value === 'string') return value;

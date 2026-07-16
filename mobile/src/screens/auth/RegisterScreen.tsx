@@ -16,6 +16,11 @@ export default function RegisterScreen() {
   const [obscure, setObscure] = useState(true);
   const [loading, setLoading] = useState(false);
   const [role, setRole] = useState<Role>('SPECTATOR');
+  const roleOptions: Array<{ value: Role; label: string; desc: string }> = [
+    { value: 'SPECTATOR', label: 'Khán giả', desc: 'Theo dõi, livestream và dự đoán' },
+    { value: 'OWNER', label: 'Chủ ngựa', desc: 'Quản lý ngựa và tuyển Jockey' },
+    { value: 'JOCKEY', label: 'Jockey', desc: 'Nhận lời mời và xem lịch thi đấu' },
+  ];
 
   const handleRegister = async () => {
     if (!name || !email || !password) {
@@ -106,6 +111,24 @@ export default function RegisterScreen() {
               <TouchableOpacity onPress={() => setObscure(!obscure)}>
                 {obscure ? <EyeOff size={18} color="#94a3b8" /> : <Eye size={18} color="#94a3b8" />}
               </TouchableOpacity>
+            </View>
+
+            <Text className="text-xs font-semibold text-slate-700 mb-2 uppercase tracking-wider">Vai trò</Text>
+            <View className="mb-6 gap-2">
+              {roleOptions.map((option) => {
+                const active = role === option.value;
+                return (
+                  <TouchableOpacity
+                    key={option.value}
+                    activeOpacity={0.84}
+                    onPress={() => setRole(option.value)}
+                    className={`p-3 rounded-xl border ${active ? 'bg-blue-50 border-blue-200' : 'bg-slate-50 border-slate-200'}`}
+                  >
+                    <Text className={`font-extrabold ${active ? 'text-blue-700' : 'text-slate-800'}`}>{option.label}</Text>
+                    <Text className="text-xs text-slate-500 mt-1">{option.desc}</Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
             {/* Register Button */}
