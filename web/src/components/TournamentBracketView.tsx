@@ -11,14 +11,19 @@ export function TournamentBracketView({ bracket, races, onGenerateNextRound, loa
   
   if ((!displayBracket || !displayBracket.rounds || displayBracket.rounds.length === 0) && races && races.length > 0) {
     const roundGroups = new Map<string, any[]>();
-    races.forEach(r => {
+    
+    // Sort races by scheduled time so rounds appear in correct chronological order
+    const sortedRaces = [...races].sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
+    
+    sortedRaces.forEach(r => {
        const parts = r.name.split(' - ');
        let roundName = 'Vòng 1';
-       if (r.name.includes('Chung Kết')) roundName = 'Chung Kết';
-       else if (r.name.includes('Bán Kết')) roundName = 'Bán Kết';
-       else if (r.name.includes('Tứ Kết')) roundName = 'Tứ Kết';
+       const rNameLower = r.name.toLowerCase();
+       if (rNameLower.includes('chung kết')) roundName = 'Chung Kết';
+       else if (rNameLower.includes('bán kết')) roundName = 'Bán Kết';
+       else if (rNameLower.includes('tứ kết')) roundName = 'Tứ Kết';
        else {
-         const match = r.name.match(/(Vòng \d+)/i);
+         const match = r.name.match(/(Vòng \d+)/i) || r.name.match(/(Round \d+)/i);
          if (match) roundName = match[1];
          else roundName = parts.length >= 2 ? parts[parts.length - 2].trim() : 'Vòng 1';
        }
@@ -34,7 +39,7 @@ export function TournamentBracketView({ bracket, races, onGenerateNextRound, loa
     // Predict future rounds if they are missing
     let lastRound = generatedRounds[generatedRounds.length - 1];
     let rNum = generatedRounds.length + 1;
-    while (lastRound && lastRound.races.length > 1 && !lastRound.name.includes('Chung Kết')) {
+    while (lastRound && lastRound.races.length > 1 && !lastRound.name.toLowerCase().includes('chung kết')) {
       const nextHorsesCount = lastRound.races.length * 2; // Assume top 2 advance
       let nextRacesCount = Math.ceil(nextHorsesCount / 4); // Assume max 4 per heat
       if (nextRacesCount === 1 && nextHorsesCount > 8) nextRacesCount = 2; // Max 8 per final race
@@ -52,7 +57,7 @@ export function TournamentBracketView({ bracket, races, onGenerateNextRound, loa
       lastRound = nextRound;
       rNum++;
     }
-
+    
     displayBracket = { rounds: generatedRounds };
   }
 
