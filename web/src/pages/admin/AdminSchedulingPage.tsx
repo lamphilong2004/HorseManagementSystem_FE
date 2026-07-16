@@ -967,6 +967,15 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
     const maxHorses = tourn.maxHorses || 8
     let currentHorses = eligibleRegs.length
     
+    // First pass: calculate total rounds
+    let tempHorses = currentHorses
+    let totalRounds = 1
+    while (tempHorses > maxHorses) {
+      const numRaces = Math.ceil(tempHorses / maxHorses)
+      tempHorses = numRaces * 2 // topAdvance
+      totalRounds++
+    }
+
     const newDraftApprovals: Record<string, { raceId: string, raceName: string }> = {}
     const rounds: any[] = []
     let roundNum = 1
@@ -978,16 +987,20 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
       const numRaces = Math.ceil(currentHorses / maxHorses)
       const topAdvance = 2 // Advance top 2 by default
       
+      let roundNameStr = `Vòng ${roundNum}`
+      if (totalRounds - roundNum === 1) roundNameStr = 'Bán Kết'
+      else if (totalRounds - roundNum === 2) roundNameStr = 'Tứ Kết'
+
       const roundRaces = []
       
       for (let i = 0; i < numRaces; i++) {
-        const raceName = `Vòng ${roundNum} - Bảng ${i + 1}`
+        const raceName = `${tourn.name} - ${roundNameStr} - Bảng ${i + 1}`
         
         // Assign horses to round 1 races
         if (roundNum === 1) {
           const horsesForRace = simulatedHorsesArray.filter((_, idx) => idx % numRaces === i)
           horsesForRace.forEach(reg => {
-            newDraftApprovals[reg.id] = { raceId: `draft-${raceName}`, raceName }
+            newDraftApprovals[reg.id || (reg as any)._id] = { raceId: `draft-${raceName}`, raceName }
           })
           roundRaces.push({
             name: raceName,
@@ -1007,7 +1020,7 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
       }
       
       rounds.push({
-        name: `Vòng ${roundNum}`,
+        name: roundNameStr,
         races: roundRaces
       })
       
@@ -1016,16 +1029,16 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
     }
 
     // Final Round
-    const finalRaceName = 'Chung Kết'
+    const finalRaceName = `${tourn.name} - Chung Kết`
     if (roundNum === 1) {
       // Direct to final
       simulatedHorsesArray.forEach(reg => {
-        newDraftApprovals[reg.id] = { raceId: `draft-${finalRaceName}`, raceName: finalRaceName }
+        newDraftApprovals[reg.id || (reg as any)._id] = { raceId: `draft-${finalRaceName}`, raceName: finalRaceName }
       })
     }
     
     rounds.push({
-      name: finalRaceName,
+      name: 'Chung Kết',
       races: [{
         name: finalRaceName,
         horseCount: currentHorses,
@@ -1033,10 +1046,6 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
         isDraft: true
       }]
     })
-
-    // Prettify names
-    if (rounds.length >= 2) rounds[rounds.length - 2].name = 'Bán Kết'
-    if (rounds.length >= 3) rounds[rounds.length - 3].name = 'Tứ Kết'
 
     setDraftBracket(rounds)
     setDraftApprovals(newDraftApprovals)

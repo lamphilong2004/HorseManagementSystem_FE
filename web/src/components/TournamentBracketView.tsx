@@ -13,7 +13,15 @@ export function TournamentBracketView({ bracket, races, onGenerateNextRound, loa
     const roundGroups = new Map<string, any[]>();
     races.forEach(r => {
        const parts = r.name.split(' - ');
-       const roundName = parts.length > 1 ? parts[0] : (r.name.includes('Chung Kết') ? 'Chung Kết' : 'Vòng 1');
+       let roundName = 'Vòng 1';
+       if (r.name.includes('Chung Kết')) roundName = 'Chung Kết';
+       else if (r.name.includes('Bán Kết')) roundName = 'Bán Kết';
+       else if (r.name.includes('Tứ Kết')) roundName = 'Tứ Kết';
+       else {
+         const match = r.name.match(/(Vòng \d+)/i);
+         if (match) roundName = match[1];
+         else roundName = parts.length >= 2 ? parts[parts.length - 2].trim() : 'Vòng 1';
+       }
        if (!roundGroups.has(roundName)) roundGroups.set(roundName, []);
        roundGroups.get(roundName)!.push({ name: r.name, horseCount: r.maxHorses || 8, topAdvance: 2 });
     });
