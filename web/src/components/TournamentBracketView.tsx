@@ -1,10 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { getHorsesByRace } from '@/api'
-import { Trophy, ChevronRight } from 'lucide-react'
-
-export function TournamentBracketView({ bracket, races, onGenerateNextRound, loadingNextRound }: { bracket: any, races?: any[], onGenerateNextRound?: (roundIdx: number) => void, loadingNextRound?: boolean }) {
-  const [raceHorses, setRaceHorses] = useState<Record<string, any[]>>({})
+export function TournamentBracketView({ bracket, races, onGenerateNextRound, loadingNextRound, draftHorsesRecord }: { bracket: any, races?: any[], onGenerateNextRound?: (roundIdx: number) => void, loadingNextRound?: boolean, draftHorsesRecord?: Record<string, any[]> }) {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -109,7 +106,9 @@ export function TournamentBracketView({ bracket, races, onGenerateNextRound, loa
                   <div className="flex flex-col justify-around gap-8 flex-1 w-full">
                     {round.races?.map((bRace: any, mIdx: number) => {
                       const actualRace = races?.find(r => r.name === bRace.name)
-                      const horses = actualRace ? (raceHorses[actualRace._id || actualRace.id] || []) : []
+                      const actualHorses = actualRace ? (raceHorses[actualRace._id || actualRace.id] || []) : []
+                      const isDraft = !actualRace && draftHorsesRecord && draftHorsesRecord[bRace.name] && draftHorsesRecord[bRace.name].length > 0;
+                      const displayHorses = actualRace ? actualHorses : (isDraft ? draftHorsesRecord![bRace.name] : []);
                       const isFinal = distanceToFinal === 0;
 
                       return (
@@ -132,9 +131,9 @@ export function TournamentBracketView({ bracket, races, onGenerateNextRound, loa
                             </div>
 
                             <div className="p-3 flex flex-col gap-2 min-h-[100px] justify-center">
-                              {actualRace ? (
-                                horses.length > 0 ? (
-                                  horses.map((h: any, hIdx: number) => (
+                              {actualRace || isDraft ? (
+                                displayHorses.length > 0 ? (
+                                  displayHorses.map((h: any, hIdx: number) => (
                                     <div key={hIdx} className="flex items-center gap-3 p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
                                       <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shrink-0 border ${hIdx < bRace.topAdvance ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-[#27272a] text-zinc-400 border-[#3f3f46]'}`}>
                                         {hIdx + 1}
@@ -142,6 +141,7 @@ export function TournamentBracketView({ bracket, races, onGenerateNextRound, loa
                                       <span className={`font-bold truncate text-sm ${hIdx < bRace.topAdvance ? 'text-white' : 'text-zinc-300'}`}>
                                         {h.horse?.name || h.horseName || '---'}
                                       </span>
+                                      {isDraft && <span className="ml-auto text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/30 whitespace-nowrap">Dự kiến</span>}
                                     </div>
                                   ))
                                 ) : (

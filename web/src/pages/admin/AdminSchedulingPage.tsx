@@ -1292,6 +1292,20 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
 
   const currentHeader = tabHeaders[activeTab] || { title: 'Quản lý Hệ thống', desc: 'Giải đấu, lịch trình, duyệt đăng ký và công bố kết quả', icon: Settings }
 
+  const isViewingDraft = draftBracket && viewBracketTournament && filterRegTourn === viewBracketTournament.id;
+  let draftHorsesRecord: Record<string, any[]> | undefined = undefined;
+  
+  if (isViewingDraft) {
+    draftHorsesRecord = {};
+    Object.entries(draftApprovals).forEach(([regId, data]) => {
+      const reg = registrations.find(r => r.id === regId || (r as any)._id === regId);
+      if (reg) {
+        if (!draftHorsesRecord![data.raceName]) draftHorsesRecord![data.raceName] = [];
+        draftHorsesRecord![data.raceName].push(reg);
+      }
+    });
+  }
+
   return (
     <>
       {/* Toast notifications */}
@@ -3220,10 +3234,11 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
             
             <div className="flex-1 overflow-y-auto p-6 bg-[#0f0f13]">
               <TournamentBracketView 
-                bracket={viewBracketTournament.bracket} 
+                bracket={isViewingDraft ? { rounds: draftBracket } : viewBracketTournament.bracket} 
                 races={viewBracketRaces} 
                 onGenerateNextRound={handleGenerateNextRound}
                 loadingNextRound={generatingNextRound}
+                draftHorsesRecord={draftHorsesRecord}
               />
             </div>
           </div>
