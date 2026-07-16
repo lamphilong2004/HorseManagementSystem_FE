@@ -1631,7 +1631,13 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
                       const own = (ownerInfo?.fullName || r.ownerName || (typeof r.horseId === 'object' ? r.horseId?.ownerId?.fullName || r.horseId?.ownerId?.name || r.horseId?.owner?.fullName || r.horseId?.owner : '')).toLowerCase()
                       if (!own.includes(regColumnFilters.ownerName.toLowerCase())) return false
                     }
-                    if (regColumnFilters.status && r.status !== regColumnFilters.status) return false
+                    if (regColumnFilters.status) {
+                      if (regColumnFilters.status === 'PENDING') {
+                        if (r.status !== 'PENDING' && r.status !== 'PENDING_APPROVAL') return false
+                      } else if (r.status !== regColumnFilters.status) {
+                        return false
+                      }
+                    }
                     return true
                   })
 
@@ -1731,7 +1737,6 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
                     filterType: 'select',
                     filterOptions: [
                       { label: 'Chờ duyệt', value: 'PENDING' },
-                      { label: 'Chờ duyệt (Alt)', value: 'PENDING_APPROVAL' },
                       { label: 'Đã duyệt', value: 'APPROVED' },
                       { label: 'Đã xác nhận', value: 'CONFIRMED' },
                       { label: 'Đã từ chối', value: 'REJECTED' },
@@ -1819,7 +1824,12 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
                       })
                     }
                     if (regColumnFilters.status) {
-                      res = res.filter(r => r.status === regColumnFilters.status)
+                      res = res.filter(r => {
+                        if (regColumnFilters.status === 'PENDING') {
+                          return r.status === 'PENDING' || r.status === 'PENDING_APPROVAL'
+                        }
+                        return r.status === regColumnFilters.status
+                      })
                     }
                     return res.length
                   })(),

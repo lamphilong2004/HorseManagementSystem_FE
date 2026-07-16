@@ -121,7 +121,7 @@ export type RaceRegistration = {
   raceId: any
   raceName?: string
   ownerName?: string
-  status: 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED' | 'CONFIRMED'
+  status: 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED' | 'CONFIRMED' | 'PENDING'
   confirmedByOwner: boolean
   createdAt?: string
   rejectionReason?: string
