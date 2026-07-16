@@ -40,6 +40,7 @@ import {
   getHorseId,
   getHorseName,
   getRaceId,
+  sortRacesByScheduledAt,
   sortTournamentsByStartDate,
 } from '../../utils/spectator';
 
@@ -57,6 +58,9 @@ type OwnerRegistration = {
   confirmedByOwner?: boolean;
   rejectionReason?: string;
   jockeyId?: any;
+  source?: 'RACE' | 'TOURNAMENT';
+  tournamentId?: string;
+  tournamentName?: string;
 };
 
 const emptyHorseForm = {
@@ -116,6 +120,33 @@ function raceTournamentName(race: Race | any) {
   return typeof tournament === 'object' ? tournament?.name : 'Giải đấu';
 }
 
+function tournamentIdOf(tournament: Tournament | any) {
+  return String(tournament?.id || tournament?._id || '').trim();
+}
+
+function tournamentRaceForInvite(tournament: Tournament, raceList: Race[]) {
+  const tournamentId = tournamentIdOf(tournament);
+  const candidates = raceList.filter((race) => raceTournamentId(race) === tournamentId);
+  return sortRacesByScheduledAt(candidates)[0];
+}
+
+function pseudoRaceFromTournament(tournament: Tournament): Race {
+  const tournamentId = tournamentIdOf(tournament);
+  return {
+    id: tournamentId,
+    _id: tournamentId,
+    tournamentId: tournament,
+    name: tournament.name,
+    distance: 0,
+    scheduledAt: tournament.startDate,
+    maxHorses: 0,
+    prizeFirst: 0,
+    prizeSecond: 0,
+    prizeThird: 0,
+    status: tournament.status as Race['status'],
+  };
+}
+
 function horseAvatarUrl(name: string): string {
   let hash = 0;
   for (let i = 0; i < name.length; i += 1) {
@@ -165,7 +196,7 @@ export default function HorsesScreen() {
     if (!selectedHorseId) return [];
     return registrations.filter((reg) => {
       const status = String(reg.status || '').toUpperCase();
-      return reg.horseId === selectedHorseId && ['APPROVED', 'CONFIRMED'].includes(status);
+      return reg.horseId === selectedHorseId && ['APPROVED', 'CONFIRMED', 'ACCEPTED', 'APPROVED_BY_ADMIN'].includes(status);
     }).sort((a, b) => dateTimeValue(a.race?.scheduledAt) - dateTimeValue(b.race?.scheduledAt));
   }, [registrations, selectedHorseId]);
 
@@ -227,6 +258,23 @@ export default function HorsesScreen() {
     });
   }, [registrations]);
 
+  const selectedHorseTournamentRegistration = (tournament: Tournament) => {
+    const tournamentId = tournamentIdOf(tournament);
+    return registrations.find((reg) => (
+      reg.horseId === selectedHorseId
+      && (reg.tournamentId || raceTournamentId(reg.race)) === tournamentId
+    ));
+  };
+
+  const registrationButtonLabel = (status?: string) => {
+    const normalized = String(status || '').toUpperCase();
+    if (['PENDING', 'PENDING_APPROVAL'].includes(normalized)) return 'Chờ admin duyệt';
+    if (normalized === 'APPROVED') return 'Đã duyệt';
+    if (normalized === 'CONFIRMED') return 'Đã chốt';
+    if (normalized === 'REJECTED') return 'Bị từ chối';
+    return 'Đăng ký giải';
+  };
+
   const loadOwnerInvites = async (horseList: Horse[]) => {
     const inviteGroups = await Promise.all(
       horseList.map(async (horse) => {
@@ -246,7 +294,7 @@ export default function HorsesScreen() {
     return inviteGroups.flat();
   };
 
-  const loadRegistrations = async (horseList: Horse[], raceList: Race[]) => {
+  const loadRegistrations = async (horseList: Horse[], tournamentList: Tournament[], raceList: Race[]) => {
     const myHorseIds = new Set(horseList.map((horse) => getHorseId(horse)));
     const rows: OwnerRegistration[] = [];
 
@@ -271,10 +319,74 @@ export default function HorsesScreen() {
               confirmedByOwner: entry.confirmedByOwner,
               rejectionReason: entry.rejectionReason,
               jockeyId: entry.jockeyId || entry.jockey?._id || entry.jockey?.id || entry.jockey,
+              source: 'RACE',
+              tournamentId: raceTournamentId(race),
+              tournamentName: raceTournamentName(race),
             });
           });
         } catch {
           // Keep partial data usable when one race fails.
+        }
+      })
+    );
+
+    const raceRegistrationKeys = new Set(rows.map((row) => `${row.horseId}:${row.tournamentId || raceTournamentId(row.race)}`));
+    const tournamentCandidates = tournamentList.filter((tournament) => {
+      const status = String(tournament.status || '').toUpperCase();
+      return !['CANCELLED', 'COMPLETED'].includes(status);
+    });
+    const tournamentRegistrationsByTournament = new Map<string, any[]>();
+    let loadedMyTournamentRegistrations = false;
+
+    try {
+      const myTournamentRegistrations = await api.getMyTournamentRegistrations();
+      loadedMyTournamentRegistrations = myTournamentRegistrations.length > 0;
+      myTournamentRegistrations.forEach((registration: any) => {
+        const tournamentId = idOf(registration.tournamentId || registration.tournament);
+        if (!tournamentId) return;
+        const current = tournamentRegistrationsByTournament.get(tournamentId) || [];
+        current.push(registration);
+        tournamentRegistrationsByTournament.set(tournamentId, current);
+      });
+    } catch {
+      // Older backends may not expose an owner-level tournament-registration endpoint.
+    }
+
+    await Promise.all(
+      tournamentCandidates.map(async (tournament) => {
+        const tournamentId = tournamentIdOf(tournament);
+        if (!tournamentId) return;
+
+        try {
+          const tournamentRegistrations = tournamentRegistrationsByTournament.get(tournamentId)
+            || (loadedMyTournamentRegistrations ? [] : await api.getTournamentRegistrations(tournamentId));
+          tournamentRegistrations.forEach((registration: any) => {
+            const horseId = idOf(registration.horseId || registration.horse);
+            if (!myHorseIds.has(horseId)) return;
+            if (raceRegistrationKeys.has(`${horseId}:${tournamentId}`)) return;
+
+            const horse = horseList.find((item) => getHorseId(item) === horseId);
+            const linkedRace = tournamentRaceForInvite(tournament, raceList);
+            const inviteRace = linkedRace || pseudoRaceFromTournament(tournament);
+
+            rows.push({
+              id: registration.id,
+              _id: registration._id,
+              registrationId: registration.registrationId || registration.id || registration._id,
+              race: inviteRace,
+              raceId: getRaceId(inviteRace),
+              horseId,
+              horseName: horse?.name || registration.horseName || 'Ngựa thi đấu',
+              status: registration.status || 'PENDING',
+              confirmedByOwner: registration.confirmedByOwner,
+              rejectionReason: registration.rejectionReason,
+              source: 'TOURNAMENT',
+              tournamentId,
+              tournamentName: tournament.name,
+            });
+          });
+        } catch {
+          // Some backends keep tournament-registration lists admin-only. Race-level data above remains usable.
         }
       })
     );
@@ -292,7 +404,7 @@ export default function HorsesScreen() {
         api.searchJockeys({ limit: 100 }).catch(() => []),
       ]);
       const [regRows, inviteRows] = await Promise.all([
-        loadRegistrations(horseList, raceList),
+        loadRegistrations(horseList, tournamentList, raceList),
         loadOwnerInvites(horseList),
       ]);
 
@@ -458,17 +570,52 @@ export default function HorsesScreen() {
       return;
     }
 
-    setActionLoading(getRaceId(tournament));
+    const tournamentId = tournamentIdOf(tournament);
+    const inviteRace = tournamentRaceForInvite(tournament, races) || pseudoRaceFromTournament(tournament);
+    const upsertPendingRegistration = () => {
+      const pendingRegistration: OwnerRegistration = {
+        id: `pending-${selectedHorseId}-${tournamentId}`,
+        _id: `pending-${selectedHorseId}-${tournamentId}`,
+        registrationId: `pending-${selectedHorseId}-${tournamentId}`,
+        race: inviteRace,
+        raceId: getRaceId(inviteRace),
+        horseId: selectedHorseId,
+        horseName: horse?.name || 'Ngựa thi đấu',
+        status: 'PENDING_APPROVAL',
+        source: 'TOURNAMENT',
+        tournamentId,
+        tournamentName: tournament.name,
+      };
+
+      setRegistrations((current) => {
+        const exists = current.some((reg) => (
+          reg.horseId === selectedHorseId
+          && (reg.tournamentId || raceTournamentId(reg.race)) === tournamentId
+        ));
+
+        if (!exists) return [...current, pendingRegistration];
+
+        return current.map((reg) => (
+          reg.horseId === selectedHorseId
+          && (reg.tournamentId || raceTournamentId(reg.race)) === tournamentId
+            ? { ...reg, status: reg.status || 'PENDING_APPROVAL' }
+            : reg
+        ));
+      });
+    };
+
+    setActionLoading(tournamentId);
     try {
-      const result = await api.registerHorseForTournament(selectedHorseId, String(tournament.id || tournament._id));
+      const result = await api.registerHorseForTournament(selectedHorseId, tournamentId);
       if (result.success.length > 0) {
-        Alert.alert('Đã gửi đăng ký', `Đăng ký ${horse?.name || 'ngựa'} vào ${result.success.length} vòng bảng.`);
+        upsertPendingRegistration();
+        Alert.alert('Đã gửi đăng ký', `Đăng ký ${horse?.name || 'ngựa'} vào giải "${tournament.name}". Admin sẽ phân bổ vào vòng đấu phù hợp.`);
       } else if (result.alreadyRegistered.length > 0) {
+        upsertPendingRegistration();
         Alert.alert('Đã đăng ký trước đó', 'Ngựa đã có đăng ký trong giải này.');
       } else {
         Alert.alert('Chưa thành công', result.failed[0]?.error || 'Không thể đăng ký giải đấu.');
       }
-      await fetchData();
     } catch (error: any) {
       Alert.alert('Lỗi', error?.message || error?.response?.data?.message || 'Không thể đăng ký giải đấu.');
     } finally {
@@ -491,7 +638,7 @@ export default function HorsesScreen() {
 
   const inviteJockey = async (jockey: Jockey) => {
     if (!selectedHorseId || !selectedRaceId) {
-      Alert.alert('Thiếu thông tin', 'Vui lòng chọn ngựa và cuộc đua trước khi mời Jockey.');
+      Alert.alert('Thiếu thông tin', 'Vui lòng chọn ngựa và giải/cuộc đua trước khi mời Jockey.');
       return;
     }
 
@@ -501,7 +648,7 @@ export default function HorsesScreen() {
     const regStatus = String(registeredEntry?.status || '').toUpperCase();
 
     if (!registeredEntry) {
-      Alert.alert('Chưa đăng ký', 'Ngựa chưa đăng ký cuộc đua này.');
+      Alert.alert('Chưa đăng ký', 'Ngựa chưa đăng ký giải/cuộc đua này.');
       return;
     }
     if (['PENDING', 'PENDING_APPROVAL'].includes(regStatus)) {
@@ -512,8 +659,17 @@ export default function HorsesScreen() {
       Alert.alert('Bị từ chối', 'Đăng ký đã bị từ chối, không thể mời Jockey.');
       return;
     }
+    if (registeredEntry.source === 'TOURNAMENT' && !race) {
+      Alert.alert('Chưa có cuộc đua', 'Giải này đã được duyệt nhưng chưa có cuộc đua để gửi lời mời Jockey.');
+      return;
+    }
 
     const jId = getHorseId(jockey);
+    if (hasActiveInviteForJockey(jockey)) {
+      Alert.alert('Đã mời', 'Jockey này đã được mời cho ngựa và giải/cuộc đua đang chọn.');
+      return;
+    }
+
     setActionLoading(jId);
     try {
       await api.sendJockeyInvitation(
@@ -522,11 +678,49 @@ export default function HorsesScreen() {
         selectedRaceId,
         `Mời bạn cưỡi ngựa của tôi|RACE_ID:${selectedRaceId}`,
         registeredEntry.registrationId,
-        race?.name || ''
+        race?.name || registeredEntry.tournamentName || registeredEntry.race.name || ''
       );
+      const optimisticInvite = {
+        id: `pending-invite-${selectedHorseId}-${selectedRaceId}-${jId}`,
+        _id: `pending-invite-${selectedHorseId}-${selectedRaceId}-${jId}`,
+        horseId: selectedHorseId,
+        horseName: horse?.name,
+        jockeyId: jId,
+        raceId: selectedRaceId,
+        raceName: race?.name || registeredEntry.tournamentName || registeredEntry.race.name || '',
+        status: 'PENDING',
+        message: 'Mời bạn cưỡi ngựa của tôi',
+      } as Invite;
+
+      setInvitations((current) => {
+        const exists = current.some((invite: any) => (
+          idOf(invite.horseId || invite.horse) === selectedHorseId
+          && resolveInviteRaceId(invite) === selectedRaceId
+          && idOf(invite.jockeyId || invite.jockey) === jId
+          && !['REJECTED', 'DECLINED'].includes(String(invite.status || 'PENDING').toUpperCase())
+        ));
+        return exists ? current : [...current, optimisticInvite];
+      });
       Alert.alert('Đã gửi lời mời', `Đã gửi lời mời đến ${jockeyName(jockey)} cho ${horse?.name || 'ngựa'}.`);
-      const inviteRows = await loadOwnerInvites(horses);
-      setInvitations(inviteRows);
+      loadOwnerInvites(horses)
+        .then((inviteRows) => {
+          setInvitations((current) => {
+            const merged = [...inviteRows];
+            current.forEach((invite: any) => {
+              const exists = merged.some((item: any) => (
+                String(item.id || item._id || '') === String(invite.id || invite._id || '')
+                || (
+                  idOf(item.horseId || item.horse) === idOf(invite.horseId || invite.horse)
+                  && resolveInviteRaceId(item) === resolveInviteRaceId(invite)
+                  && idOf(item.jockeyId || item.jockey) === idOf(invite.jockeyId || invite.jockey)
+                )
+              ));
+              if (!exists) merged.push(invite);
+            });
+            return merged;
+          });
+        })
+        .catch(() => {});
     } catch (error: any) {
       Alert.alert('Lỗi', error?.response?.data?.message || error?.response?.data?.error || 'Không thể gửi lời mời.');
     } finally {
@@ -541,6 +735,34 @@ export default function HorsesScreen() {
     if (rawRaceId) return rawRaceId;
     const horseId = idOf(invite.horseId);
     return registrations.find((reg) => reg.horseId === horseId)?.raceId || '';
+  };
+
+  const hasActiveInviteForJockey = (jockey: Jockey | any) => {
+    if (!selectedHorseId || !selectedRaceId) return false;
+
+    const jockeyIds = [
+      idOf(jockey),
+      idOf(jockey.userId),
+      jockey.userId?._id,
+      jockey.userId?.id,
+    ].filter(Boolean).map((value) => String(value).trim());
+
+    return invitations.some((invite: any) => {
+      const status = String(invite.status || 'PENDING').toUpperCase();
+      if (['REJECTED', 'DECLINED'].includes(status)) return false;
+
+      const inviteHorseId = idOf(invite.horseId || invite.horse);
+      if (inviteHorseId !== selectedHorseId) return false;
+      if (resolveInviteRaceId(invite) !== selectedRaceId) return false;
+
+      const inviteJockeyIds = [
+        idOf(invite.jockeyId || invite.jockey),
+        idOf(invite.jockeyId?.userId),
+        idOf(invite.jockey?.userId),
+      ].filter(Boolean).map((value) => String(value).trim());
+
+      return inviteJockeyIds.some((id) => jockeyIds.includes(id));
+    });
   };
 
   const confirmInviteJockey = async (invite: Invite | any) => {
@@ -666,30 +888,37 @@ export default function HorsesScreen() {
       ) : openTournaments.length === 0 ? (
         <EmptyState icon={Trophy} title="Không có giải đang mở" />
       ) : (
-        openTournaments.map((tournament) => (
-          <Surface key={String(tournament.id || tournament._id)} className="p-4 mb-3">
-            <View className="flex-row justify-between items-start">
-              <View className="flex-1 pr-3">
-                <Text className="text-base font-extrabold text-slate-900" numberOfLines={2}>{tournament.name}</Text>
-                <Text className="text-sm text-slate-500 mt-1" numberOfLines={1}>{tournament.venue || 'Chưa rõ địa điểm'}</Text>
-                <Text className="text-xs text-slate-400 mt-2">{formatDateTime(tournament.startDate)} - {formatDateTime(tournament.endDate)}</Text>
+        openTournaments.map((tournament) => {
+          const tournamentId = tournamentIdOf(tournament);
+          const existingRegistration = selectedHorseTournamentRegistration(tournament);
+          const hasRegistration = !!existingRegistration;
+          const registering = actionLoading === tournamentId;
+
+          return (
+            <Surface key={tournamentId} className="p-4 mb-3">
+              <View className="flex-row justify-between items-start">
+                <View className="flex-1 pr-3">
+                  <Text className="text-base font-extrabold text-slate-900" numberOfLines={2}>{tournament.name}</Text>
+                  <Text className="text-sm text-slate-500 mt-1" numberOfLines={1}>{tournament.venue || 'Chưa rõ địa điểm'}</Text>
+                  <Text className="text-xs text-slate-400 mt-2">{formatDateTime(tournament.startDate)} - {formatDateTime(tournament.endDate)}</Text>
+                </View>
+                <View className="items-end">
+                  <Text className="text-xs font-extrabold text-amber-700">{formatPoints(tournament.prizePool)} điểm</Text>
+                  <Text className="text-[10px] font-extrabold text-slate-400 mt-1">{statusLabel(tournament.status)}</Text>
+                </View>
               </View>
-              <View className="items-end">
-                <Text className="text-xs font-extrabold text-amber-700">{formatPoints(tournament.prizePool)} điểm</Text>
-                <Text className="text-[10px] font-extrabold text-slate-400 mt-1">{statusLabel(tournament.status)}</Text>
+              <View className="mt-4">
+                <ActionButton
+                  label={registrationButtonLabel(existingRegistration?.status)}
+                  onPress={() => registerTournament(tournament)}
+                  loading={registering}
+                  disabled={!selectedHorseId || registering || hasRegistration}
+                  icon={hasRegistration ? Clock : Send}
+                />
               </View>
-            </View>
-            <View className="mt-4">
-              <ActionButton
-                label="Đăng ký giải"
-                onPress={() => registerTournament(tournament)}
-                loading={actionLoading === String(tournament.id || tournament._id)}
-                disabled={!selectedHorseId || actionLoading === String(tournament.id || tournament._id)}
-                icon={Send}
-              />
-            </View>
-          </Surface>
-        ))
+            </Surface>
+          );
+        })
       )}
     </View>
   );
@@ -748,12 +977,12 @@ export default function HorsesScreen() {
       {renderHorsePicker()}
       {inviteRaces.length > 0 ? (
         <View className="mb-4">
-          <Text className="text-xs font-extrabold text-slate-500 uppercase mb-2">Chọn cuộc đua đã duyệt</Text>
+          <Text className="text-xs font-extrabold text-slate-500 uppercase mb-2">Chọn giải/cuộc đua đã duyệt</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {inviteRaces.map((reg) => (
               <Chip
-                key={reg.raceId}
-                label={reg.race.name}
+                key={`${reg.source || 'RACE'}-${reg.registrationId || reg.raceId}`}
+                label={reg.source === 'TOURNAMENT' ? (reg.tournamentName || reg.race.name) : reg.race.name}
                 active={selectedRaceId === reg.raceId}
                 onPress={() => setSelectedRaceId(reg.raceId)}
                 tone="blue"
@@ -763,7 +992,7 @@ export default function HorsesScreen() {
         </View>
       ) : (
         <Surface className="p-4 mb-4 bg-amber-50 border-amber-100">
-          <Text className="text-sm font-bold text-amber-800">Ngựa được chọn chưa có cuộc đua đã duyệt để mời Jockey.</Text>
+          <Text className="text-sm font-bold text-amber-800">Ngựa được chọn chưa có giải/cuộc đua đã duyệt để mời Jockey.</Text>
         </Surface>
       )}
       <View className="flex-row items-center bg-white border border-slate-200 rounded-2xl px-3 h-12 mb-4">
@@ -781,8 +1010,12 @@ export default function HorsesScreen() {
         filteredJockeys.map((jockey) => {
           const available = String(jockey.status || '').toUpperCase() === 'AVAILABLE';
           const name = jockeyName(jockey);
+          const jockeyId = getHorseId(jockey);
+          const invited = hasActiveInviteForJockey(jockey);
+          const sending = actionLoading === jockeyId;
+          const disabled = !available || !selectedRaceId || invited || sending;
           return (
-            <Surface key={getHorseId(jockey)} className="p-4 mb-3">
+            <Surface key={jockeyId} className="p-4 mb-3">
               <View className="flex-row items-center">
                 <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-3 ${available ? 'bg-emerald-50' : 'bg-slate-100'}`}>
                   <Text className={`font-extrabold ${available ? 'text-emerald-700' : 'text-slate-500'}`}>{name.slice(0, 2).toUpperCase()}</Text>
@@ -796,13 +1029,29 @@ export default function HorsesScreen() {
                 </View>
               </View>
               <View className="mt-4">
-                <ActionButton
-                  label={available ? 'Mời Jockey' : 'Không khả dụng'}
+                <TouchableOpacity
+                  activeOpacity={0.86}
+                  disabled={disabled}
                   onPress={() => inviteJockey(jockey)}
-                  loading={actionLoading === getHorseId(jockey)}
-                  disabled={!available || !selectedRaceId || actionLoading === getHorseId(jockey)}
-                  icon={Send}
-                />
+                  className={`min-h-[52px] rounded-2xl px-4 flex-row items-center justify-center ${
+                    invited
+                      ? 'bg-slate-700'
+                      : !available || !selectedRaceId
+                        ? 'bg-slate-300'
+                        : 'bg-blue-600'
+                  }`}
+                >
+                  {sending ? (
+                    <ActivityIndicator color="white" />
+                  ) : (
+                    <>
+                      {invited ? <Check size={18} color="white" /> : <Send size={18} color="white" />}
+                      <Text className="text-white font-extrabold ml-2">
+                        {invited ? 'Đã mời' : available ? 'Mời Jockey' : 'Không khả dụng'}
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
               </View>
             </Surface>
           );
