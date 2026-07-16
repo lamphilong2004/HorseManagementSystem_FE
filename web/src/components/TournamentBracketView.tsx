@@ -28,7 +28,7 @@ export function TournamentBracketView({ bracket, races, onGenerateNextRound, loa
          else roundName = parts.length >= 2 ? parts[parts.length - 2].trim() : 'Vòng 1';
        }
        if (!roundGroups.has(roundName)) roundGroups.set(roundName, []);
-       roundGroups.get(roundName)!.push({ name: r.name, horseCount: r.maxHorses || 8, topAdvance: 2 });
+       roundGroups.get(roundName)!.push({ name: r.name, horseCount: r.maxHorses || 8, topAdvance: (r as any).topAdvance || 2 });
     });
     
     const generatedRounds = Array.from(roundGroups.entries()).map(([name, rList]) => ({
@@ -52,17 +52,18 @@ export function TournamentBracketView({ bracket, races, onGenerateNextRound, loa
     let lastRound = generatedRounds[generatedRounds.length - 1];
     let rNum = generatedRounds.length + 1;
     while (lastRound && lastRound.races.length > 1 && !lastRound.name.toLowerCase().includes('chung kết')) {
-      const nextHorsesCount = lastRound.races.length * 2; // Assume top 2 advance
-      let nextRacesCount = Math.ceil(nextHorsesCount / 4); // Assume max 4 per heat
-      if (nextRacesCount === 1 && nextHorsesCount > 8) nextRacesCount = 2; // Max 8 per final race
+      const nextHorsesCount = lastRound.races.reduce((sum: number, r: any) => sum + (r.topAdvance || 2), 0);
+      const maxHorses = lastRound.races[0]?.horseCount || 8;
+      let nextRacesCount = Math.ceil(nextHorsesCount / maxHorses);
+      if (nextRacesCount === 1 && nextHorsesCount > maxHorses) nextRacesCount = 2;
 
       const nextRoundName = nextRacesCount === 1 ? 'Chung Kết' : `Vòng ${rNum}`;
       const nextRound = {
         name: nextRoundName,
         races: Array.from({length: nextRacesCount}).map((_, i) => ({
           name: nextRacesCount === 1 ? 'Chung Kết' : `Vòng ${rNum} - Bảng ${i+1}`,
-          horseCount: nextRacesCount === 1 ? nextHorsesCount : 4,
-          topAdvance: nextRacesCount === 1 ? 1 : 2
+          horseCount: nextRacesCount === 1 ? nextHorsesCount : Math.ceil(nextHorsesCount / nextRacesCount),
+          topAdvance: nextRacesCount === 1 ? 1 : Math.floor(maxHorses / nextRacesCount) || 1
         }))
       };
       generatedRounds.push(nextRound);
