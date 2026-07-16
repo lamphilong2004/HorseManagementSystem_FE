@@ -774,7 +774,7 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
       await approveRaceRegistration(regId)
       setLastModifiedRegId(regId)
       showToast('Đã duyệt đăng ký tham gia cuộc đua')
-      loadTabData(undefined, undefined, regId, undefined)
+      setRegistrations(prev => prev.map(r => r.id === regId ? { ...r, status: 'APPROVED' } : r))
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Duyệt đăng ký thất bại', 'error')
     }
@@ -787,10 +787,31 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
       await rejectRaceRegistration(regId, reason)
       setLastModifiedRegId(regId)
       showToast('Đã từ chối đăng ký', 'warning')
-      loadTabData(undefined, undefined, regId, undefined)
+      setRegistrations(prev => prev.map(r => r.id === regId ? { ...r, status: 'REJECTED', rejectionReason: reason } : r))
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Từ chối thất bại', 'error')
     }
+  }
+
+  const handleApproveAllPending = () => {
+    const pendingRegs = filteredRegistrations.filter(r => r.status === 'PENDING' || r.status === 'PENDING_APPROVAL')
+    if (pendingRegs.length === 0) {
+      showToast('Không có đăng ký nào đang chờ duyệt trong danh sách hiện tại', 'warning')
+      return
+    }
+    if (!window.confirm(`Bạn có chắc muốn duyệt tất cả ${pendingRegs.length} đăng ký đang chờ duyệt không?`)) return
+
+    const ids = pendingRegs.map(r => r.id)
+    setRegistrations(prev => prev.map(r => ids.includes(r.id) ? { ...r, status: 'APPROVED' } : r))
+    
+    Promise.allSettled(ids.map(id => approveRaceRegistration(id))).then((results) => {
+      const failed = results.filter(r => r.status === 'rejected')
+      if (failed.length > 0) {
+        showToast(`Duyệt thành công ${ids.length - failed.length}, thất bại ${failed.length}. Vui lòng kiểm tra lại.`, 'warning')
+      } else {
+        showToast(`Đã duyệt thành công ${ids.length} đăng ký!`)
+      }
+    })
   }
 
   const handleAutoAssignTournamentRegistrations = () => {
@@ -1098,7 +1119,13 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
 
   // Filter registrations list
   const filteredRegistrations = registrations.filter((reg) => {
-    if (filterRegStatus !== 'ALL' && reg.status !== filterRegStatus) return false
+    if (filterRegStatus !== 'ALL') {
+      if (filterRegStatus === 'PENDING') {
+        if (reg.status !== 'PENDING' && reg.status !== 'PENDING_APPROVAL') return false
+      } else if (reg.status !== filterRegStatus) {
+        return false
+      }
+    }
     
     if (filterRegTourn !== 'ALL') {
       const resolvedTournId = getTournamentIdForRegistration(reg)
@@ -1495,10 +1522,10 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
                 className="h-10 rounded-lg"
               >
                 <option value="ALL">Tất cả trạng thái</option>
-                <option value="PENDING_APPROVAL">Chờ duyệt (Pending)</option>
-                <option value="APPROVED">Đã duyệt (Approved)</option>
-                <option value="CONFIRMED">Đã xác nhận (Confirmed)</option>
-                <option value="REJECTED">Đã từ chối (Rejected)</option>
+                <option value="PENDING">Chờ duyệt</option>
+                <option value="APPROVED">Đã duyệt</option>
+                <option value="CONFIRMED">Đã xác nhận</option>
+                <option value="REJECTED">Đã từ chối</option>
               </select>
             </div>
             <div className="form-group min-w-[200px]" style={{ margin: 0 }}>
@@ -1584,6 +1611,21 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
                 >
                   <span className="flex justify-center items-center gap-2 relative z-10">
                     <Sparkles className="w-4 h-4" /> Tự phân bổ ngẫu nhiên
+                  </span>
+                  <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out"></div>
+                </button>
+                <button
+                  type="button"
+                  className="btn btnPrimary h-10 flex-1 relative overflow-hidden group"
+                  onClick={handleApproveAllPending}
+                  style={{
+                    background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+                    border: 'none',
+                    fontWeight: 700,
+                  }}
+                >
+                  <span className="flex justify-center items-center gap-2 relative z-10">
+                    <CheckCircle className="w-4 h-4" /> Duyệt tất cả chờ duyệt
                   </span>
                   <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out"></div>
                 </button>
