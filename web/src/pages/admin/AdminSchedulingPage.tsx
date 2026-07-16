@@ -16,7 +16,7 @@ import {
   Lock,
   TrendingUp,
   Phone,
-  ExternalLink,
+  
   User as UserIcon,
   Calendar,
   X,
@@ -2012,7 +2012,7 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
           {/* Horse profiles approval */}
           <div className="card">
             <h2>Duyệt Hồ Sơ Ngựa Trong Hệ Thống</h2>
-            <p className="muted">Khi chủ ngựa khai báo ngựa mới, hồ sơ cần được duyệt (kiểm tra chứng nhận sức khỏe) trước khi có thể đăng ký thi đấu.</p>
+            <p className="muted">Khi chủ ngựa khai báo ngựa mới, hồ sơ cần được duyệt trước khi có thể đăng ký thi đấu.</p>
 
             {loading ? (
               <p className="muted">Đang tải...</p>
@@ -2111,23 +2111,7 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
                         </div>
                       )
                     },
-                    {
-                      id: 'healthCertUrl',
-                      header: 'Hồ sơ sức khỏe',
-                      cell: (row) => (
-                        row.healthCertUrl ? (
-                          <a href={row.healthCertUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1" style={{ color: 'var(--primary)', fontWeight: 600 }}>
-                            <span>Xem Health Cert</span>
-                            <ExternalLink className="w-3 h-3 shrink-0" />
-                          </a>
-                        ) : (
-                          <span className="danger-text flex items-center gap-1">
-                            <AlertTriangle className="w-3 h-3 text-red-500 shrink-0" />
-                            <span>Thiếu hồ sơ</span>
-                          </span>
-                        )
-                      )
-                    },
+
                     {
                       id: 'actions',
                       header: 'Hành động',
