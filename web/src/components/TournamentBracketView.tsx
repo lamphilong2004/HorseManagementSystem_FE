@@ -7,6 +7,25 @@ export function TournamentBracketView({ bracket, races, onGenerateNextRound, loa
   const [raceHorses, setRaceHorses] = useState<Record<string, any[]>>({})
   const [loading, setLoading] = useState(false)
 
+  let displayBracket = bracket;
+  
+  if ((!bracket || !bracket.rounds || bracket.rounds.length === 0) && races && races.length > 0) {
+    const roundGroups = new Map<string, any[]>();
+    races.forEach(r => {
+       const parts = r.name.split(' - ');
+       const roundName = parts.length > 1 ? parts[0] : 'Vòng 1';
+       if (!roundGroups.has(roundName)) roundGroups.set(roundName, []);
+       roundGroups.get(roundName)!.push({ name: r.name, horseCount: 8, topAdvance: 2 });
+    });
+    
+    displayBracket = {
+      rounds: Array.from(roundGroups.entries()).map(([name, rList]) => ({
+        name,
+        races: rList
+      }))
+    };
+  }
+
   useEffect(() => {
     if (!races || races.length === 0) return
     setLoading(true)
@@ -28,7 +47,7 @@ export function TournamentBracketView({ bracket, races, onGenerateNextRound, loa
     fetchHorses()
   }, [races])
 
-  const hasBracket = bracket && bracket.rounds && bracket.rounds.length > 0
+  const hasBracket = displayBracket && displayBracket.rounds && displayBracket.rounds.length > 0
   
   if (!hasBracket) {
     return (
@@ -55,8 +74,8 @@ export function TournamentBracketView({ bracket, races, onGenerateNextRound, loa
       ) : (
         <div className="overflow-x-auto pb-12">
           <div className="flex gap-16 min-w-max p-4 justify-center items-stretch">
-            {bracket.rounds.map((round: any, rIdx: number) => {
-              const totalRounds = bracket.rounds.length;
+            {displayBracket.rounds.map((round: any, rIdx: number) => {
+              const totalRounds = displayBracket.rounds.length;
               const distanceToFinal = totalRounds - 1 - rIdx;
               
               let roundName = round.name || `Vòng ${rIdx + 1}`;

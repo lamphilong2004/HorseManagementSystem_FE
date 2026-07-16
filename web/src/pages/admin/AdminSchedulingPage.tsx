@@ -1048,6 +1048,7 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
       showToast(`Đã chốt chia bảng thành công và xếp cổng!`, 'success')
       setDraftApprovals({})
       setDraftRejections({})
+      setDraftBracket(null)
       setShowConfirmDraftModal(false)
       loadTabData(filterRegTourn, undefined, undefined, undefined)
       loadDashboardStats()
