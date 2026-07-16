@@ -1077,14 +1077,11 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
       }
       
       const payload = {
-        heats: Array.from(heatsMap.entries()).map(([name, regIds]) => ({ name, regIds }))
+        heats: Array.from(heatsMap.entries()).map(([name, regIds]) => ({ name, regIds })),
+        draftBracket: draftBracket // Send draftBracket to BE so they can extract custom names and inject raceIds
       }
 
-      await http.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/admin/tournaments/${filterRegTourn}/generate-heats`, payload)
-      
-      if (draftBracket) {
-        await updateTournament(filterRegTourn, { bracket: { rounds: draftBracket } })
-      }
+      await http.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/admin/tournaments/${filterRegTourn}/generate-bracket`, payload)
       
       showToast(`Đã chốt chia bảng thành công và xếp cổng!`, 'success')
       setDraftApprovals({})
