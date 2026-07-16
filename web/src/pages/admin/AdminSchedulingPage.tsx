@@ -126,8 +126,10 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
   // Draft auto-assign states
   const [draftApprovals, setDraftApprovals] = useState<Record<string, { raceId: string, raceName: string }>>({})
   const [draftRejections, setDraftRejections] = useState<Record<string, string>>({})
+  const [draftBracket, setDraftBracket] = useState<any>(null)
   const [showConfirmDraftModal, setShowConfirmDraftModal] = useState(false)
   const [confirmDraftLoading, setConfirmDraftLoading] = useState(false)
+  const [generatingNextRound, setGeneratingNextRound] = useState(false)
 
   // Registrations Table State
   const [regSortColumn, setRegSortColumn] = useState<string | undefined>()
@@ -792,6 +794,97 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
     }
   }
 
+  const handleGenerateNextRound = async (roundIdx: number) => {
+    if (!viewBracketTournament) return;
+    setGeneratingNextRound(true)
+    try {
+      const bracket = viewBracketTournament.bracket;
+      const prevRound = bracket.rounds[roundIdx - 1];
+      const nextRound = bracket.rounds[roundIdx];
+      
+      const prevRaces = prevRound.races.map((br: any) => viewBracketRaces.find(r => r.name === br.name));
+      if (prevRaces.some((r: any) => !r)) {
+        showToast('Vòng trước chưa được tạo đầy đủ!', 'error')
+        return
+      }
+      
+      if (prevRaces.some((r: any) => r.status !== 'COMPLETED' && r.status !== 'FINISHED' && r.status !== 'RESULT_CONFIRMED')) {
+        showToast('Tất cả các bảng vòng trước phải đua xong mới có thể tạo vòng tiếp theo!', 'warning')
+        return
+      }
+
+      const advancingRegIds: string[] = []
+      
+      for (let i = 0; i < prevRaces.length; i++) {
+        const race = prevRaces[i];
+        const topAdvance = prevRound.races[i].topAdvance || 2;
+        
+        let results = race.results || race.rankings || [];
+        if (results.length === 0) {
+          // fetch from api if needed
+          const res = await http.get(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/results/races/${race.id}`).catch(() => null)
+          if (res?.data?.results) results = res.data.results
+        }
+        
+        if (results.length === 0) {
+          showToast(`Bảng ${race.name} chưa có kết quả!`, 'error')
+          return;
+        }
+
+        const sorted = [...results].sort((a: any, b: any) => a.position - b.position);
+        const topResults = sorted.slice(0, topAdvance);
+        
+        const resHorses = await http.get(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/races/${race.id}/horses`).catch(() => null)
+        const raceHorses = resHorses?.data || [];
+        
+        topResults.forEach((res: any) => {
+          const horseId = res.horseId?.id || res.horseId?._id || res.horseId;
+          const reg = raceHorses.find((rh: any) => (rh.horse?.id || rh.horse?._id || rh.horseId) === horseId);
+          if (reg) {
+            // Find the original tournament registration
+            const tournReg = registrations.find(r => (r.horseId?.id || r.horseId?._id || r.horseId) === horseId && getTournamentIdForRegistration(r) === viewBracketTournament.id)
+            if (tournReg) advancingRegIds.push(tournReg.id);
+          }
+        })
+      }
+      
+      if (advancingRegIds.length === 0) {
+        showToast('Không tìm thấy ngựa nào đủ điều kiện vào vòng trong', 'error')
+        return;
+      }
+      
+      const heatsMap = new Map<string, string[]>();
+      let pointer = 0;
+      for (let i = 0; i < nextRound.races.length; i++) {
+        const bRace = nextRound.races[i];
+        const count = bRace.horseCount;
+        const regIdsForThisRace = advancingRegIds.slice(pointer, pointer + count);
+        heatsMap.set(bRace.name, regIdsForThisRace);
+        pointer += count;
+      }
+
+      const payload = {
+        heats: Array.from(heatsMap.entries()).map(([name, regIds]) => ({ name, regIds }))
+      }
+
+      await http.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/admin/tournaments/${viewBracketTournament.id}/generate-heats`, payload)
+      
+      showToast(`Đã khởi tạo ${nextRound.name} thành công!`, 'success')
+      loadTabData(viewBracketTournament.id, undefined, undefined, undefined)
+      
+      // Update the local view bracket races to instantly reflect without closing
+      const updatedRacesRes = await http.get(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/races?tournamentId=${viewBracketTournament.id}`)
+      if (updatedRacesRes?.data?.races) {
+        setViewBracketRaces(updatedRacesRes.data.races)
+      }
+      
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Lỗi khi tạo vòng tiếp theo', 'error')
+    } finally {
+      setGeneratingNextRound(false)
+    }
+  }
+
   const handleApproveAllPending = () => {
     const pendingRegs = filteredRegistrations.filter(r => r.status === 'PENDING' || r.status === 'PENDING_APPROVAL')
     if (pendingRegs.length === 0) {
@@ -845,40 +938,85 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
       return
     }
 
-    // Determine heats
+    // Determine rounds and heats dynamically
     const maxHorses = tourn.maxHorses || 8
-    let numHeats = Math.ceil(eligibleRegs.length / maxHorses)
-
-    // Theo logic giải đấu, nếu số lượng ngựa đủ để chia ít nhất 2 bảng (vd: 8 ngựa) thì nên chia 2 thay vì dồn vào 1 bảng duy nhất (Final luôn)
-    if (numHeats === 1 && eligibleRegs.length >= 4) {
-      numHeats = 2
-    }
+    let currentHorses = eligibleRegs.length
+    
+    const newDraftApprovals: Record<string, { raceId: string, raceName: string }> = {}
+    const rounds: any[] = []
+    let roundNum = 1
     
     // Randomize horses
-    const shuffled = [...eligibleRegs].sort(() => Math.random() - 0.5)
+    const simulatedHorsesArray = [...eligibleRegs].sort(() => Math.random() - 0.5)
 
-    const newDraftApprovals: Record<string, { raceId: string, raceName: string }> = {}
-
-    // Distribute evenly
-    const heats = Array.from({ length: numHeats }, (_, i) => ({
-      name: `Bảng ${String.fromCharCode(65 + i)}`,
-      horses: [] as RaceRegistration[]
-    }))
-
-    shuffled.forEach((reg, idx) => {
-      const heatIdx = idx % numHeats
-      heats[heatIdx].horses.push(reg)
-    })
-
-    heats.forEach(heat => {
-      heat.horses.forEach(reg => {
-        newDraftApprovals[reg.id] = { raceId: `draft-${heat.name}`, raceName: heat.name }
+    while (currentHorses > maxHorses) {
+      const numRaces = Math.ceil(currentHorses / maxHorses)
+      const topAdvance = 2 // Advance top 2 by default
+      
+      const roundRaces = []
+      
+      for (let i = 0; i < numRaces; i++) {
+        const raceName = `Vòng ${roundNum} - Bảng ${i + 1}`
+        
+        // Assign horses to round 1 races
+        if (roundNum === 1) {
+          const horsesForRace = simulatedHorsesArray.filter((_, idx) => idx % numRaces === i)
+          horsesForRace.forEach(reg => {
+            newDraftApprovals[reg.id] = { raceId: `draft-${raceName}`, raceName }
+          })
+          roundRaces.push({
+            name: raceName,
+            horseCount: horsesForRace.length,
+            topAdvance,
+            isDraft: true
+          })
+        } else {
+          // Future rounds placeholder structure
+          roundRaces.push({
+            name: raceName,
+            horseCount: Math.ceil(currentHorses / numRaces),
+            topAdvance,
+            isDraft: true
+          })
+        }
+      }
+      
+      rounds.push({
+        name: `Vòng ${roundNum}`,
+        races: roundRaces
       })
+      
+      currentHorses = numRaces * topAdvance
+      roundNum++
+    }
+
+    // Final Round
+    const finalRaceName = 'Chung Kết'
+    if (roundNum === 1) {
+      // Direct to final
+      simulatedHorsesArray.forEach(reg => {
+        newDraftApprovals[reg.id] = { raceId: `draft-${finalRaceName}`, raceName: finalRaceName }
+      })
+    }
+    
+    rounds.push({
+      name: finalRaceName,
+      races: [{
+        name: finalRaceName,
+        horseCount: currentHorses,
+        topAdvance: 1,
+        isDraft: true
+      }]
     })
 
+    // Prettify names
+    if (rounds.length >= 2) rounds[rounds.length - 2].name = 'Bán Kết'
+    if (rounds.length >= 3) rounds[rounds.length - 3].name = 'Tứ Kết'
+
+    setDraftBracket(rounds)
     setDraftApprovals(newDraftApprovals)
     setDraftRejections({})
-    showToast(`Đã chia ${eligibleRegs.length} ngựa vào ${numHeats} bảng dự kiến. Bấm Xác nhận để chốt!`, 'info')
+    showToast(`Đã chia ${eligibleRegs.length} ngựa thành ${rounds.length} vòng đấu. Bấm Xác nhận để chốt!`, 'info')
   }
 
   const confirmDraftAssignments = async () => {
@@ -897,6 +1035,10 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
       }
 
       await http.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/admin/tournaments/${filterRegTourn}/generate-heats`, payload)
+      
+      if (draftBracket) {
+        await updateTournament(filterRegTourn, { bracket: { rounds: draftBracket } })
+      }
       
       showToast(`Đã chốt chia bảng thành công và xếp cổng!`, 'success')
       setDraftApprovals({})
@@ -1495,6 +1637,7 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
                   setFilterRegRace('ALL'); 
                   setDraftApprovals({});
                   setDraftRejections({});
+                  setDraftBracket(null);
                 }}
                 className="h-10 rounded-lg"
               >
@@ -3071,7 +3214,12 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
             </div>
             
             <div className="flex-1 overflow-y-auto p-6 bg-[#0f0f13]">
-              <TournamentBracketView bracket={viewBracketTournament.bracket} races={viewBracketRaces} />
+              <TournamentBracketView 
+                bracket={viewBracketTournament.bracket} 
+                races={viewBracketRaces} 
+                onGenerateNextRound={handleGenerateNextRound}
+                loadingNextRound={generatingNextRound}
+              />
             </div>
           </div>
         </div>
