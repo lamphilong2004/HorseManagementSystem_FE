@@ -700,7 +700,7 @@ export async function rejectHorse(horseId: string, reason?: string): Promise<any
 }
 
 export async function getAdminJockeys(params?: { status?: string; page?: number; limit?: number }): Promise<Jockey[]> {
-  const res = await http.get(`${BE_BASE_URL}/admin/jockeys`, { params })
+  const res = await http.get(`${BE_BASE_URL}/admin/horses/jockeys`, { params })
   const data = res.data.jockeys || res.data
   return data.map((j: any) => ({
     id: j._id || j.id,
@@ -720,13 +720,13 @@ export async function getAdminJockeys(params?: { status?: string; page?: number;
 
 // --- CÔNG BỐ KẾT QUẢ ---
 export async function publishRaceResult(raceId: string, results: any[]): Promise<any> {
-  const res = await http.post(`${BE_BASE_URL}/admin/races/${raceId}/publish-result`, { results })
+  const res = await http.post(`${BE_BASE_URL}/results/admin/races/${raceId}/publish`, { results })
   return res.data
 }
 
 export async function getRaceResults(raceId: string): Promise<any> {
   try {
-    const res = await http.get(`${BE_BASE_URL}/races/${raceId}/results`)
+    const res = await http.get(`${BE_BASE_URL}/results/races/${raceId}`)
     return res.data.results || []
   } catch (err: any) {
     if (err?.response?.status === 404) {
