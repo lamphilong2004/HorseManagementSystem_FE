@@ -866,11 +866,17 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
         const race = prevRaces[i];
         const topAdvance = prevRound.races[i].topAdvance || 2;
         
-        let results = race.results || race.rankings || [];
+        // Fetch race results from API always to get fresh data
+        let results: any[] = [];
+        const resResults = await http.get(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/results/races/${race.id}`).catch(() => null)
+        if (resResults?.data) {
+          // Handle all possible response shapes
+          results = resResults.data.results || resResults.data.rankings || resResults.data.raceResults ||
+            (Array.isArray(resResults.data) ? resResults.data : [])
+        }
+        // Fallback to data embedded in race object
         if (results.length === 0) {
-          // fetch from api if needed
-          const res = await http.get(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/results/races/${race.id}`).catch(() => null)
-          if (res?.data?.results) results = res.data.results
+          results = race.results || race.rankings || []
         }
         
         if (results.length === 0) {
@@ -878,20 +884,44 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
           return;
         }
 
-        const sorted = [...results].sort((a: any, b: any) => a.position - b.position);
+        // Sort ascending by position (1st place = position 1 = winner)
+        const sorted = [...results].sort((a: any, b: any) => {
+          const posA = a.position ?? a.rank ?? a.finalPosition ?? 999;
+          const posB = b.position ?? b.rank ?? b.finalPosition ?? 999;
+          return posA - posB;
+        });
         const topResults = sorted.slice(0, topAdvance);
         
+        // Fetch race horses/registrations to map horseId -> regId
         const resHorses = await http.get(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/races/${race.id}/horses`).catch(() => null)
-        const raceHorses = resHorses?.data || [];
+        // Handle all possible response shapes: array, {horses:[]}, {data:[]}
+        const raceHorses: any[] = resHorses?.data?.horses || resHorses?.data?.registrations ||
+          (Array.isArray(resHorses?.data) ? resHorses.data : [])
         
         topResults.forEach((res: any) => {
-          const horseId = res.horseId?.id || res.horseId?._id || res.horseId;
-          const reg = raceHorses.find((rh: any) => (rh.horse?.id || rh.horse?._id || rh.horseId) === horseId);
-          if (reg) {
-            // Find the original tournament registration
-            const tournReg = registrations.find(r => (r.horseId?.id || r.horseId?._id || r.horseId) === horseId && getTournamentIdForRegistration(r) === viewBracketTournament.id)
-            if (tournReg) advancingRegIds.push(tournReg.id);
+          const horseId = String(res.horseId?.id || res.horseId?._id || res.horseId || '')
+          if (!horseId) return;
+          
+          // Try matching from raceHorses first to get registration id
+          const raceReg = raceHorses.find((rh: any) => {
+            const rhHorseId = String(rh.horse?.id || rh.horse?._id || rh.horseId || '')
+            return rhHorseId === horseId
+          });
+          
+          if (raceReg) {
+            const regId = raceReg.id || (raceReg as any)._id || raceReg.registrationId;
+            if (regId) {
+              advancingRegIds.push(String(regId));
+              return;
+            }
           }
+          
+          // Fallback: find in the tournament registrations state
+          const tournReg = registrations.find(r => {
+            const rHorseId = String(r.horseId?.id || r.horseId?._id || r.horseId || '')
+            return rHorseId === horseId && getTournamentIdForRegistration(r) === viewBracketTournament!.id
+          })
+          if (tournReg) advancingRegIds.push(tournReg.id);
         })
       }
       
