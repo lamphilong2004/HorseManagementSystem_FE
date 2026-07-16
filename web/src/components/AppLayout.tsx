@@ -276,6 +276,17 @@ export function AppLayout() {
     }
   }, [location.pathname, effectiveRole, navigate])
 
+  // Global listener for 401 Unauthorized API responses
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      logout()
+      navigate('/login')
+    }
+    window.addEventListener('auth-unauthorized', handleUnauthorized)
+    return () => window.removeEventListener('auth-unauthorized', handleUnauthorized)
+  }, [logout, navigate])
+
+
   // Loading effect on route change
   useEffect(() => {
     setIsLoading(true)

@@ -49,10 +49,8 @@ http.interceptors.response.use(
     if (error.response?.status === 401) {
       console.error('Session expired or unauthorized. Clearing session.')
       localStorage.removeItem('hr_session')
-      // Only redirect if we're not already on the login page
-      if (!window.location.pathname.includes('/login')) {
-        window.location.href = '/login'
-      }
+      // Dispatch a custom event so the React app can navigate gracefully
+      window.dispatchEvent(new CustomEvent('auth-unauthorized'))
     }
     return Promise.reject(error)
   }
