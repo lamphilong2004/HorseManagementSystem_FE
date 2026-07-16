@@ -336,7 +336,7 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
     highlightHorseId?: string,
     isBackground: boolean = false
   ) => {
-    if (!isBackground) setLoading(true)
+    if (!isBackground && !tournaments.length && !races.length && !horses.length && !registrations.length && !jockeys.length) setLoading(true)
     setError(null)
     const targetTournId = highlightTournId || lastModifiedTournId
     const targetRaceId = highlightRaceId || lastModifiedRaceId
