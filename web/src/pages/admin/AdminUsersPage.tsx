@@ -168,7 +168,7 @@ export function AdminUsersPage() {
   }
 
   const fetchUsers = (highlightId?: string, isBackground = false) => {
-    if (!isBackground && users.length === 0) setLoading(true)
+    if (!isBackground && (!users || users.length === 0)) setLoading(true)
     setError(null)
     const targetId = highlightId || lastModifiedUserId
     getAdminUsers({
@@ -208,7 +208,7 @@ export function AdminUsersPage() {
     if (!window.confirm(`${isActive ? 'Khóa' : 'Mở khóa'} tài khoản của ${user.name}?`)) return
     
     // Optimistic UI
-    setUsers(prev => prev.map(u => u.id === user.id ? { ...u, status: isActive ? 'INACTIVE' : 'ACTIVE' } : u))
+    setUsers(prev => prev ? prev.map(u => u.id === user.id ? { ...u, status: isActive ? 'INACTIVE' : 'ACTIVE' } : u) : [])
     
     try {
       await toggleUserStatus(user.id, !isActive)
@@ -226,7 +226,7 @@ export function AdminUsersPage() {
     if (!window.confirm(`Xóa tài khoản của ${user.name}? Thao tác này không thể hoàn tác.`)) return
     
     // Optimistic UI
-    setUsers(prev => prev.filter(u => u.id !== user.id))
+    setUsers(prev => prev ? prev.filter(u => u.id !== user.id) : [])
     
     try {
       await deleteUser(user.id)
@@ -243,7 +243,7 @@ export function AdminUsersPage() {
     
     const targetUserId = editingUser.id
     // Optimistic UI
-    setUsers(prev => prev.map(u => u.id === targetUserId ? { ...u, role: selectedRole as any } : u))
+    setUsers(prev => prev ? prev.map(u => u.id === targetUserId ? { ...u, role: selectedRole as any } : u) : [])
     setEditingUser(null)
     
     try {
