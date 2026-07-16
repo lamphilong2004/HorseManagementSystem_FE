@@ -19,8 +19,8 @@ import {
   ExternalLink,
   User as UserIcon,
   Calendar,
-  TrendingUp,
-  X
+  X,
+  Gavel
 } from 'lucide-react'
 import type { Tournament, Race, User, RaceRegistration, Horse, Jockey, Prediction } from '../../types'
 import { TournamentBracketView } from '../../components/TournamentBracketView'
@@ -383,7 +383,7 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
         setRegistrationOwners(ownerMap)
         setTournaments(tList)
         setRaces(rList)
-      } else if (activeTab === 'horses') {
+      } else if (activeTab === 'horses-jockeys') {
         const [hList, jList] = await Promise.all([
           getAdminHorses(),
           getAdminJockeys({ limit: 100 })
@@ -405,7 +405,7 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
           const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0
           return dateB - dateA
         }))
-      } else if (activeTab === 'referees') {
+      } else if (activeTab === 'referee-results') {
         const [rList, refList] = await Promise.all([
           getRaces(),
           getAdminUsers({ role: 'REFEREE' })
@@ -1286,8 +1286,8 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
   const tabHeaders: Record<string, { title: string; desc: string; icon: any }> = {
     tournaments: { title: 'Giải Đấu & Lịch Trình', desc: 'Quản lý thông tin giải đấu và xếp lịch các chặng đua.', icon: Trophy },
     registrations: { title: 'Duyệt Đăng Ký Giải', desc: 'Tự phân bổ ngựa đã đăng ký giải vào các vòng đua phù hợp.', icon: ClipboardList },
-    'horses': { title: 'Ngựa & Jockeys', desc: 'Xét duyệt hồ sơ ngựa chiến mới và danh sách nài ngựa.', icon: Sparkles },
-    'referees': { title: 'Trọng Tài & Cuộc Đua', desc: 'Chỉ định trọng tài điều khiển và quản lý các chặng đua.', icon: Gavel },
+    'horses-jockeys': { title: 'Ngựa & Jockeys', desc: 'Xét duyệt hồ sơ ngựa chiến mới và danh sách nài ngựa.', icon: Sparkles },
+    'referee-results': { title: 'Trọng Tài & Cuộc Đua', desc: 'Chỉ định trọng tài điều khiển và quản lý các chặng đua.', icon: Gavel },
     predictions: { title: 'Dự Đoán (Bets)', desc: 'Theo dõi các hoạt động đặt cược và thanh quyết toán kết quả.', icon: Target }
   }
 
@@ -2435,7 +2435,6 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
                               </button>
                             </>
                           )}
-                          {/* Admin no longer confirms results or pays out manually, handled by referee */}
                         </div>
                       )
                     }
