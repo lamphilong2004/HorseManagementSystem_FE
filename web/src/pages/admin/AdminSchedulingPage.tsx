@@ -119,8 +119,7 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
   const [expandedTournId, setExpandedTournId] = useState<string | null>(null)
 
   // Filters for Registrations Tab
-  const [filterRegSearch, setFilterRegSearch] = useState<string>('')
-  const [filterRegStatus, setFilterRegStatus] = useState<string>('ALL')
+  // Note: Search and Status are handled by the table's built-in column filters
   const [filterRegTourn, setFilterRegTourn] = useState<string>('ALL')
   const [filterRegRace, setFilterRegRace] = useState<string>('ALL')
   
@@ -1119,13 +1118,6 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
 
   // Filter registrations list
   const filteredRegistrations = registrations.filter((reg) => {
-    if (filterRegStatus !== 'ALL') {
-      if (filterRegStatus === 'PENDING') {
-        if (reg.status !== 'PENDING' && reg.status !== 'PENDING_APPROVAL') return false
-      } else if (reg.status !== filterRegStatus) {
-        return false
-      }
-    }
     
     if (filterRegTourn !== 'ALL') {
       const resolvedTournId = getTournamentIdForRegistration(reg)
@@ -1138,16 +1130,6 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
       if (raceName !== filterRegRace) return false
     }
 
-    if (filterRegSearch.trim() !== '') {
-      const query = filterRegSearch.toLowerCase()
-      const horseName = (reg.horseName || (typeof reg.horseId === 'object' ? reg.horseId?.name : '') || '').toLowerCase()
-      const raceName = (reg.raceName || (typeof reg.raceId === 'object' ? reg.raceId?.name : '') || '').toLowerCase()
-      const horseKey = typeof reg.horseId === 'string' ? reg.horseId : reg.horseId?._id || reg.horseId?.id
-      const ownerInfo = horseKey ? registrationOwners[horseKey] : undefined
-      const ownerName = (ownerInfo?.fullName || reg.ownerName || (typeof reg.horseId === 'object' ? reg.horseId?.ownerId?.fullName || reg.horseId?.ownerId?.name || reg.horseId?.owner?.fullName || reg.horseId?.owner : '') || '').toLowerCase()
-
-      if (!horseName.includes(query) && !raceName.includes(query) && !ownerName.includes(query)) return false
-    }
     return true
   })
 
@@ -1504,30 +1486,6 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
 
           {/* Filter Bar */}
           <div className="flex flex-wrap gap-4 items-end mb-6 bg-white/[0.01] border border-white/[0.03] p-4 rounded-xl">
-            <div className="form-group flex-1 min-w-[200px]" style={{ margin: 0 }}>
-              <label className="text-xs font-bold mb-1.5 block">Tìm kiếm</label>
-              <input
-                type="text"
-                placeholder="Tìm tên ngựa, cuộc đua, chủ sở hữu..."
-                value={filterRegSearch}
-                onChange={(e) => setFilterRegSearch(e.target.value)}
-                className="h-10 rounded-lg"
-              />
-            </div>
-            <div className="form-group min-w-[150px]" style={{ margin: 0 }}>
-              <label className="text-xs font-bold mb-1.5 block">Trạng thái đăng ký</label>
-              <select
-                value={filterRegStatus}
-                onChange={(e) => setFilterRegStatus(e.target.value)}
-                className="h-10 rounded-lg"
-              >
-                <option value="ALL">Tất cả trạng thái</option>
-                <option value="PENDING">Chờ duyệt</option>
-                <option value="APPROVED">Đã duyệt</option>
-                <option value="CONFIRMED">Đã xác nhận</option>
-                <option value="REJECTED">Đã từ chối</option>
-              </select>
-            </div>
             <div className="form-group min-w-[200px]" style={{ margin: 0 }}>
               <label className="text-xs font-bold mb-1.5 block">Lọc theo giải đấu</label>
               <select
