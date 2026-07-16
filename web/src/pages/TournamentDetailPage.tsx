@@ -48,33 +48,47 @@ export function TournamentDetailPage() {
   const [races, setRaces] = useState<Race[]>([])
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [bracket, setBracket] = useState<any>(null)
   const [activeTab, setActiveTab] = useState<'races' | 'leaderboard' | 'bracket'>('bracket')
 
-  useEffect(() => {
+  const fetchData = async (showLoading = true) => {
     if (!id) return
-    setLoading(true)
-    Promise.all([
-      getPublicTournament(id).catch(() => null),
-      getPublicRaces({ tournamentId: id }).catch(() => [] as any),
-      getTournamentLeaderboard(id).catch(() => [] as any),
-      getTournamentBracket(id).catch(() => null),
-    ])
-      .then(([t, r, lb, br]) => {
-        if (!t) {
-          setError('Không tìm thấy giải đấu')
-        } else {
-          setTournament(t)
-        }
-        const raceList = Array.isArray(r) ? r : (r?.races || r?.data || [])
-        setRaces(raceList)
-        const lbList = Array.isArray(lb) ? lb : (lb?.data || lb?.leaderboard || [])
-        setLeaderboard(lbList)
-        setBracket(br?.bracket || br?.data || br || null)
-      })
-      .finally(() => setLoading(false))
+    if (showLoading) setLoading(true)
+    setRefreshing(true)
+    try {
+      const [t, r, lb, br] = await Promise.all([
+        getPublicTournament(id).catch(() => null),
+        getPublicRaces({ tournamentId: id }).catch(() => [] as any),
+        getTournamentLeaderboard(id).catch(() => [] as any),
+        getTournamentBracket(id).catch(() => null),
+      ])
+      if (!t) {
+        setError('Không tìm thấy giải đấu')
+      } else {
+        setTournament(t)
+      }
+      const raceList = Array.isArray(r) ? r : (r?.races || r?.data || [])
+      setRaces(raceList)
+      const lbList = Array.isArray(lb) ? lb : (lb?.data || lb?.leaderboard || [])
+      setLeaderboard(lbList)
+      setBracket(br?.bracket || br?.data || br || null)
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchData()
   }, [id])
+
+  useEffect(() => {
+    if (activeTab === 'bracket') {
+      fetchData(false)
+    }
+  }, [activeTab, id])
 
   if (loading) return (
     <div className="space-y-6">
@@ -243,27 +257,42 @@ export function TournamentDetailPage() {
       <ScrollReveal direction="up" distance={40} duration={0.7} delay={0.1}>
         <div className="spectator-card">
           {/* Tab Buttons */}
-          <div className="spectator-tabs mb-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="spectator-tabs">
+              <button
+                className={`spectator-tab ${activeTab === 'bracket' ? 'spectator-tab-active' : ''}`}
+                onClick={() => setActiveTab('bracket')}
+              >
+                <Trophy className="w-4 h-4" />
+                Sơ Đồ Thi Đấu
+              </button>
+              <button
+                className={`spectator-tab ${activeTab === 'races' ? 'spectator-tab-active' : ''}`}
+                onClick={() => setActiveTab('races')}
+              >
+                <CalendarRange className="w-4 h-4" />
+                Lịch Đua ({races.length})
+              </button>
+              <button
+                className={`spectator-tab ${activeTab === 'leaderboard' ? 'spectator-tab-active' : ''}`}
+                onClick={() => setActiveTab('leaderboard')}
+              >
+                <Medal className="w-4 h-4" />
+                Bảng Xếp Hạng
+              </button>
+            </div>
             <button
-              className={`spectator-tab ${activeTab === 'bracket' ? 'spectator-tab-active' : ''}`}
-              onClick={() => setActiveTab('bracket')}
+              className="btn btnPrimary h-10 px-4 rounded-xl flex items-center gap-2 font-bold transition-all"
+              style={{ background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none' }}
+              onClick={() => fetchData(false)}
+              disabled={refreshing}
             >
-              <Trophy className="w-4 h-4" />
-              Sơ Đồ Thi Đấu
-            </button>
-            <button
-              className={`spectator-tab ${activeTab === 'races' ? 'spectator-tab-active' : ''}`}
-              onClick={() => setActiveTab('races')}
-            >
-              <CalendarRange className="w-4 h-4" />
-              Lịch Đua ({races.length})
-            </button>
-            <button
-              className={`spectator-tab ${activeTab === 'leaderboard' ? 'spectator-tab-active' : ''}`}
-              onClick={() => setActiveTab('leaderboard')}
-            >
-              <Medal className="w-4 h-4" />
-              Bảng Xếp Hạng
+              {refreshing ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Trophy className="w-4 h-4" />
+              )}
+              {refreshing ? 'Đang làm mới...' : 'Làm mới'}
             </button>
           </div>
 

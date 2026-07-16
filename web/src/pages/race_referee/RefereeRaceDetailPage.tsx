@@ -932,7 +932,7 @@ export function RefereeRaceDetailPage() {
                 </div>
                 {resultsSource === 'ADMIN_PUBLISHED' && (
                   <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-sm text-emerald-300">
-                    ✅ Kết quả đã được tự động ghi nhận từ livestream. Không cần xác nhận lại.
+                    ✅ Kết quả đã được tự động ghi nhận từ livestream. Bạn chỉ cần xem kết quả mà không cần xác nhận lại.
                   </div>
                 )}
                 <AnimatedTable
@@ -940,7 +940,7 @@ export function RefereeRaceDetailPage() {
                   columns={monitorResultsColumns}
                   emptyMessage="Chưa có kết quả"
                 />
-                  {resultsSource !== 'ADMIN_PUBLISHED' && race?.status !== 'RESULT_CONFIRMED' && race?.status !== 'COMPLETED' && (
+                  {resultsSource !== 'ADMIN_PUBLISHED' && resultsSource !== null && race?.status !== 'RESULT_CONFIRMED' && race?.status !== 'COMPLETED' && (
                     <div className="mt-6 flex flex-col gap-3 p-4 bg-white/[0.02] border border-white/10 rounded-xl">
                       <div className="form-group">
                         <label className="text-emerald-400 font-bold mb-2 block">Duyệt Kết Quả</label>
@@ -1165,7 +1165,7 @@ export function RefereeRaceDetailPage() {
             )}
 
             {/* Manual entry form - only show if no livestream results */}
-            {results.length === 0 && (
+            {results.length === 0 && resultsSource !== 'ADMIN_PUBLISHED' && (
               <>
                 <div>
                   <div className="text-lg font-black text-[var(--text)] mb-4">🏅 Nhập bảng xếp hạng</div>

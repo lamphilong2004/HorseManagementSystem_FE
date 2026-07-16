@@ -292,6 +292,24 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
     }
   }, [tab])
 
+  // Auto-refresh tournament data when viewing tournaments tab
+  // This ensures bracket updates from autoAdvance are visible
+  useEffect(() => {
+    if (activeTab !== 'tournaments') return
+
+    const hasOngoingTournament = tournaments.some(
+      t => t.status === 'ONGOING' || t.status === 'BRACKET_GENERATED'
+    )
+
+    if (!hasOngoingTournament) return
+
+    const interval = setInterval(() => {
+      loadTabData()
+    }, 8000) // Refresh every 8 seconds
+
+    return () => clearInterval(interval)
+  }, [activeTab, tournaments])
+
   const loadDashboardStats = async () => {
     try {
       const [tList, rList, hList, regList] = await Promise.all([

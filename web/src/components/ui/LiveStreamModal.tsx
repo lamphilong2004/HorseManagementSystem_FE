@@ -193,13 +193,18 @@ export function LiveStreamModal({ race, onClose }: LiveStreamModalProps) {
   // Submit results automatically when race finishes
   useEffect(() => {
     if (gameState === 'finished' && rankedLeaderboard && rankedLeaderboard.length > 0) {
-      const resultsPayload = rankedLeaderboard.map((horse, index) => ({
-        horseId: horse.horse?._id || horse.horse?.id,
-        jockeyId: horse.horse?.jockey?._id || horse.horse?.jockey?.id || horse.horse?.jockeyId || '',
-        registrationId: horse.id || (horse as any).registrationId,
-        position: index + 1,
-        finishTime: horse.finishTimeSeconds || 0
-      }));
+      const resultsPayload = rankedLeaderboard.map((entry, index) => {
+        const item = entry.horse; // This is the element from `horses` array
+        const realHorseId = item.horse?._id || item.horse?.id || item._id || item.id;
+        const realJockeyId = item.jockeyId || item.horse?.jockey?._id || item.horse?.jockey?.id || item.horse?.jockeyId || '';
+        return {
+          horseId: realHorseId,
+          jockeyId: realJockeyId,
+          registrationId: entry.id || item.registrationId,
+          position: index + 1,
+          finishTime: entry.finishTimeSeconds || 0
+        };
+      });
       
       const raceId = race?.id || race?._id;
       if (raceId) {
