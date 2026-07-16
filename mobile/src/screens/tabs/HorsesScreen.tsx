@@ -21,7 +21,6 @@ import {
   Flag,
   Medal,
   Plus,
-  RefreshCw,
   Search,
   Send,
   Trash2,
@@ -1124,15 +1123,10 @@ export default function HorsesScreen() {
       <ScreenHeader
         title="Ngựa của tôi"
         subtitle="Quản lý đàn ngựa, đăng ký giải và tuyển Jockey."
-        right={
-          <View className="flex-row gap-2">
-            <TouchableOpacity onPress={fetchData} className="w-11 h-11 rounded-full bg-white border border-slate-100 items-center justify-center">
-              <RefreshCw color="#64748b" size={20} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => openHorseForm()} className="w-11 h-11 rounded-full bg-blue-600 items-center justify-center">
-              <Plus color="white" size={22} />
-            </TouchableOpacity>
-          </View>
+        profileActionBelow={
+          <TouchableOpacity onPress={() => openHorseForm()} className="w-11 h-11 rounded-full bg-blue-600 items-center justify-center">
+            <Plus color="white" size={22} />
+          </TouchableOpacity>
         }
       />
 

@@ -2,7 +2,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { BarChart2, Bell, Calendar, Flag, LogOut, Mail, Medal, Radio, Trophy, UserCircle, Wallet } from 'lucide-react-native';
+import { BarChart2, Bell, Calendar, Flag, Mail, Medal, Radio, Trophy, UserCircle, Wallet } from 'lucide-react-native';
 import * as api from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { Race, Tournament } from '../../types';
@@ -32,7 +32,7 @@ function roleLabel(role?: string) {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { user, balance, logout, refreshBalance } = useAuth();
+  const { user, balance, refreshBalance } = useAuth();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [races, setRaces] = useState<Race[]>([]);
   const [loading, setLoading] = useState(true);
@@ -112,11 +112,6 @@ export default function HomeScreen() {
       <ScreenHeader
         title="Dashboard"
         subtitle={`Xin chào, ${user?.name || 'người dùng'} · Vai trò: ${roleLabel(role)}`}
-        right={
-          <TouchableOpacity onPress={logout} className="w-11 h-11 rounded-full bg-white border border-slate-100 items-center justify-center">
-            <LogOut color="#64748b" size={20} />
-          </TouchableOpacity>
-        }
       />
 
       <ScrollView

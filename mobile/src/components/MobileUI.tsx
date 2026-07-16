@@ -1,5 +1,8 @@
 import React from 'react';
 import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
+import { usePathname, useRouter } from 'expo-router';
+import { UserCircle } from 'lucide-react-native';
+import { useAuth } from '../context/AuthContext';
 
 type IconComponent = React.ComponentType<{ size?: number; color?: string }>;
 type Tone = 'blue' | 'emerald' | 'amber' | 'rose' | 'slate' | 'purple';
@@ -17,11 +20,22 @@ export function ScreenHeader({
   title,
   subtitle,
   right,
+  profileActionBelow,
+  showProfileAction = true,
 }: {
   title: string;
   subtitle?: string;
   right?: React.ReactNode;
+  profileActionBelow?: React.ReactNode;
+  showProfileAction?: boolean;
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { user } = useAuth();
+  const shouldShowProfileAction = showProfileAction
+    && ['JOCKEY', 'OWNER', 'SPECTATOR'].includes(String(user?.role || '').toUpperCase())
+    && !pathname.includes('/profile');
+
   return (
     <View className="px-5 pt-2 pb-4 bg-slate-50">
       <View className="flex-row items-center justify-between">
@@ -30,7 +44,34 @@ export function ScreenHeader({
           <Text className="text-2xl font-extrabold text-slate-900 mt-1" numberOfLines={1}>{title}</Text>
           {subtitle ? <Text className="text-sm text-slate-500 mt-1" numberOfLines={2}>{subtitle}</Text> : null}
         </View>
-        {right}
+        {right || shouldShowProfileAction ? (
+          <View className="flex-row items-center gap-2">
+            {right}
+            {shouldShowProfileAction && !profileActionBelow ? (
+              <TouchableOpacity
+                activeOpacity={0.84}
+                accessibilityLabel="Hồ sơ"
+                onPress={() => router.push('/(tabs)/profile' as any)}
+                className="w-11 h-11 rounded-full bg-white border border-slate-100 items-center justify-center"
+              >
+                <UserCircle color="#64748b" size={22} />
+              </TouchableOpacity>
+            ) : null}
+            {shouldShowProfileAction && profileActionBelow ? (
+              <View className="items-center">
+                <TouchableOpacity
+                  activeOpacity={0.84}
+                  accessibilityLabel="Hồ sơ"
+                  onPress={() => router.push('/(tabs)/profile' as any)}
+                  className="w-11 h-11 rounded-full bg-white border border-slate-100 items-center justify-center"
+                >
+                  <UserCircle color="#64748b" size={22} />
+                </TouchableOpacity>
+                <View className="mt-2">{profileActionBelow}</View>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
       </View>
     </View>
   );

@@ -4,6 +4,7 @@ import { ActivityIndicator, Modal, Pressable, RefreshControl, ScrollView, Text, 
 import { ChevronDown, ChevronRight, Clock, Flag, Radio, RefreshCw, Search, Trophy } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import * as api from '../../api';
+import { useAuth } from '../../context/AuthContext';
 import { Race } from '../../types';
 import { EmptyState, ScreenHeader, Surface } from '../../components/MobileUI';
 import { dateTimeValue, formatDateTime, getRaceId } from '../../utils/spectator';
@@ -126,6 +127,7 @@ function OptionSheet({
 
 export default function RacesScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const [races, setRaces] = useState<Race[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -203,7 +205,7 @@ export default function RacesScreen() {
 
         const scheduledAt = dateTimeValue(race.scheduledAt, 0);
         if (timeFilter === 'all' && scheduledAt < now) return false;
-        if (timeFilter === 'upcoming' && !(['SCHEDULED', 'PENDING'].includes(status) || scheduledAt >= now)) return false;
+        if (timeFilter === 'upcoming' && !['SCHEDULED', 'PENDING'].includes(status)) return false;
         if (timeFilter === 'live' && !['ONGOING', 'LIVE'].includes(status)) return false;
         if (timeFilter === 'completed' && !(['COMPLETED', 'CANCELLED', 'RESULT_CONFIRMED'].includes(status) || scheduledAt < now)) return false;
         return true;
@@ -228,17 +230,19 @@ export default function RacesScreen() {
 
   const selectedStatusLabel = STATUS_FILTERS.find((item) => item.value === statusFilter)?.label || STATUS_FILTERS[0].label;
   const selectedSortLabel = SORT_OPTIONS.find((item) => item.value === sortOrder)?.label || SORT_OPTIONS[0].label;
+  const role = String(user?.role || '').toUpperCase();
+  const hideHeaderRefresh = ['JOCKEY', 'OWNER'].includes(role);
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50">
       <ScreenHeader
         title="Cuộc đua"
         subtitle="Theo dõi lịch, trạng thái và kết quả từng cuộc đua."
-        right={
+        right={!hideHeaderRefresh ? (
           <TouchableOpacity onPress={fetchRaces} className="w-11 h-11 rounded-full bg-white border border-slate-100 items-center justify-center">
             <RefreshCw color="#64748b" size={20} />
           </TouchableOpacity>
-        }
+        ) : undefined}
       />
 
       <ScrollView
