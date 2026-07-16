@@ -762,6 +762,11 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
   }
 
   const getTournamentIdForRegistration = (reg: RaceRegistration) => {
+    const raceId = getRegRaceId(reg)
+    // Sometimes the backend assigns the Tournament ID directly to reg.raceId for tournament registrations
+    const isDirectTourn = tournaments.find(t => t.id === raceId || (t as any)._id === raceId)
+    if (isDirectTourn) return String(isDirectTourn.id || (isDirectTourn as any)._id)
+
     const race = getRaceForRegistration(reg)
     const tournament = race?.tournamentId as any
     return String(tournament?._id || tournament?.id || tournament || '')
