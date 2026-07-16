@@ -282,6 +282,16 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
   // ---------------------------------------------------------
   // INITIAL DATA LIFECYCLE
   // ---------------------------------------------------------
+  // Add this effect to sync viewBracketTournament when tournaments change in the background
+  useEffect(() => {
+    if (viewBracketTournament) {
+      const updatedTourn = tournaments.find(t => t.id === viewBracketTournament.id)
+      if (updatedTourn && JSON.stringify(updatedTourn.bracket) !== JSON.stringify(viewBracketTournament.bracket)) {
+        setViewBracketTournament(updatedTourn)
+      }
+    }
+  }, [tournaments])
+
   useEffect(() => {
     loadTabData()
   }, [activeTab])
