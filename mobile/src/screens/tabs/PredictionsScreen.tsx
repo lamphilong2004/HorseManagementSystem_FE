@@ -3,6 +3,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Modal,
+  Pressable,
   RefreshControl,
   ScrollView,
   Text,
@@ -10,7 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { BarChart2, CheckCircle, Clock, DollarSign, Flag, Search, Target, Trophy, Wallet } from 'lucide-react-native';
+import { BarChart2, CheckCircle, ChevronDown, Clock, DollarSign, Flag, Search, Target, Trophy, Wallet } from 'lucide-react-native';
 import * as api from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { Prediction, Race, Tournament } from '../../types';
@@ -31,6 +33,80 @@ import {
 const QUICK_BETS = [100000, 200000, 500000];
 const HISTORY_STATUS = ['ALL', 'PENDING', 'WON', 'LOST', 'OPEN', 'CLOSED'];
 
+function TournamentFilter({
+  label,
+  disabled,
+  onPress,
+}: {
+  label: string;
+  disabled?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      activeOpacity={0.84}
+      disabled={disabled}
+      onPress={onPress}
+      className={`h-12 rounded-full border px-4 flex-row items-center justify-between mb-4 ${disabled ? 'bg-slate-50 border-slate-100' : 'bg-white border-slate-200'}`}
+    >
+      <Text className={`flex-1 text-base font-bold mr-3 ${disabled ? 'text-slate-400' : 'text-slate-950'}`} numberOfLines={1}>{label}</Text>
+      <ChevronDown size={20} color={disabled ? '#cbd5e1' : '#64748b'} />
+    </TouchableOpacity>
+  );
+}
+
+function TournamentFilterSheet({
+  visible,
+  tournaments,
+  selectedTournamentId,
+  onSelect,
+  onClose,
+}: {
+  visible: boolean;
+  tournaments: Tournament[];
+  selectedTournamentId: string;
+  onSelect: (id: string) => void;
+  onClose: () => void;
+}) {
+  const options = [
+    { id: 'all', name: 'Tất cả giải đấu' },
+    ...tournaments.map((tournament) => ({
+      id: getTournamentId(tournament),
+      name: tournament.name,
+    })),
+  ];
+
+  return (
+    <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
+      <View className="flex-1 justify-end bg-black/45">
+        <Pressable className="absolute inset-0" onPress={onClose} />
+        <View className="max-h-[70%] rounded-t-[28px] bg-white px-5 pt-5 pb-8">
+          <View className="w-12 h-1.5 rounded-full bg-slate-200 self-center mb-5" />
+          <Text className="text-lg font-extrabold text-slate-950 mb-4">Chọn giải đấu</Text>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {options.map((option) => {
+              const active = selectedTournamentId === option.id;
+              return (
+                <TouchableOpacity
+                  key={option.id}
+                  activeOpacity={0.82}
+                  onPress={() => onSelect(option.id)}
+                  className={`min-h-[54px] rounded-2xl px-4 mb-2 flex-row items-center justify-between border ${active ? 'bg-blue-50 border-blue-200' : 'bg-white border-slate-100'}`}
+                >
+                  <Text className={`flex-1 text-sm font-extrabold mr-3 ${active ? 'text-blue-700' : 'text-slate-700'}`} numberOfLines={2}>
+                    {option.name}
+                  </Text>
+                  {active ? <CheckCircle size={19} color="#2563eb" /> : null}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 export default function PredictionsScreen() {
   const { balance, refreshBalance, updateBalance } = useAuth();
   const [predictions, setPredictions] = useState<Prediction[]>([]);
@@ -49,6 +125,12 @@ export default function PredictionsScreen() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [searchText, setSearchText] = useState('');
   const [sortNewest, setSortNewest] = useState(true);
+  const [showTournamentFilter, setShowTournamentFilter] = useState(false);
+
+  const selectedTournament = useMemo(
+    () => tournaments.find((tournament) => getTournamentId(tournament) === selectedTournamentId),
+    [selectedTournamentId, tournaments],
+  );
 
   const selectedRace = useMemo(
     () => races.find((race) => getRaceId(race) === selectedRaceId),
@@ -236,20 +318,11 @@ export default function PredictionsScreen() {
               <Text className="text-lg font-extrabold text-slate-900 mb-4">Đặt dự đoán mới</Text>
 
               <Text className="text-xs font-extrabold text-slate-500 uppercase mb-2">Giải đấu</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
-                <Chip label="Tất cả" active={selectedTournamentId === 'all'} onPress={() => setSelectedTournamentId('all')} />
-                {tournaments.map((tournament) => {
-                  const id = getTournamentId(tournament);
-                  return (
-                    <Chip
-                      key={id || tournament.id}
-                      label={tournament.name}
-                      active={selectedTournamentId === id}
-                      onPress={() => setSelectedTournamentId(id)}
-                    />
-                  );
-                })}
-              </ScrollView>
+              <TournamentFilter
+                label={selectedTournamentId === 'all' ? 'Tất cả giải đấu' : selectedTournament?.name || 'Chọn giải đấu'}
+                disabled={loading && tournaments.length === 0}
+                onPress={() => setShowTournamentFilter(true)}
+              />
 
               <Text className="text-xs font-extrabold text-slate-500 uppercase mb-2">Cuộc đua đang nhận dự đoán</Text>
               {visibleRaces.length === 0 ? (
@@ -454,6 +527,17 @@ export default function PredictionsScreen() {
           </View>
         )}
       </ScrollView>
+
+      <TournamentFilterSheet
+        visible={showTournamentFilter}
+        tournaments={tournaments}
+        selectedTournamentId={selectedTournamentId}
+        onSelect={(id) => {
+          setSelectedTournamentId(id);
+          setShowTournamentFilter(false);
+        }}
+        onClose={() => setShowTournamentFilter(false)}
+      />
     </SafeAreaView>
   );
 }

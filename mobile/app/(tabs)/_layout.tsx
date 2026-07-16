@@ -21,9 +21,9 @@ import * as api from '../../src/api';
 import { isLiveRace } from '../../src/utils/spectator';
 
 const roleTabs: Record<string, string[]> = {
-  OWNER: ['tournaments', 'races', 'leaderboard', 'livestream', 'profile', 'horses'],
-  JOCKEY: ['tournaments', 'races', 'leaderboard', 'livestream', 'profile', 'invites', 'schedule', 'results'],
-  SPECTATOR: ['races', 'livestream', 'predictions', 'profile'],
+  OWNER: ['tournaments', 'livestream', 'horses'],
+  JOCKEY: ['tournaments', 'invites', 'schedule'],
+  SPECTATOR: ['races', 'livestream', 'predictions'],
   REFEREE: ['races', 'referee_races', 'profile'],
   ADMIN: ['races', 'admin_users', 'profile'],
 };
