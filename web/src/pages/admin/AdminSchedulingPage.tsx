@@ -276,12 +276,6 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
   const [refRaceId, setRefRaceId] = useState<string>('')
   const [selectedRefId, setSelectedRefId] = useState<string>('')
 
-  // Publish Results
-  const [showResultModal, setShowResultModal] = useState(false)
-  const [resultRace, setResultRace] = useState<Race | null>(null)
-  const [raceHorses, setRaceHorses] = useState<any[]>([]) // list of confirmed horses for race
-  const [resultRankings, setResultRankings] = useState<any[]>([]) // array of rankings inputs
-  const [resultNotes, setResultNotes] = useState<string>('')
 
   // Prediction Stats
   const [showPredStatsModal, setShowPredStatsModal] = useState(false)
@@ -1111,35 +1105,6 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
     }
   }
 
-  const openResultModal = async (race: Race) => {
-    setResultRace(race)
-    setResultNotes('')
-    try {
-      // Get horses registered for this race
-      const res = await http.get(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/races/${race.id}/horses`)
-      const horsesList = res.data.horses || []
-      setRaceHorses(horsesList)
-
-      // Check if race already has confirmed rankings/results
-      let initialRankings: any[]
-      if ((race.status === 'RESULT_CONFIRMED' || race.status === 'COMPLETED') && race.rankings && Array.isArray(race.rankings) && race.rankings.length > 0) {
-        initialRankings = race.rankings
-      } else if ((race.status === 'RESULT_CONFIRMED' || race.status === 'COMPLETED') && race.results && Array.isArray(race.results) && race.results.length > 0) {
-        initialRankings = race.results
-      } else {
-        // Initialize rankings form: default positions
-        initialRankings = horsesList.map((h: any, idx: number) => ({
-          horseId: h.horse?._id || h.horse?.id,
-          jockeyId: h.horse?.ownerId?._id || h.horse?.ownerId, // placeholder or jockey if confirmed
-          position: idx + 1,
-          finishTime: 60 + idx * 2.5, // default time estimate
-          status: 'FINISHED',
-          prizeAmount: idx === 0 ? race.prizeFirst : idx === 1 ? race.prizeSecond : idx === 2 ? race.prizeThird : 0,
-        }))
-      }
-      setResultRankings(initialRankings)
-      setShowResultModal(true)
-    } catch (err: any) {
       alert('Không thể lấy danh sách ngựa đã đăng ký cho cuộc đua: ' + (err.response?.data?.message || err.message))
     }
   }
@@ -3023,117 +2988,6 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
         </div>
       )}
 
-      {/* 5. Publish Results Modal */}
-      {showResultModal && resultRace && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowResultModal(false) }}>
-          <div className="modal-content modal-content-lg">
-            <div className="modal-header">
-              <h3 className="flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-amber-500" />
-                <span>Công bố Kết quả: {resultRace.name}</span>
-              </h3>
-              <button className="modal-close" onClick={() => setShowResultModal(false)}>✕</button>
-            </div>
-            <div className="modal-body">
-              <p className="muted" style={{ marginBottom: 12 }}>Vui lòng thiết lập vị trí về đích, thời gian hoàn thành và giải thưởng thực tế cho từng chú ngựa tham gia.</p>
-
-              {raceHorses.length === 0 ? (
-                <p className="danger-text">Cảnh báo: Không có ngựa nào được xác nhận tham gia cuộc đua này!</p>
-              ) : (
-                <div className="admin-table-wrapper" style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                  <table className="admin-table">
-                    <thead>
-                      <tr>
-                        <th>Tên ngựa</th>
-                        <th style={{ width: '90px' }}>Thứ hạng</th>
-                        <th style={{ width: '120px' }}>Thời gian về đích (s)</th>
-                        <th>Trạng thái</th>
-                        <th>Tiền thưởng (VND)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {resultRankings.map((rank, idx) => {
-                        const horseObj = raceHorses.find(
-                          (rh: any) => (rh.horse?._id || rh.horse?.id) === rank.horseId
-                        )
-                        return (
-                          <tr key={rank.horseId}>
-                            <td style={{ fontWeight: 600 }}>{horseObj?.horse?.name || 'Ngựa thi đấu'}</td>
-                            <td>
-                              <input
-                                type="number"
-                                min="1"
-                                max={raceHorses.length}
-                                value={rank.position}
-                                onChange={(e) => {
-                                  const updated = [...resultRankings]
-                                  updated[idx].position = parseInt(e.target.value)
-                                  setResultRankings(updated)
-                                }}
-                              />
-                            </td>
-                            <td>
-                              <input
-                                type="number"
-                                step="0.01"
-                                value={rank.finishTime}
-                                onChange={(e) => {
-                                  const updated = [...resultRankings]
-                                  updated[idx].finishTime = parseFloat(e.target.value)
-                                  setResultRankings(updated)
-                                }}
-                              />
-                            </td>
-                            <td>
-                              <select
-                                value={rank.status}
-                                onChange={(e) => {
-                                  const updated = [...resultRankings]
-                                  updated[idx].status = e.target.value
-                                  setResultRankings(updated)
-                                }}
-                              >
-                                <option value="FINISHED">FINISHED</option>
-                                <option value="DISQUALIFIED">DISQUALIFIED</option>
-                                <option value="DNF">DNF (Bỏ cuộc)</option>
-                              </select>
-                            </td>
-                            <td>
-                              <input
-                                type="number"
-                                value={rank.prizeAmount}
-                                onChange={(e) => {
-                                  const updated = [...resultRankings]
-                                  updated[idx].prizeAmount = parseInt(e.target.value)
-                                  setResultRankings(updated)
-                                }}
-                              />
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              <div className="form-group" style={{ marginTop: 16 }}>
-                <label>Ghi chú chung của cuộc đua</label>
-                <textarea
-                  style={{ width: '100%', height: '70px', padding: '8px', border: '1px solid var(--border)', borderRadius: '8px' }}
-                  placeholder="Ghi chú về thời tiết, sự cố..."
-                  value={resultNotes}
-                  onChange={(e) => setResultNotes(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn" onClick={() => setShowResultModal(false)}>Hủy</button>
-              <button className="btn btnPrimary" disabled={raceHorses.length === 0} onClick={handleSaveResult}>Công bố kết quả</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* 6. Prediction Stats Modal */}
       {showPredStatsModal && predStats && (
