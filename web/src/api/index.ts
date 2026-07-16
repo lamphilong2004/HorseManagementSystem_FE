@@ -885,8 +885,9 @@ export async function getRefereeRaceHorses(raceId: string): Promise<{ horses: Ra
   const list = Array.isArray(res.data) ? res.data : (res.data.horses || res.data.data || [])
   return {
     horses: list.map((h: any) => ({
-      id: h._id || h.id,
-      _id: h._id || h.id,
+      id: h.registrationId || h._id || h.id,
+      _id: h.registrationId || h._id || h.id,
+      registrationId: h.registrationId,
       horse: h.horse || h,
       horseId: h.horseId || h.horse?._id || h.horse?.id || h._id || h.id,
       raceId: h.raceId,
