@@ -3103,12 +3103,42 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
                 <Trophy className="w-6 h-6 text-amber-500" />
                 Sơ Đồ Giải Đấu - {viewBracketTournament.name}
               </h2>
-              <button 
-                className="text-zinc-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 p-2 rounded-xl cursor-pointer"
-                onClick={() => setViewBracketTournament(null)}
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-3">
+                {/* End Tournament button — shown when final race is confirmed */}
+                {viewBracketTournament.status !== 'COMPLETED' && (() => {
+                  const bracket = viewBracketTournament.bracket;
+                  const finalRound = bracket?.rounds?.[bracket.rounds.length - 1];
+                  const finalBRace = finalRound?.races?.[0];
+                  const finalRace = viewBracketRaces.find(r => r.name === finalBRace?.name);
+                  const finalDone = finalRace && ['COMPLETED','FINISHED','RESULT_CONFIRMED'].includes((finalRace.status || '').toUpperCase());
+                  return finalDone ? (
+                    <button
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white transition-all"
+                      style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', border: 'none', boxShadow: '0 4px 15px rgba(245,158,11,0.4)' }}
+                      onClick={async () => {
+                        if (!window.confirm('Xác nhận kết thúc giải đấu này? Hành động này không thể hoàn tác.')) return;
+                        try {
+                          await updateTournament(viewBracketTournament.id, { status: 'COMPLETED' } as any);
+                          showToast('Giải đấu đã kết thúc thành công! 🏆', 'success');
+                          setViewBracketTournament(prev => prev ? { ...prev, status: 'COMPLETED' } : null);
+                          loadDashboardStats();
+                        } catch (err: any) {
+                          showToast(err.response?.data?.message || 'Lỗi khi kết thúc giải đấu', 'error');
+                        }
+                      }}
+                    >
+                      <Trophy className="w-4 h-4" />
+                      Kết Thúc Giải Đấu
+                    </button>
+                  ) : null;
+                })()}
+                <button 
+                  className="text-zinc-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 p-2 rounded-xl cursor-pointer"
+                  onClick={() => setViewBracketTournament(null)}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
             
             <div className="flex-1 overflow-y-auto p-6 bg-[#0f0f13]">

@@ -186,12 +186,18 @@ export function TournamentBracketView({ bracket, races, onGenerateNextRound, loa
                         return rankA - rankB;
                       });
                       const isFinal = distanceToFinal === 0;
+                      const isFinalCompleted = isFinal && actualRace &&
+                        ['COMPLETED','FINISHED','RESULT_CONFIRMED'].includes((actualRace.status || '').toUpperCase());
+                      const podiumIcons = ['🥇','🥈','🥉'];
 
                       return (
                         <div key={mIdx} className="relative flex items-center">
                           <div 
                             className={`bg-[var(--surface-2)] border rounded-2xl p-0 shadow-xl flex flex-col relative transition-all group ${isFinal ? 'w-80' : 'w-72'} hover:-translate-y-1 overflow-hidden z-10`}
-                            style={{ borderColor, boxShadow: `0 8px 30px ${shadowColor}` }}
+                            style={{ 
+                              borderColor: isFinalCompleted ? 'rgba(245,158,11,0.8)' : borderColor, 
+                              boxShadow: isFinalCompleted ? '0 8px 40px rgba(245,158,11,0.4), 0 0 0 1px rgba(245,158,11,0.2)' : `0 8px 30px ${shadowColor}` 
+                            }}
                           >
                             <div className="bg-gradient-to-b from-[#27272a] to-[#18181b] p-3 border-b border-[#3f3f46] flex justify-between items-center group-hover:from-white/5 transition-colors">
                               <h4 className={`font-black text-${themeColor}-500 text-sm uppercase tracking-wider`}>{bRace.name}</h4>
@@ -210,14 +216,33 @@ export function TournamentBracketView({ bracket, races, onGenerateNextRound, loa
                               {actualRace || isDraft ? (
                                 displayHorses.length > 0 ? (
                                   displayHorses.map((h: any, hIdx: number) => (
-                                    <div key={hIdx} className="flex items-center gap-3 p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
-                                      <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shrink-0 border ${hIdx < bRace.topAdvance ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-[#27272a] text-zinc-400 border-[#3f3f46]'}`}>
-                                        {hIdx + 1}
+                                    <div key={hIdx} className={`flex items-center gap-3 p-2 rounded-xl transition-colors ${
+                                      isFinalCompleted && hIdx === 0
+                                        ? 'bg-amber-500/20 ring-1 ring-amber-500/50'
+                                        : 'bg-white/5 hover:bg-white/10'
+                                    }`}>
+                                      <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-sm shrink-0 border ${
+                                        isFinalCompleted && hIdx < 3
+                                          ? 'bg-transparent border-transparent text-lg'
+                                          : hIdx < bRace.topAdvance
+                                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50'
+                                            : 'bg-[#27272a] text-zinc-400 border-[#3f3f46]'
+                                      }`}>
+                                        {isFinalCompleted && hIdx < 3 ? podiumIcons[hIdx] : hIdx + 1}
                                       </div>
-                                      <span className={`font-bold truncate text-sm ${hIdx < bRace.topAdvance ? 'text-white' : 'text-zinc-300'}`}>
+                                      <span className={`font-bold truncate text-sm ${
+                                        isFinalCompleted && hIdx === 0
+                                          ? 'text-amber-400 text-base'
+                                          : hIdx < bRace.topAdvance
+                                            ? 'text-white'
+                                            : 'text-zinc-300'
+                                      }`}>
                                         {h.horse?.name || h.horseName || '---'}
                                       </span>
-                                      {isDraft && <span className="ml-auto text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/30 whitespace-nowrap">Dự kiến</span>}
+                                      {isFinalCompleted && hIdx === 0 && (
+                                        <span className="ml-auto text-[10px] bg-amber-500/30 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/50 whitespace-nowrap font-bold">VÔ ĐỊCH</span>
+                                      )}
+                                      {isDraft && !isFinalCompleted && <span className="ml-auto text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/30 whitespace-nowrap">Dự kiến</span>}
                                     </div>
                                   ))
                                 ) : (
@@ -235,6 +260,15 @@ export function TournamentBracketView({ bracket, races, onGenerateNextRound, loa
                             {actualRace && !isFinal && (
                               <div className="bg-zinc-900/80 p-2 border-t border-zinc-800 text-center text-xs font-medium text-amber-400/80">
                                 Lấy Top {bRace.topAdvance} đi tiếp
+                              </div>
+                            )}
+
+                            {/* Champion Banner for completed final */}
+                            {isFinalCompleted && displayHorses.length > 0 && (
+                              <div className="bg-gradient-to-r from-amber-900/60 via-yellow-800/60 to-amber-900/60 border-t border-amber-500/50 p-2 flex items-center justify-center gap-2">
+                                <Trophy className="w-4 h-4 text-amber-400" />
+                                <span className="text-amber-300 text-xs font-black uppercase tracking-wider">Giải đấu kết thúc</span>
+                                <Trophy className="w-4 h-4 text-amber-400" />
                               </div>
                             )}
                           </div>

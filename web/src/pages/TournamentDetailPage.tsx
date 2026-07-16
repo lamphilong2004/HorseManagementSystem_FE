@@ -52,6 +52,7 @@ export function TournamentDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [bracket, setBracket] = useState<any>(null)
   const [activeTab, setActiveTab] = useState<'races' | 'leaderboard' | 'bracket'>('bracket')
+  const [champion, setChampion] = useState<{ horseName: string; ownerName?: string; raceName?: string } | null>(null)
 
   const fetchData = async (showLoading = true) => {
     if (!id) return
@@ -75,7 +76,40 @@ export function TournamentDetailPage() {
         setLeaderboard(lbList)
       } else if (activeTab === 'bracket') {
         const br = await getTournamentBracket(id).catch(() => null)
-        setBracket(br?.bracket || br?.data || br || null)
+        const bracketData = br?.bracket || br?.data || br || null
+        setBracket(bracketData)
+
+        // If tournament is COMPLETED, find champion from final race
+        const tStatus = t?.status?.toUpperCase?.() || ''
+        if (tStatus === 'COMPLETED' && bracketData?.rounds?.length) {
+          const finalRound = bracketData.rounds[bracketData.rounds.length - 1]
+          const finalRaceName = finalRound?.races?.[0]?.name
+          if (finalRaceName) {
+            try {
+              const allRaces = await getPublicRaces({ tournamentId: id }).catch(() => [] as any)
+              const raceList = Array.isArray(allRaces) ? allRaces : (allRaces?.races || allRaces?.data || [])
+              const finalRace = raceList.find((r: any) => r.name === finalRaceName)
+              if (finalRace) {
+                const raceId = finalRace._id || finalRace.id
+                const { getRaceResults } = await import('@/api')
+                const results = await getRaceResults(raceId).catch(() => null)
+                const resultList = results?.results || results?.rankings || results?.raceResults ||
+                  (Array.isArray(results) ? results : [])
+                const sorted = [...resultList].sort((a: any, b: any) => {
+                  return (a.position ?? a.rank ?? 999) - (b.position ?? b.rank ?? 999)
+                })
+                if (sorted.length > 0) {
+                  const winner = sorted[0]
+                  setChampion({
+                    horseName: winner.horseName || winner.horse?.name || 'N/A',
+                    ownerName: winner.ownerName || winner.owner?.name,
+                    raceName: finalRaceName,
+                  })
+                }
+              }
+            } catch {/* silent */}
+          }
+        }
       }
     } finally {
       setLoading(false)
@@ -184,6 +218,36 @@ export function TournamentDetailPage() {
         <ArrowLeft className="w-4 h-4" />
         Quay lại danh sách giải
       </Link>
+
+      {/* ══ Champion Banner ══ */}
+      {champion && tournament?.status?.toUpperCase() === 'COMPLETED' && (
+        <div
+          className="relative overflow-hidden rounded-3xl border border-amber-500/40 shadow-2xl"
+          style={{ background: 'linear-gradient(135deg, #1a1200 0%, #2d1f00 40%, #1a1200 100%)' }}
+        >
+          {/* Glow effects */}
+          <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(245,158,11,0.25) 0%, transparent 70%)' }} />
+          <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: 'linear-gradient(90deg, transparent, rgba(245,158,11,0.8), transparent)' }} />
+
+          <div className="relative z-10 flex flex-col items-center text-center py-10 px-6 gap-4">
+            <div className="text-6xl drop-shadow-[0_0_20px_rgba(245,158,11,0.8)] animate-bounce" style={{ animationDuration: '2s' }}>🏆</div>
+            <div>
+              <p className="text-amber-400/70 text-sm font-bold uppercase tracking-[0.3em] mb-1">Nhà Vô ĐỊch</p>
+              <h2 className="text-4xl md:text-5xl font-black text-amber-300 drop-shadow-[0_2px_15px_rgba(245,158,11,0.6)] tracking-tight">
+                {champion.horseName}
+              </h2>
+              {champion.ownerName && (
+                <p className="text-amber-400/60 text-sm font-semibold mt-2">Chủ ngựa: {champion.ownerName}</p>
+              )}
+            </div>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="inline-flex items-center gap-2 bg-amber-500/20 border border-amber-500/40 text-amber-300 px-4 py-1.5 rounded-full text-sm font-bold">
+                🥇 Vô ĐỊch Giải Đấu
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ══ Tournament Hero ══ */}
       <ScrollReveal direction="up" distance={40} duration={0.7} delay={0.05}>
