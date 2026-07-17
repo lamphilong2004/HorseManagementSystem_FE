@@ -319,6 +319,9 @@ export function PredictionsPage() {
         if (prediction.status === 'WON') {
           return <span className="text-emerald-400 font-black">{formatPoints(prediction.prizeAmount || prediction.payout)}</span>
         }
+        if (prediction.status === 'LOST') {
+          return <span className="text-red-400 font-bold">- {formatPoints(prediction.betAmount || 0)}</span>
+        }
         if (prediction.status === 'PENDING') {
           return <span className="text-amber-400 font-bold">{formatPoints((prediction.betAmount || 0) * 1.8)}</span>
         }

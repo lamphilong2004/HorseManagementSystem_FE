@@ -51,6 +51,7 @@ import {
 } from '@/api'
 import { http } from '../../api/http'
 import { AnimatedTable, type SortDirection } from '@/components/ui/animated-table'
+import { ConfirmModal } from '@/components/ui/confirm-modal'
 
 type Tab = 'tournaments' | 'registrations' | 'horses-jockeys' | 'referee-results' | 'predictions'
 
@@ -85,6 +86,21 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Confirm Modal state
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    onConfirm: () => void
+    isDestructive?: boolean
+    confirmText?: string
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  })
+
   // ---------------------------------------------------------
   // DATA STATES
   // ---------------------------------------------------------
@@ -114,6 +130,8 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
   // Filters for Tournaments Tab
   const [filterTournSearch, setFilterTournSearch] = useState<string>('')
   const [filterTournStatus, setFilterTournStatus] = useState<string>('ALL')
+  const [filterTournStartDate, setFilterTournStartDate] = useState<Date | null>(null)
+  const [filterTournEndDate, setFilterTournEndDate] = useState<Date | null>(null)
   const [expandedTournId, setExpandedTournId] = useState<string | null>(null)
 
   // Filters for Registrations Tab
@@ -150,6 +168,7 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
   const [horsesSortDirection, setHorsesSortDirection] = useState<SortDirection>(null)
   const [horsesColumnFilters, setHorsesColumnFilters] = useState<Record<string, string>>({})
   const [horsesPage, setHorsesPage] = useState(1)
+  const [selectedHorses, setSelectedHorses] = useState<(string | number)[]>([])
 
   const handleHorsesSort = (columnId: string, direction: SortDirection) => {
     setHorsesSortColumn(columnId)
@@ -367,8 +386,8 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
             if (aId === targetTournId) return -1
             if (bId === targetTournId) return 1
           }
-          const dateA = a.startDate ? new Date(a.startDate).getTime() : 0
-          const dateB = b.startDate ? new Date(b.startDate).getTime() : 0
+          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : (a.startDate ? new Date(a.startDate).getTime() : 0)
+          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : (b.startDate ? new Date(b.startDate).getTime() : 0)
           return dateB - dateA
         })
         setTournaments(sortedTournaments)
@@ -512,6 +531,16 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
       }
     }
 
+    if (!selectedTourn && tournForm.startDate) {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const start = new Date(tournForm.startDate)
+      if (start < today) {
+        showToast('Ngày bắt đầu không được ở trong quá khứ!', 'error')
+        return
+      }
+    }
+
     if (tournForm.registrationCloseDate && tournForm.startDate) {
       const rEnd = new Date(tournForm.registrationCloseDate).getTime()
       if (new Date(tournForm.startDate).getTime() < rEnd) {
@@ -564,19 +593,27 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
   }
 
   const handleDeleteTourn = async (id: string, name: string) => {
-    if (!window.confirm(`Bạn có chắc muốn xóa giải đấu ${name} không? Thao tác này không thể hoàn tác.`)) return
-    
-    // Optimistic UI
-    setTournaments(prev => prev.filter(t => t.id !== id))
-    
-    try {
-      await deleteTournament(id)
-      showToast(`Đã xóa giải đấu ${name}`)
-      loadTabData(undefined, undefined, undefined, undefined, true) // Background sync
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Có lỗi xảy ra khi xóa', 'error')
-      loadTabData(undefined, undefined, undefined, undefined, true) // Rollback
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Xác nhận xóa giải đấu',
+      message: `Bạn có chắc muốn xóa giải đấu ${name} không? Thao tác này không thể hoàn tác.`,
+      isDestructive: true,
+      confirmText: 'Xóa giải đấu',
+      onConfirm: async () => {
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }))
+        // Optimistic UI
+        setTournaments(prev => prev.filter(t => t.id !== id))
+        
+        try {
+          await deleteTournament(id)
+          showToast(`Đã xóa giải đấu ${name}`)
+          loadTabData(undefined, undefined, undefined, undefined, true) // Background sync
+        } catch (err: any) {
+          showToast(err.response?.data?.message || 'Có lỗi xảy ra khi xóa', 'error')
+          loadTabData(undefined, undefined, undefined, undefined, true) // Rollback
+        }
+      }
+    })
   }
 
   const handleQuickStatusChange = async (id: string, name: string, newStatus: string) => {
@@ -615,32 +652,53 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
         msg = `CẢNH BÁO: Giải đấu này đang có ${pendingCount} đăng ký CHỜ DUYỆT. Nếu đóng cổng, các đăng ký này sẽ bị TỪ CHỐI TỰ ĐỘNG (auto-reject). Bạn có chắc chắn muốn đóng đăng ký không?`;
       }
 
-      if (!window.confirm(msg)) return
+      setConfirmConfig({
+        isOpen: true,
+        title: 'Xác nhận đóng đăng ký',
+        message: msg,
+        isDestructive: pendingCount > 0,
+        confirmText: 'Đóng đăng ký',
+        onConfirm: async () => {
+          setConfirmConfig(prev => ({ ...prev, isOpen: false }))
+          // Optimistic UI
+          setTournaments(prev => prev.map(t => t.id === id ? { ...t, status: 'REGISTRATION_CLOSED' } : t))
 
-      // Optimistic UI
-      setTournaments(prev => prev.map(t => t.id === id ? { ...t, status: 'REGISTRATION_CLOSED' } : t))
-
-      await closeTournamentRegistration(id)
-      setLastModifiedTournId(id)
-      showToast('Đã đóng cổng đăng ký thành công')
-      loadTabData(id, undefined, undefined, undefined, true)
+          try {
+            await closeTournamentRegistration(id)
+            setLastModifiedTournId(id)
+            showToast('Đã đóng cổng đăng ký thành công')
+            loadTabData(id, undefined, undefined, undefined, true)
+          } catch (err: any) {
+            showToast(err.response?.data?.message || 'Không thể đóng cổng đăng ký', 'error')
+            loadTabData(id, undefined, undefined, undefined, true) // Rollback
+          }
+        }
+      })
     } catch (err: any) {
-      showToast(err.response?.data?.message || 'Không thể đóng cổng đăng ký', 'error')
-      loadTabData(id, undefined, undefined, undefined, true) // Rollback
+      showToast(err.response?.data?.message || 'Không thể lấy dữ liệu', 'error')
     }
   }
 
   const handleGenerateBracket = async (id: string) => {
-    if (!window.confirm('Bạn có chắc muốn chia bảng tự động cho giải đấu này?')) return
-    try {
-      const tourn = tournaments.find(t => t.id === id || (t as any)._id === id)
-      await generateTournamentBracket(id, tourn?.pairingMethod || 'RANDOM')
-      setLastModifiedTournId(id)
-      showToast('Đã chia bảng thành công')
-      loadTabData(id, undefined, undefined, undefined)
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Không thể chia bảng', 'error')
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Xác nhận chia bảng',
+      message: 'Bạn có chắc muốn chia bảng tự động cho giải đấu này?',
+      isDestructive: false,
+      confirmText: 'Chia bảng',
+      onConfirm: async () => {
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }))
+        try {
+          const tourn = tournaments.find(t => t.id === id || (t as any)._id === id)
+          await generateTournamentBracket(id, tourn?.pairingMethod || 'RANDOM')
+          setLastModifiedTournId(id)
+          showToast('Đã chia bảng thành công')
+          loadTabData(id, undefined, undefined, undefined)
+        } catch (err: any) {
+          showToast(err.response?.data?.message || 'Không thể chia bảng', 'error')
+        }
+      }
+    })
   }
 
   // ---------------------------------------------------------
@@ -968,17 +1026,26 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
       showToast('Không có đăng ký nào đang chờ duyệt trong danh sách hiện tại', 'warning')
       return
     }
-    if (!window.confirm(`Bạn có chắc muốn duyệt tất cả ${pendingRegs.length} đăng ký đang chờ duyệt không?`)) return
-
-    const ids = pendingRegs.map(r => r.id)
-    setRegistrations(prev => prev.map(r => ids.includes(r.id) ? { ...r, status: 'APPROVED' } : r))
     
-    Promise.allSettled(ids.map(id => approveRaceRegistration(id))).then((results) => {
-      const failed = results.filter(r => r.status === 'rejected')
-      if (failed.length > 0) {
-        showToast(`Duyệt thành công ${ids.length - failed.length}, thất bại ${failed.length}. Vui lòng kiểm tra lại.`, 'warning')
-      } else {
-        showToast(`Đã duyệt thành công ${ids.length} đăng ký!`)
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Xác nhận duyệt',
+      message: `Bạn có chắc muốn duyệt tất cả ${pendingRegs.length} đăng ký đang chờ duyệt không?`,
+      isDestructive: false,
+      confirmText: 'Duyệt tất cả',
+      onConfirm: () => {
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }))
+        const ids = pendingRegs.map(r => r.id)
+        setRegistrations(prev => prev.map(r => ids.includes(r.id) ? { ...r, status: 'APPROVED' } : r))
+        
+        Promise.allSettled(ids.map(id => approveRaceRegistration(id))).then((results) => {
+          const failed = results.filter(r => r.status === 'rejected')
+          if (failed.length > 0) {
+            showToast(`Duyệt thành công ${ids.length - failed.length}, thất bại ${failed.length}. Vui lòng kiểm tra lại.`, 'warning')
+          } else {
+            showToast(`Đã duyệt thành công ${ids.length} đăng ký!`)
+          }
+        })
       }
     })
   }
@@ -1166,6 +1233,33 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
     }
   }
 
+  const handleApproveMultipleHorses = () => {
+    if (selectedHorses.length === 0) return
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Xác nhận duyệt',
+      message: `Bạn có chắc chắn muốn duyệt ${selectedHorses.length} ngựa đã chọn?`,
+      isDestructive: false,
+      confirmText: 'Duyệt tất cả',
+      onConfirm: () => {
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }))
+        // Optimistic UI
+        setHorses(prev => prev.map(h => selectedHorses.includes(h.id) ? { ...h, status: 'APPROVED' } : h))
+        
+        Promise.allSettled(selectedHorses.map(id => approveHorse(String(id)))).then((results) => {
+          const failed = results.filter(r => r.status === 'rejected')
+          if (failed.length > 0) {
+            showToast(`Duyệt thành công ${selectedHorses.length - failed.length}, thất bại ${failed.length}. Vui lòng kiểm tra lại.`, 'warning')
+          } else {
+            showToast(`Đã duyệt thành công ${selectedHorses.length} hồ sơ ngựa!`)
+          }
+          setSelectedHorses([])
+          loadTabData(undefined, undefined, undefined, undefined, true) // background sync
+        })
+      }
+    })
+  }
+
   const handleRejectHorse = async (horseId: string) => {
     const reason = window.prompt('Nhập lý do từ chối hồ sơ ngựa (có thể để trống):')
     if (reason === null) return // user cancelled
@@ -1292,6 +1386,25 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
       const desc = (t.description || '').toLowerCase()
       if (!name.includes(query) && !venue.includes(query) && !desc.includes(query)) return false
     }
+
+    if (filterTournStartDate) {
+      const tDate = t.startDate ? new Date(t.startDate) : null
+      if (tDate) {
+        const d1 = new Date(tDate.getFullYear(), tDate.getMonth(), tDate.getDate())
+        const d2 = new Date(filterTournStartDate.getFullYear(), filterTournStartDate.getMonth(), filterTournStartDate.getDate())
+        if (d1 < d2) return false
+      }
+    }
+
+    if (filterTournEndDate) {
+      const tDate = t.endDate ? new Date(t.endDate) : (t.startDate ? new Date(t.startDate) : null)
+      if (tDate) {
+        const d1 = new Date(tDate.getFullYear(), tDate.getMonth(), tDate.getDate())
+        const d2 = new Date(filterTournEndDate.getFullYear(), filterTournEndDate.getMonth(), filterTournEndDate.getDate())
+        if (d1 > d2) return false
+      }
+    }
+
     return true
   })
 
@@ -1512,6 +1625,31 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
                 <option value="CANCELLED">Đã hủy (Cancelled)</option>
               </select>
             </div>
+            
+            <div className="form-group min-w-[140px]" style={{ margin: 0 }}>
+              <label className="text-xs font-bold mb-1.5 block">Từ ngày</label>
+              <DatePicker
+                selected={filterTournStartDate}
+                onChange={(date: Date | null) => setFilterTournStartDate(date)}
+                dateFormat="dd/MM/yyyy"
+                placeholderText="DD/MM/YYYY"
+                className="h-10 rounded-lg w-full"
+                isClearable
+              />
+            </div>
+            
+            <div className="form-group min-w-[140px]" style={{ margin: 0 }}>
+              <label className="text-xs font-bold mb-1.5 block">Đến ngày</label>
+              <DatePicker
+                selected={filterTournEndDate}
+                onChange={(date: Date | null) => setFilterTournEndDate(date)}
+                dateFormat="dd/MM/yyyy"
+                placeholderText="DD/MM/YYYY"
+                className="h-10 rounded-lg w-full"
+                isClearable
+                minDate={filterTournStartDate || undefined}
+              />
+            </div>
           </div>
 
           {loading ? (
@@ -1592,7 +1730,7 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
                         {t.status === 'REGISTRATION_CLOSED' && (
                            <button className="btn btn-sm" style={{ padding: '6px 12px', fontSize: '12px', background: '#3b82f6', color: '#fff', border: 'none' }} onClick={() => handleGenerateBracket(t.id)}>Chia Bảng</button>
                         )}
-                        <button className="btn btn-sm" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => openRaceModal(null, t.id)}>+ Cuộc đua</button>
+                        {/* <button className="btn btn-sm" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => openRaceModal(null, t.id)}>+ Cuộc đua</button> */}
                         <button className="btn btn-sm" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => openTournModal(t)}>Sửa</button>
                         <button className="btn btn-sm" style={{ color: '#ef4444', padding: '6px 12px', fontSize: '12px' }} onClick={() => handleDeleteTourn(t.id, t.name)}>Xóa</button>
                         
@@ -2042,8 +2180,22 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 32 }}>
           {/* Horse profiles approval */}
           <div className="card">
-            <h2>Duyệt Hồ Sơ Ngựa Trong Hệ Thống</h2>
-            <p className="muted">Khi chủ ngựa khai báo ngựa mới, hồ sơ cần được duyệt trước khi có thể đăng ký thi đấu.</p>
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h2 style={{ margin: 0, marginBottom: '4px' }}>Duyệt Hồ Sơ Ngựa Trong Hệ Thống</h2>
+                <p className="muted" style={{ margin: 0 }}>Khi chủ ngựa khai báo ngựa mới, hồ sơ cần được duyệt trước khi có thể đăng ký thi đấu.</p>
+              </div>
+              {selectedHorses.length > 0 && (
+                <button 
+                  className="btn btnPrimary flex items-center gap-2" 
+                  onClick={handleApproveMultipleHorses}
+                  style={{ background: '#10b981', borderColor: '#10b981' }}
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  Duyệt {selectedHorses.length} mục đã chọn
+                </button>
+              )}
+            </div>
 
             {loading ? (
               <p className="muted">Đang tải...</p>
@@ -2052,6 +2204,9 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
             ) : (
               <div className="admin-table-wrapper w-full">
                 <AnimatedTable
+                  selectable={true}
+                  selectedIds={selectedHorses}
+                  onSelectionChange={setSelectedHorses}
                   data={(() => {
                     let res = horses
                     // Filters
@@ -3112,24 +3267,33 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
                   const finalRace = viewBracketRaces.find(r => r.name === finalBRace?.name);
                   const finalDone = finalRace && ['COMPLETED','FINISHED','RESULT_CONFIRMED'].includes((finalRace.status || '').toUpperCase());
                   return finalDone ? (
-                    <button
-                      className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white transition-all"
-                      style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', border: 'none', boxShadow: '0 4px 15px rgba(245,158,11,0.4)' }}
-                      onClick={async () => {
-                        if (!window.confirm('Xác nhận kết thúc giải đấu này? Hành động này không thể hoàn tác.')) return;
-                        try {
-                          await updateTournament(viewBracketTournament.id, { status: 'COMPLETED' } as any);
-                          showToast('Giải đấu đã kết thúc thành công! 🏆', 'success');
-                          setViewBracketTournament(prev => prev ? { ...prev, status: 'COMPLETED' } : null);
-                          loadDashboardStats();
-                        } catch (err: any) {
-                          showToast(err.response?.data?.message || 'Lỗi khi kết thúc giải đấu', 'error');
-                        }
-                      }}
-                    >
-                      <Trophy className="w-4 h-4" />
-                      Kết Thúc Giải Đấu
-                    </button>
+                      <button
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white transition-all cursor-pointer"
+                        style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', border: 'none', boxShadow: '0 4px 15px rgba(245,158,11,0.4)' }}
+                        onClick={() => {
+                          setConfirmConfig({
+                            isOpen: true,
+                            title: 'Kết thúc giải đấu',
+                            message: 'Xác nhận kết thúc giải đấu này? Hành động này không thể hoàn tác.',
+                            isDestructive: true,
+                            confirmText: 'Kết thúc',
+                            onConfirm: async () => {
+                              setConfirmConfig(prev => ({ ...prev, isOpen: false }))
+                              try {
+                                await updateTournament(viewBracketTournament.id, { status: 'COMPLETED' } as any);
+                                showToast('Giải đấu đã kết thúc thành công! 🏆', 'success');
+                                setViewBracketTournament(prev => prev ? { ...prev, status: 'COMPLETED' } : null);
+                                loadDashboardStats();
+                              } catch (err: any) {
+                                showToast(err.response?.data?.message || 'Lỗi khi kết thúc giải đấu', 'error');
+                              }
+                            }
+                          })
+                        }}
+                      >
+                        <Trophy className="w-4 h-4" />
+                        Kết Thúc Giải Đấu
+                      </button>
                   ) : null;
                 })()}
                 <button 
@@ -3153,6 +3317,17 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
           </div>
         </div>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        onClose={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        onConfirm={confirmConfig.onConfirm}
+        isDestructive={confirmConfig.isDestructive}
+        confirmText={confirmConfig.confirmText}
+      />
       </div>
     </>
   )

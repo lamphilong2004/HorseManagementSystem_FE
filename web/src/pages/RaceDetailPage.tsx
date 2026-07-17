@@ -4,12 +4,15 @@ import { useSession } from '../auth/SessionContext'
 import type { Race, RaceResult } from '../types'
 import { getPublicRace, getRaceHorses, getRaceResults, checkPredictionOpen, placePrediction, splitRaceIntoHeats } from '@/api'
 import { AnimatedTable, type ColumnDef } from '../components/ui/animated-table'
+import { getStatusClassName, getStatusLabel } from '@/lib/status'
 
-function statusBadge(s?: string) {
+function statusBadge(s?: string, type: string = 'race') {
   if (!s) return null
-  return <span className={`badge badge-${s.toLowerCase()}`}>
+  const className = getStatusClassName(s, type)
+  const label = getStatusLabel(s, type)
+  return <span className={`badge ${className} font-bold`}>
     {s === 'ONGOING' && <span className="live-dot" />}
-    {s}
+    {label}
   </span>
 }
 
@@ -111,7 +114,8 @@ export function RaceDetailPage() {
         setRace(r)
         const horseList = Array.isArray(h) ? h : (h?.horses || h?.data || [])
         setHorses(horseList)
-        setResults(Array.isArray(res) ? res : [])
+        const resultList = res?.results || res?.rankings || res?.raceResults || (Array.isArray(res) ? res : [])
+        setResults(resultList)
       })
       .finally(() => setLoading(false))
 
@@ -125,7 +129,10 @@ export function RaceDetailPage() {
   useEffect(() => {
     if (!race || race.status !== 'ONGOING' || !id) return
     const timer = setInterval(() => {
-      getRaceResults(id).then((res: any) => setResults(Array.isArray(res) ? res : [])).catch(() => {})
+      getRaceResults(id).then((res: any) => {
+        const resultList = res?.results || res?.rankings || res?.raceResults || (Array.isArray(res) ? res : [])
+        setResults(resultList)
+      }).catch(() => {})
     }, 15000)
     return () => clearInterval(timer)
   }, [race, id])
@@ -218,7 +225,7 @@ export function RaceDetailPage() {
       header: 'Trạng thái',
       cell: (h: any) => {
         const regStatus = h?.registrationStatus || h?.status || ''
-        return regStatus ? <span className={`badge badge-${regStatus.toLowerCase()} font-bold`}>{regStatus}</span> : '—'
+        return regStatus ? statusBadge(regStatus, 'registration') : '—'
       },
     },
     ...(isSpectator ? [{
@@ -265,17 +272,24 @@ export function RaceDetailPage() {
       header: 'Thời gian',
       cell: (r: RaceResult) => <span className="fw-600">{r.finishTime || '—'}</span>,
     },
-    {
-      id: 'status',
-      header: 'Trạng thái',
-      cell: (r: RaceResult) => <span className={`badge badge-${(r.status || '').toLowerCase()}`}>{r.status}</span>,
-    },
-    {
-      id: 'prize',
-      header: 'Giải thưởng',
-      align: 'right' as const,
-      cell: (r: RaceResult) => <span className="money">{formatPoints(r.prizeAmount)}</span>,
-    },
+    // {
+    //   id: 'status',
+    //   header: 'Trạng thái',
+    //   cell: (r: RaceResult) => {
+    //     const s = r.status || ''
+    //     let label = s
+    //     if (s === 'FINISHED') label = 'Hoàn thành'
+    //     else if (s === 'DISQUALIFIED') label = 'Truất quyền'
+    //     else if (s === 'DNF') label = 'Bỏ cuộc'
+    //     return <span className={`badge badge-${s.toLowerCase()}`}>{label}</span>
+    //   },
+    // },
+    // {
+    //   id: 'prize',
+    //   header: 'Giải thưởng',
+    //   align: 'right' as const,
+    //   cell: (r: RaceResult) => <span className="money">{formatPoints(r.prizeAmount)}</span>,
+    // },
   ]
 
   const horsesWithId = horses.map((h: any, idx: number) => {
@@ -293,7 +307,7 @@ export function RaceDetailPage() {
   if (loading) return <div className="loading"><div className="spinner" /></div>
   if (error) return (
     <div className="card">
-      <Link to="/races" className="back-link">← Quay lại</Link>
+      <Link to="/races" className="back-link" style={{ display: 'inline-block', marginBottom: '24px' }}>← Quay lại</Link>
       <div className="alert alert-error">⚠️ {error}</div>
     </div>
   )
@@ -301,7 +315,7 @@ export function RaceDetailPage() {
 
   return (
     <div>
-      <Link to="/races" className="back-link">← Quay lại danh sách</Link>
+      <Link to="/races" className="back-link" style={{ display: 'inline-block', marginBottom: '24px' }}>← Quay lại danh sách</Link>
 
       {/* Race Info Header */}
       <div className="card" style={{ marginBottom: 20 }}>

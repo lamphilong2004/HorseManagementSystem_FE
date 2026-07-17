@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { getHorsesByRace } from '@/api'
+import { getHorsesByRace, getRaceResults } from '@/api'
 import { Trophy, ChevronRight } from 'lucide-react'
 
-export function TournamentBracketView({ bracket, races, onGenerateNextRound, loadingNextRound, draftHorsesRecord }: { bracket: any, races?: any[], onGenerateNextRound?: (roundIdx: number) => void, loadingNextRound?: boolean, draftHorsesRecord?: Record<string, any[]> }) {
+export function TournamentBracketView({ bracket, races, onGenerateNextRound, loadingNextRound, draftHorsesRecord, championName }: { bracket: any, races?: any[], onGenerateNextRound?: (roundIdx: number) => void, loadingNextRound?: boolean, draftHorsesRecord?: Record<string, any[]>, championName?: string }) {
   const [raceHorses, setRaceHorses] = useState<Record<string, any[]>>({})
   const [loading, setLoading] = useState(false)
 
@@ -83,7 +83,30 @@ export function TournamentBracketView({ bracket, races, onGenerateNextRound, loa
         races.map(async (r) => {
           try {
             const h = await getHorsesByRace(r._id || r.id)
-            result[r._id || r.id] = h
+            if (['COMPLETED', 'FINISHED', 'RESULT_CONFIRMED'].includes((r.status || '').toUpperCase())) {
+              try {
+                const resultsObj = await getRaceResults(r._id || r.id);
+                const results = resultsObj?.results || resultsObj?.rankings || resultsObj?.raceResults || (Array.isArray(resultsObj) ? resultsObj : []);
+                
+                const rankedHorses = h.map((horseItem: any) => {
+                  const horseId = horseItem.horse?._id || horseItem.horseId || horseItem._id;
+                  const foundResult = results.find((res: any) => {
+                     const rHorseId = res.horseId?._id || res.horseId?.id || res.horseId || res.horse?._id || res.horseId;
+                     return String(rHorseId) === String(horseId);
+                  });
+                  if (foundResult) {
+                    return { ...horseItem, position: foundResult.position ?? foundResult.rank };
+                  }
+                  return horseItem;
+                });
+                result[r._id || r.id] = rankedHorses;
+              } catch (e) {
+                console.error('Failed to fetch results for race', r._id)
+                result[r._id || r.id] = h
+              }
+            } else {
+              result[r._id || r.id] = h
+            }
           } catch (e) {
             console.error('Failed to fetch horses for race', r._id)
           }
@@ -215,36 +238,36 @@ export function TournamentBracketView({ bracket, races, onGenerateNextRound, loa
                             <div className="p-3 flex flex-col gap-2 min-h-[100px] justify-center">
                               {actualRace || isDraft ? (
                                 displayHorses.length > 0 ? (
-                                  displayHorses.map((h: any, hIdx: number) => (
-                                    <div key={hIdx} className={`flex items-center gap-3 p-2 rounded-xl transition-colors ${
-                                      isFinalCompleted && hIdx === 0
-                                        ? 'bg-amber-500/20 ring-1 ring-amber-500/50'
-                                        : 'bg-white/5 hover:bg-white/10'
-                                    }`}>
-                                      <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-sm shrink-0 border ${
-                                        isFinalCompleted && hIdx < 3
-                                          ? 'bg-transparent border-transparent text-lg'
-                                          : hIdx < bRace.topAdvance
-                                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50'
-                                            : 'bg-[#27272a] text-zinc-400 border-[#3f3f46]'
+                                  displayHorses.map((h: any, hIdx: number) => {
+                                    const isRaceCompleted = actualRace && ['COMPLETED','FINISHED','RESULT_CONFIRMED'].includes((actualRace.status || '').toUpperCase());
+                                    const actualRank = h.position || h.rank || h.actualPosition || hIdx + 1;
+                                    const isAdvancing = isRaceCompleted && !isFinal && actualRank <= bRace.topAdvance;
+                                    
+                                    return (
+                                      <div key={hIdx} className={`flex items-center gap-3 p-2 rounded-xl transition-colors ${
+                                        isAdvancing ? 'bg-white/10 ring-1 ring-white/20' : 'bg-white/5 hover:bg-white/10'
                                       }`}>
-                                        {isFinalCompleted && hIdx < 3 ? podiumIcons[hIdx] : hIdx + 1}
+                                        <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-[10px] shrink-0 border bg-[#27272a] text-zinc-400 border-[#3f3f46]`}>
+                                          🐎
+                                        </div>
+                                        <span className={`font-bold truncate text-sm ${isAdvancing ? 'text-white' : 'text-zinc-300'}`}>
+                                          {h.horse?.name || h.horseName || '---'}
+                                        </span>
+                                        {isAdvancing && (
+                                          <span className={`ml-auto text-[10px] px-2 py-0.5 rounded border whitespace-nowrap font-bold ${
+                                            actualRank === 1 ? 'text-yellow-400 bg-yellow-400/20 border-yellow-400/30' :
+                                            actualRank === 2 ? 'text-slate-300 bg-slate-300/20 border-slate-300/30' :
+                                            actualRank === 3 ? 'text-amber-600 bg-amber-600/20 border-amber-600/30' :
+                                            actualRank === 4 ? 'text-purple-400 bg-purple-400/20 border-purple-400/30' :
+                                            'text-blue-400 bg-blue-400/20 border-blue-400/30'
+                                          }`}>
+                                            #{actualRank}
+                                          </span>
+                                        )}
+                                        {isDraft && !isRaceCompleted && <span className="ml-auto text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/30 whitespace-nowrap">Dự kiến</span>}
                                       </div>
-                                      <span className={`font-bold truncate text-sm ${
-                                        isFinalCompleted && hIdx === 0
-                                          ? 'text-amber-400 text-base'
-                                          : hIdx < bRace.topAdvance
-                                            ? 'text-white'
-                                            : 'text-zinc-300'
-                                      }`}>
-                                        {h.horse?.name || h.horseName || '---'}
-                                      </span>
-                                      {isFinalCompleted && hIdx === 0 && (
-                                        <span className="ml-auto text-[10px] bg-amber-500/30 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/50 whitespace-nowrap font-bold">VÔ ĐỊCH</span>
-                                      )}
-                                      {isDraft && !isFinalCompleted && <span className="ml-auto text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/30 whitespace-nowrap">Dự kiến</span>}
-                                    </div>
-                                  ))
+                                    )
+                                  })
                                 ) : (
                                   <div className="text-center text-zinc-500 text-sm italic py-4">Chưa có ngựa</div>
                                 )
@@ -256,13 +279,6 @@ export function TournamentBracketView({ bracket, races, onGenerateNextRound, loa
                               )}
                             </div>
                             
-                            {/* Advancement Indicator (Bottom line) */}
-                            {actualRace && !isFinal && (
-                              <div className="bg-zinc-900/80 p-2 border-t border-zinc-800 text-center text-xs font-medium text-amber-400/80">
-                                Lấy Top {bRace.topAdvance} đi tiếp
-                              </div>
-                            )}
-
                             {/* Champion Banner for completed final */}
                             {isFinalCompleted && displayHorses.length > 0 && (
                               <div className="bg-gradient-to-r from-amber-900/60 via-yellow-800/60 to-amber-900/60 border-t border-amber-500/50 p-2 flex items-center justify-center gap-2">
@@ -286,6 +302,26 @@ export function TournamentBracketView({ bracket, races, onGenerateNextRound, loa
                 </div>
               )
             })}
+
+            {/* Champion Node */}
+            {championName && (
+              <div className="flex flex-col gap-8 relative items-center justify-center">
+                <div className="flex flex-col justify-around gap-8 flex-1 w-full relative">
+                  {/* Connect line from final */}
+                  <div className="absolute left-[-4rem] top-1/2 -translate-y-1/2 w-[4rem] h-[2px] bg-amber-500/50 z-0 flex items-center justify-start"></div>
+                  
+                  <div className="bg-[var(--surface-2)] border rounded-2xl p-0 shadow-[0_8px_40px_rgba(245,158,11,0.6),_0_0_0_2px_rgba(245,158,11,0.5)] flex flex-col relative transition-all w-64 hover:-translate-y-1 overflow-hidden z-10 animate-bounce" style={{ animationDuration: '2.5s' }}>
+                    <div className="bg-gradient-to-b from-amber-500/40 to-[#18181b] p-4 border-b border-amber-500/30 flex flex-col justify-center items-center gap-2">
+                      <Trophy className="w-10 h-10 text-amber-400 drop-shadow-[0_0_15px_rgba(245,158,11,0.8)]" />
+                      <h4 className="font-black text-amber-400 text-base uppercase tracking-widest drop-shadow-md">Nhà Vô Địch</h4>
+                    </div>
+                    <div className="p-6 flex flex-col items-center justify-center min-h-[100px] bg-gradient-to-b from-transparent to-amber-900/20">
+                      <span className="font-black text-2xl text-amber-300 text-center drop-shadow-lg">{championName}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

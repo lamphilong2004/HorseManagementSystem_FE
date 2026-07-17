@@ -549,7 +549,7 @@ export function RefereeRaceDetailPage() {
       id: 'status',
       header: 'Trạng thái',
       sortable: true,
-      cell: (r: RaceResult) => statusBadge(r.status || 'FINISHED', 'registration'),
+      cell: (r: RaceResult) => statusBadge(r.status || 'FINISHED', 'race'),
     },
   ]
 
@@ -1103,20 +1103,93 @@ export function RefereeRaceDetailPage() {
 
             {/* Livestream results - read only */}
             {results.length > 0 && (resultsSource === 'ADMIN_PUBLISHED' || resultsSource === 'REFEREE_CONFIRMED') && (
-              <div>
-                <div className="text-lg font-black text-[var(--text)] mb-3">
-                  📊 Kết quả cuộc đua {resultsSource === 'ADMIN_PUBLISHED' ? '(Từ Livestream)' : '(Đã xác nhận)'}
-                </div>
-                {resultsSource === 'ADMIN_PUBLISHED' && (
-                  <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-sm text-emerald-300">
-                    ✅ Kết quả đã được tự động ghi nhận từ livestream. Bạn chỉ cần xem và không cần phải xác nhận lại.
+              <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-xl overflow-hidden relative mt-4">
+                {/* Top Decorative Banner */}
+                <div className="h-2 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500" />
+                
+                <div className="p-6 md:p-8">
+                  <div className="flex items-center gap-4 mb-8">
+                    <div className="w-12 h-12 rounded-xl bg-emerald-500/15 flex items-center justify-center border border-emerald-500/20 shrink-0">
+                      <span className="text-2xl">🏆</span>
+                    </div>
+                    <div>
+                      <h2 className="text-xl md:text-2xl font-black text-[var(--text)] tracking-tight m-0 mb-1 flex flex-wrap items-center gap-3">
+                        Kết quả cuộc đua
+                        <span className="text-xs md:text-sm font-bold px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                          {resultsSource === 'ADMIN_PUBLISHED' ? 'Từ Livestream' : 'Đã xác nhận'}
+                        </span>
+                      </h2>
+                      <p className="text-[var(--muted)] text-sm m-0 mt-1">Bảng xếp hạng chung cuộc chính thức của cuộc đua</p>
+                    </div>
                   </div>
-                )}
-                <AnimatedTable
-                  data={resultsWithId}
-                  columns={monitorResultsColumns}
-                  emptyMessage="Chưa có kết quả"
-                />
+
+                  {resultsSource === 'ADMIN_PUBLISHED' && (
+                    <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-sm font-medium text-emerald-400 flex items-center gap-3 shadow-inner">
+                      <span className="text-lg shrink-0">✅</span> 
+                      <span>Kết quả đã được tự động ghi nhận từ livestream. Bạn chỉ cần xem và không cần phải xác nhận lại.</span>
+                    </div>
+                  )}
+
+                  <div className="overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--bg2)]/50 shadow-inner">
+                    <table className="w-full text-left border-collapse min-w-[650px]">
+                      <thead>
+                        <tr className="bg-[var(--surface-strong)] border-b border-[var(--border)]">
+                          <th className="p-4 text-xs font-bold text-[var(--muted)] uppercase tracking-wider w-20 text-center">Hạng</th>
+                          <th className="p-4 text-xs font-bold text-[var(--muted)] uppercase tracking-wider">Ngựa & Nài ngựa</th>
+                          <th className="p-4 text-xs font-bold text-[var(--muted)] uppercase tracking-wider text-center">Thời gian</th>
+                          <th className="p-4 text-xs font-bold text-[var(--muted)] uppercase tracking-wider text-right pr-6">Trạng thái</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[var(--border)]">
+                        {results.map((r, idx) => {
+                          const horseIdStr = String(r.horseId || '')
+                          const found = horses.find(h => {
+                            const horse = h.horse || h.horseId || h
+                            return horse?._id === horseIdStr || horse?.id === horseIdStr
+                          })
+                          const horseObj = r.horseId && typeof r.horseId === 'object' ? (r.horseId as any) : ((found?.horse || found) as any)
+                          const horseName = horseObj?.name || '—'
+                          const jockeyName = (r.jockeyId && typeof r.jockeyId === 'object') ? (r.jockeyId as any).fullName || (r.jockeyId as any).name : found?.jockeyName || '—'
+                          const isTop3 = idx < 3
+                          
+                          return (
+                            <tr key={idx} className={`transition-colors hover:bg-[var(--surface-3)] ${isTop3 ? 'bg-amber-500/[0.02]' : ''}`}>
+                              <td className="p-4 align-middle text-center">
+                                <div className={`inline-flex items-center justify-center w-9 h-9 rounded-xl font-black text-lg shadow-sm ${
+                                  idx === 0 ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' :
+                                  idx === 1 ? 'bg-slate-300/20 text-slate-300 border border-slate-300/30' :
+                                  idx === 2 ? 'bg-amber-700/20 text-amber-700 border border-amber-700/30' :
+                                  'bg-[var(--surface)] text-[var(--muted)] border border-[var(--border)] text-sm'
+                                }`}>
+                                  {idx === 0 ? '1' : idx === 1 ? '2' : idx === 2 ? '3' : r.position}
+                                </div>
+                              </td>
+                              <td className="p-4 align-middle">
+                                <div className="flex flex-col justify-center">
+                                  <span className={`font-black text-base ${isTop3 ? 'text-[var(--text)]' : 'text-[var(--text)]/80'}`}>{horseName}</span>
+                                  <span className="text-xs font-semibold text-[var(--muted)] mt-1 flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--border)] inline-block" />
+                                    {jockeyName}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="p-4 align-middle text-center">
+                                <span className={`font-mono font-bold px-3 py-1.5 rounded-lg border ${
+                                  isTop3 ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-[var(--surface)] text-[var(--muted)] border-[var(--border)]'
+                                }`}>
+                                  {r.finishTime || '—'}
+                                </span>
+                              </td>
+                              <td className="p-4 align-middle text-right pr-6">
+                                {statusBadge(r.status || 'FINISHED', 'race')}
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             )}
 

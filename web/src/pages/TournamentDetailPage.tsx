@@ -52,7 +52,7 @@ export function TournamentDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [bracket, setBracket] = useState<any>(null)
   const [activeTab, setActiveTab] = useState<'races' | 'leaderboard' | 'bracket'>('bracket')
-  const [champion, setChampion] = useState<{ horseName: string; ownerName?: string; raceName?: string } | null>(null)
+  const [topWinners, setTopWinners] = useState<{ horseName: string; ownerName?: string; position?: number }[]>([])
 
   const fetchData = async (showLoading = true) => {
     if (!id) return
@@ -99,12 +99,12 @@ export function TournamentDetailPage() {
                   return (a.position ?? a.rank ?? 999) - (b.position ?? b.rank ?? 999)
                 })
                 if (sorted.length > 0) {
-                  const winner = sorted[0]
-                  setChampion({
-                    horseName: winner.horseName || winner.horse?.name || 'N/A',
-                    ownerName: winner.ownerName || winner.owner?.name,
-                    raceName: finalRaceName,
-                  })
+                  const top3 = sorted.slice(0, 3).map((w: any) => ({
+                    horseName: w.horseName || w.horseId?.name || w.horse?.name || 'N/A',
+                    ownerName: w.ownerName || w.horseId?.ownerId?.fullName || w.horseId?.owner?.fullName || w.owner?.name,
+                    position: w.position ?? w.rank,
+                  }))
+                  setTopWinners(top3)
                 }
               }
             } catch {/* silent */}
@@ -219,8 +219,8 @@ export function TournamentDetailPage() {
         Quay lại danh sách giải
       </Link>
 
-      {/* ══ Champion Banner ══ */}
-      {champion && tournament?.status?.toUpperCase() === 'COMPLETED' && (
+      {/* ══ Winners Podium ══ */}
+      {topWinners.length > 0 && tournament?.status?.toUpperCase() === 'COMPLETED' && (
         <div
           className="relative overflow-hidden rounded-3xl border border-amber-500/40 shadow-2xl"
           style={{ background: 'linear-gradient(135deg, #1a1200 0%, #2d1f00 40%, #1a1200 100%)' }}
@@ -229,21 +229,47 @@ export function TournamentDetailPage() {
           <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(245,158,11,0.25) 0%, transparent 70%)' }} />
           <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: 'linear-gradient(90deg, transparent, rgba(245,158,11,0.8), transparent)' }} />
 
-          <div className="relative z-10 flex flex-col items-center text-center py-10 px-6 gap-4">
-            <div className="text-6xl drop-shadow-[0_0_20px_rgba(245,158,11,0.8)] animate-bounce" style={{ animationDuration: '2s' }}>🏆</div>
-            <div>
-              <p className="text-amber-400/70 text-sm font-bold uppercase tracking-[0.3em] mb-1">Nhà Vô ĐỊch</p>
-              <h2 className="text-4xl md:text-5xl font-black text-amber-300 drop-shadow-[0_2px_15px_rgba(245,158,11,0.6)] tracking-tight">
-                {champion.horseName}
-              </h2>
-              {champion.ownerName && (
-                <p className="text-amber-400/60 text-sm font-semibold mt-2">Chủ ngựa: {champion.ownerName}</p>
+          <div className="relative z-10 flex flex-col items-center text-center py-10 px-6 gap-8">
+            <h2 className="text-amber-400/80 text-xl font-black uppercase tracking-[0.2em] drop-shadow-md">
+              Bảng Vàng Chung Cuộc
+            </h2>
+            
+            <div className="flex flex-col md:flex-row items-end justify-center gap-6 md:gap-4 w-full max-w-4xl">
+              {/* Hạng 2 (Silver) */}
+              {topWinners[1] && (
+                <div className="flex-1 flex flex-col items-center animate-fade-in" style={{ animationDelay: '0.2s', width: '100%' }}>
+                  <div className="text-5xl drop-shadow-[0_0_15px_rgba(156,163,175,0.6)] mb-3">🥈</div>
+                  <div className="bg-gradient-to-b from-gray-300/20 to-transparent border border-gray-300/30 rounded-2xl p-4 w-full md:h-[140px] flex flex-col justify-end">
+                    <h3 className="text-2xl font-bold text-gray-200 tracking-tight">{topWinners[1].horseName}</h3>
+                    {topWinners[1].ownerName && <p className="text-gray-400 text-xs font-semibold mt-1">{topWinners[1].ownerName}</p>}
+                    <div className="mt-3 text-xs font-bold text-gray-300 bg-gray-500/20 py-1 px-3 rounded-full mx-auto">Á QUÂN</div>
+                  </div>
+                </div>
               )}
-            </div>
-            <div className="flex items-center gap-2 mt-2">
-              <span className="inline-flex items-center gap-2 bg-amber-500/20 border border-amber-500/40 text-amber-300 px-4 py-1.5 rounded-full text-sm font-bold">
-                🥇 Vô ĐỊch Giải Đấu
-              </span>
+
+              {/* Hạng 1 (Gold) */}
+              {topWinners[0] && (
+                <div className="flex-[1.2] flex flex-col items-center animate-bounce order-first md:order-none" style={{ animationDuration: '2.5s', width: '100%' }}>
+                  <div className="text-7xl drop-shadow-[0_0_25px_rgba(245,158,11,0.8)] mb-4">🏆</div>
+                  <div className="bg-gradient-to-b from-amber-500/30 to-transparent border border-amber-500/50 rounded-2xl p-5 w-full md:h-[180px] flex flex-col justify-end shadow-[0_0_30px_rgba(245,158,11,0.2)]">
+                    <h3 className="text-4xl font-black text-amber-300 tracking-tight drop-shadow-md">{topWinners[0].horseName}</h3>
+                    {topWinners[0].ownerName && <p className="text-amber-200/80 text-sm font-semibold mt-2">{topWinners[0].ownerName}</p>}
+                    <div className="mt-4 text-sm font-black text-amber-300 bg-amber-500/20 py-1.5 px-4 rounded-full mx-auto uppercase tracking-wider">Nhà Vô Địch</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Hạng 3 (Bronze) */}
+              {topWinners[2] && (
+                <div className="flex-1 flex flex-col items-center animate-fade-in" style={{ animationDelay: '0.4s', width: '100%' }}>
+                  <div className="text-4xl drop-shadow-[0_0_15px_rgba(180,83,9,0.6)] mb-3">🥉</div>
+                  <div className="bg-gradient-to-b from-amber-700/20 to-transparent border border-amber-700/30 rounded-2xl p-4 w-full md:h-[120px] flex flex-col justify-end">
+                    <h3 className="text-xl font-bold text-amber-600 tracking-tight">{topWinners[2].horseName}</h3>
+                    {topWinners[2].ownerName && <p className="text-amber-700/80 text-xs font-semibold mt-1">{topWinners[2].ownerName}</p>}
+                    <div className="mt-3 text-xs font-bold text-amber-600 bg-amber-700/20 py-1 px-3 rounded-full mx-auto">QUÝ QUÂN</div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -359,7 +385,7 @@ export function TournamentDetailPage() {
 
           {/* Tab Content */}
           {activeTab === 'bracket' && (
-            <TournamentBracketView bracket={bracket} races={races} />
+            <TournamentBracketView bracket={bracket} races={races} championName={topWinners[0]?.horseName} />
           )}
           {activeTab === 'races' && (
             <AnimatedTable

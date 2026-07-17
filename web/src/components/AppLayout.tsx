@@ -97,7 +97,6 @@ function getRoleNav(role: string): NavItem[] {
   if (role === 'REFEREE') {
     return [
       ...common,
-      { to: '/app/referee/invites', label: 'Lời mời', icon: Mail },
       { to: '/app/referee/races', label: 'Quản lý đua', icon: Scale },
     ]
   }

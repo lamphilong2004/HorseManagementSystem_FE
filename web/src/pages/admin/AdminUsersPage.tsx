@@ -4,6 +4,7 @@ import { getAdminUsers, createAdminUser, updateUserRole, toggleUserStatus, delet
 import { AnimatedTable, type ColumnDef, type SortDirection } from '@/components/ui/animated-table'
 import { Users, CheckCircle, Lock, Search, Key, Trash2, Unlock, MoreHorizontal, AlertTriangle } from 'lucide-react'
 import { DropdownMenu, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown'
+import { ConfirmModal } from '@/components/ui/confirm-modal'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -144,6 +145,21 @@ export function AdminUsersPage() {
   const [createRole, setCreateRole] = useState<Role>('OWNER')
   const [createPhone, setCreatePhone] = useState<string>('')
 
+  // Confirm Modal state
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    onConfirm: () => void
+    isDestructive?: boolean
+    confirmText?: string
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  })
+
   // Toast
   const { toasts, show: showToast } = useToast()
   const [lastModifiedUserId, setLastModifiedUserId] = useState<string | null>(null)
@@ -205,37 +221,55 @@ export function AdminUsersPage() {
   const handleToggleStatus = async (user: User) => {
     if (user.role === 'ADMIN') return showToast('Không thể thay đổi trạng thái của Admin', 'warning')
     const isActive = user.status === 'ACTIVE'
-    if (!window.confirm(`${isActive ? 'Khóa' : 'Mở khóa'} tài khoản của ${user.name}?`)) return
     
-    // Optimistic UI
-    setUsers(prev => prev ? prev.map(u => u.id === user.id ? { ...u, status: isActive ? 'INACTIVE' : 'ACTIVE' } : u) : [])
-    
-    try {
-      await toggleUserStatus(user.id, !isActive)
-      setLastModifiedUserId(user.id)
-      showToast(`Đã ${isActive ? 'khóa' : 'mở khóa'} tài khoản ${user.name}`)
-      fetchUsers(user.id, true) // background sync
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Có lỗi xảy ra', 'error')
-      fetchUsers(user.id, true) // rollback
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Xác nhận thay đổi trạng thái',
+      message: `${isActive ? 'Khóa' : 'Mở khóa'} tài khoản của ${user.name}?`,
+      isDestructive: isActive,
+      confirmText: isActive ? 'Khóa tài khoản' : 'Mở khóa',
+      onConfirm: async () => {
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }))
+        // Optimistic UI
+        setUsers(prev => prev ? prev.map(u => u.id === user.id ? { ...u, status: isActive ? 'INACTIVE' : 'ACTIVE' } : u) : [])
+        
+        try {
+          await toggleUserStatus(user.id, !isActive)
+          setLastModifiedUserId(user.id)
+          showToast(`Đã ${isActive ? 'khóa' : 'mở khóa'} tài khoản ${user.name}`)
+          fetchUsers(user.id, true) // background sync
+        } catch (err: any) {
+          showToast(err.response?.data?.message || 'Có lỗi xảy ra', 'error')
+          fetchUsers(user.id, true) // rollback
+        }
+      }
+    })
   }
 
   const handleDeleteUser = async (user: User) => {
     if (user.role === 'ADMIN') return showToast('Không thể xóa tài khoản Admin', 'warning')
-    if (!window.confirm(`Xóa tài khoản của ${user.name}? Thao tác này không thể hoàn tác.`)) return
     
-    // Optimistic UI
-    setUsers(prev => prev ? prev.filter(u => u.id !== user.id) : [])
-    
-    try {
-      await deleteUser(user.id)
-      showToast(`Đã xóa tài khoản ${user.name}`)
-      fetchUsers(undefined, true) // background sync
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Có lỗi xảy ra', 'error')
-      fetchUsers(undefined, true) // rollback
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Xác nhận xóa',
+      message: `Xóa tài khoản của ${user.name}? Thao tác này không thể hoàn tác.`,
+      isDestructive: true,
+      confirmText: 'Xóa tài khoản',
+      onConfirm: async () => {
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }))
+        // Optimistic UI
+        setUsers(prev => prev ? prev.filter(u => u.id !== user.id) : [])
+        
+        try {
+          await deleteUser(user.id)
+          showToast(`Đã xóa tài khoản ${user.name}`)
+          fetchUsers(undefined, true) // background sync
+        } catch (err: any) {
+          showToast(err.response?.data?.message || 'Có lỗi xảy ra', 'error')
+          fetchUsers(undefined, true) // rollback
+        }
+      }
+    })
   }
 
   const handleSaveRole = async () => {
@@ -714,6 +748,17 @@ export function AdminUsersPage() {
           </div>
         </div>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        onClose={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        onConfirm={confirmConfig.onConfirm}
+        isDestructive={confirmConfig.isDestructive}
+        confirmText={confirmConfig.confirmText}
+      />
     </>
   )
 }
