@@ -3421,7 +3421,6 @@ function RaceList({
               <th>Cự ly</th>
               <th>Thời gian</th>
               <th>Số ngựa tối đa</th>
-              <th>Giải thưởng (1st / 2nd / 3rd)</th>
               <th>Trạng thái</th>
               <th style={{ textAlign: 'right' }}>Thao tác</th>
             </tr>
@@ -3433,9 +3432,6 @@ function RaceList({
                 <td>{r.distance}m</td>
                 <td>{new Date(r.scheduledAt).toLocaleString('vi-VN')}</td>
                 <td>{r.maxHorses} chú ngựa</td>
-                <td>
-                  🥇 {r.prizeFirst?.toLocaleString('vi-VN')} | 🥈 {r.prizeSecond?.toLocaleString('vi-VN')} | 🥉 {r.prizeThird?.toLocaleString('vi-VN')}
-                </td>
                 <td>
                   <select
                     value={r.status || 'SCHEDULED'}
