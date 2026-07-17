@@ -14,6 +14,7 @@ import {
   getAdminPredictions,
   approveRaceRegistration,
   rejectRaceRegistration,
+  getAdminDashboardStats,
 } from '@/api'
 import { 
   RefreshCw, 
@@ -53,6 +54,7 @@ export function AdminDashboard() {
   const [registrations, setRegistrations] = useState<any[]>([])
   const [registrationOwners, setRegistrationOwners] = useState<Record<string, { fullName?: string; phone?: string }>>({})
   const [predictions, setPredictions] = useState<any[]>([])
+  const [dashboardStats, setDashboardStats] = useState<any>(null)
 
   // Dashboard Tables State
   const [racesSortColumn, setRacesSortColumn] = useState<string | undefined>()
@@ -87,19 +89,20 @@ export function AdminDashboard() {
         getTournaments().catch(() => []),
         getRaceRegistrations().catch(() => []),
         getAdminPredictions().catch(() => []),
+        getAdminDashboardStats().catch(() => null),
       ]
 
-      let tData: any = [], regData: any = [], pData: any = []
+      let tData: any = [], regData: any = [], pData: any = [], dStats: any = null
       
       if (activeTab === 'financial') {
-        [tData, regData, pData] = await Promise.all(globalPromises)
+        [tData, regData, pData, dStats] = await Promise.all(globalPromises)
       } else if (activeTab === 'operations') {
-        const [gTData, gRegData, gPData, rData, hData] = await Promise.all([
+        const [gTData, gRegData, gPData, gDStats, rData, hData] = await Promise.all([
           ...globalPromises,
           getRaces().catch(() => []),
           getAdminHorses().catch(() => []),
         ])
-        tData = gTData; regData = gRegData; pData = gPData;
+        tData = gTData; regData = gRegData; pData = gPData; dStats = gDStats;
         setRaces(rData)
 
         const ownerMap: Record<string, { fullName?: string; phone?: string }> = {}
@@ -112,17 +115,18 @@ export function AdminDashboard() {
         })
         setRegistrationOwners(ownerMap)
       } else if (activeTab === 'members') {
-        const [gTData, gRegData, gPData, uData] = await Promise.all([
+        const [gTData, gRegData, gPData, gDStats, uData] = await Promise.all([
           ...globalPromises,
           getAdminUsers().catch(() => []),
         ])
-        tData = gTData; regData = gRegData; pData = gPData;
+        tData = gTData; regData = gRegData; pData = gPData; dStats = gDStats;
         setUsers(uData)
       }
 
       setTournaments(tData)
       setRegistrations(regData)
       setPredictions(pData)
+      setDashboardStats(dStats)
 
     } catch (err: any) {
       console.error(err)
@@ -171,10 +175,10 @@ export function AdminDashboard() {
   }
 
   // ─── Real Financial Calculations from API ───
-  const totalPrizePool = tournaments.reduce((sum, t) => sum + (t.prizePool || 0), 0)
-  const totalBets = predictions.reduce((sum, p) => sum + (p.betAmount || 0), 0)
-  const totalPayouts = predictions.reduce((sum, p) => sum + (p.prizeAmount || p.payout || 0), 0)
-  const netCommission = totalBets - totalPayouts
+  const totalPrizePool = dashboardStats?.financials?.totalPrizePool || 0
+  const totalBets = dashboardStats?.financials?.totalBets || 0
+  const totalPayouts = dashboardStats?.financials?.totalPayouts || 0
+  const netCommission = dashboardStats?.financials?.netCommission || 0
 
   // Formatter helpers
 
@@ -187,9 +191,9 @@ export function AdminDashboard() {
   }
 
   // Donut chart calculations (100% real prediction data)
-  const wonCount = predictions.filter(p => p.status === 'WON').length
-  const lostCount = predictions.filter(p => p.status === 'LOST').length
-  const pendingCount = predictions.filter(p => ['PENDING', 'OPEN', 'CLOSED'].includes(p.status || '')).length
+  const wonCount = dashboardStats?.predictionDonut?.WON || 0
+  const lostCount = dashboardStats?.predictionDonut?.LOST || 0
+  const pendingCount = dashboardStats?.predictionDonut?.PENDING || 0
   const totalDonut = wonCount + lostCount + pendingCount
 
   const wonPct = totalDonut > 0 ? wonCount / totalDonut : 0

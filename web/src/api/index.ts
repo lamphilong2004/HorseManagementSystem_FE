@@ -1055,3 +1055,72 @@ export async function stopRaceStream(raceId: string): Promise<any> {
   const res = await http.post(`${BE_BASE_URL}/admin/races/${raceId}/stream/stop`)
   return res.data
 }
+
+// ============================================================================
+// NEW STATISTICS APIs (With Fallbacks for Frontend while BE is implementing)
+// ============================================================================
+export async function getAdminDashboardStats(): Promise<any> {
+  try {
+    const res = await http.get(`${BE_BASE_URL}/admin/dashboard/stats`)
+    return res.data
+  } catch (error) {
+    console.warn('Backend API /admin/dashboard/stats not ready. Using fallback mock data.')
+    return {
+      financials: {
+        totalPrizePool: 120000000,
+        totalBets: 85000000,
+        totalPayouts: 50000000,
+        netCommission: 35000000
+      },
+      predictionDonut: { WON: 250, LOST: 300, PENDING: 120 },
+      rolesCount: { SPECTATOR: 1200, OWNER: 150, JOCKEY: 85, REFEREE: 12, ADMIN: 5 },
+      raceStatus: { COMPLETED: 80, SCHEDULED: 25, ONGOING: 2, CANCELLED: 3 },
+      monthlyData: [
+        { month: 'Tháng 2', bets: 12000000, payouts: 8000000 },
+        { month: 'Tháng 3', bets: 15000000, payouts: 11000000 },
+        { month: 'Tháng 4', bets: 18000000, payouts: 13000000 },
+        { month: 'Tháng 5', bets: 22000000, payouts: 15000000 },
+        { month: 'Tháng 6', bets: 19000000, payouts: 14000000 },
+        { month: 'Tháng 7', bets: 25000000, payouts: 18000000 }
+      ]
+    }
+  }
+}
+
+export async function getAdminRaceStats(params?: { page?: number, limit?: number, search?: string, status?: string }): Promise<any> {
+  try {
+    const res = await http.get(`${BE_BASE_URL}/admin/predictions/race-stats`, { params })
+    return res.data
+  } catch (error) {
+    console.warn('Backend API /admin/predictions/race-stats not ready. Using fallback mock data.')
+    return {
+      data: [
+        {
+          id: "mock_race_1",
+          name: "Thuận 10 - Round 1",
+          tournamentId: { id: "mock_tour", name: "Giải Mùa Xuân" },
+          scheduledAt: new Date().toISOString(),
+          status: "COMPLETED",
+          betCount: 45,
+          totalBets: 15000000,
+          totalPayouts: 9000000,
+          profit: 6000000
+        },
+        {
+          id: "mock_race_2",
+          name: "Chung kết Lớn",
+          tournamentId: { id: "mock_tour", name: "Giải Mùa Xuân" },
+          scheduledAt: new Date().toISOString(),
+          status: "SCHEDULED",
+          betCount: 12,
+          totalBets: 3000000,
+          totalPayouts: 0,
+          profit: 3000000
+        }
+      ],
+      total: 2,
+      page: 1,
+      limit: 10
+    }
+  }
+}

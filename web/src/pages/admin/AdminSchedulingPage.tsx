@@ -48,6 +48,7 @@ import {
   stopRaceStream,
   closeTournamentRegistration,
   generateTournamentBracket,
+  getAdminRaceStats,
 } from '@/api'
 import { http } from '../../api/http'
 import { AnimatedTable, type SortDirection } from '@/components/ui/animated-table'
@@ -2643,7 +2644,6 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
           <div style={{ marginTop: 16 }}>
             <h3 style={{ fontSize: '16px', marginBottom: 12 }}>Thống kê tổng hợp theo cuộc đua:</h3>
             <PredictionRaceList
-              predictions={predictions}
               onClosePred={handleClosePredictions}
               onViewStats={handleViewPredictionStats}
               lastModifiedRaceId={lastModifiedRaceId}
@@ -3534,17 +3534,15 @@ function RaceList({
 // INNER COMPONENT: PREDICTION RACE LIST
 // ---------------------------------------------------------
 function PredictionRaceList({
-  predictions,
   onClosePred,
   onViewStats,
   lastModifiedRaceId,
 }: {
-  predictions: any[]
   onClosePred: (raceId: string) => void
   onViewStats: (raceId: string) => void
   lastModifiedRaceId?: string | null
 }) {
-  const [races, setRaces] = useState<Race[]>([])
+  const [races, setRaces] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
 
   // AnimatedTable states
@@ -3555,8 +3553,8 @@ function PredictionRaceList({
 
   useEffect(() => {
     setLoading(true)
-    getRaces()
-      .then(setRaces)
+    getAdminRaceStats()
+      .then((res: any) => setRaces(res.data || res))
       .catch(() => setRaces([]))
       .finally(() => setLoading(false))
   }, [])
@@ -3574,27 +3572,8 @@ function PredictionRaceList({
     setPage(1)
   }
 
-  const enrichedRaces = races.map(r => {
-    const racePreds = predictions.filter(p => {
-      const rId = typeof p.raceId === 'object' ? p.raceId?._id || p.raceId?.id : p.raceId
-      return rId === r.id
-    })
-    const betCount = racePreds.length
-    const totalBets = racePreds.reduce((sum, p) => sum + (p.betAmount || 0), 0)
-    const totalPayouts = racePreds.filter(p => p.status === 'WON').reduce((sum, p) => sum + (p.prizeAmount || p.payout || 0), 0)
-    const profit = totalBets - totalPayouts
-
-    return {
-      ...r,
-      betCount,
-      totalBets,
-      totalPayouts,
-      profit
-    }
-  })
-
   // Filter
-  let filtered = enrichedRaces.filter(r => {
+  let filtered = races.filter(r => {
     if (columnFilters.name) {
       const matchName = (r.name || '').toLowerCase().includes(columnFilters.name.toLowerCase())
       const tournName = (typeof r.tournamentId === 'object' ? r.tournamentId?.name || '' : '').toLowerCase()
