@@ -211,7 +211,6 @@ export function TournamentBracketView({ bracket, races, onGenerateNextRound, loa
                       const isFinal = distanceToFinal === 0;
                       const isFinalCompleted = isFinal && actualRace &&
                         ['COMPLETED','FINISHED','RESULT_CONFIRMED'].includes((actualRace.status || '').toUpperCase());
-                      const podiumIcons = ['🥇','🥈','🥉'];
 
                       return (
                         <div key={mIdx} className="relative flex items-center">
