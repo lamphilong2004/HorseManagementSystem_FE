@@ -205,55 +205,22 @@ export function AdminDashboard() {
   
   // Bar Chart calculations for User Roles (100% real API data)
   const rolesCount = {
-    SPECTATOR: users.filter(u => u.role === 'SPECTATOR').length,
-    OWNER: users.filter(u => u.role === 'OWNER').length,
-    JOCKEY: users.filter(u => u.role === 'JOCKEY').length,
-    REFEREE: users.filter(u => u.role === 'REFEREE').length,
-    ADMIN: users.filter(u => u.role === 'ADMIN').length,
+    SPECTATOR: dashboardStats?.rolesCount?.SPECTATOR || 0,
+    OWNER: dashboardStats?.rolesCount?.OWNER || 0,
+    JOCKEY: dashboardStats?.rolesCount?.JOCKEY || 0,
+    REFEREE: dashboardStats?.rolesCount?.REFEREE || 0,
+    ADMIN: dashboardStats?.rolesCount?.ADMIN || 0,
   }
 
-  // Monthly economic volume data generated dynamically from actual API predictions
-  const getMonthlyDataFromRealApi = (preds: any[]) => {
-    const months: Array<{ label: string; monthKey: string; bets: number; payouts: number }> = []
-    const now = new Date()
-    // Generate the last 6 months dynamically
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-      months.push({
-        label: `${d.getMonth() + 1}`,
-        monthKey: `${d.getFullYear()}-${d.getMonth()}`,
-        bets: 0,
-        payouts: 0
-      })
-    }
-
-    preds.forEach(p => {
-      if (!p.createdAt) return
-      const pDate = new Date(p.createdAt)
-      const monthKey = `${pDate.getFullYear()}-${pDate.getMonth()}`
-      const monthItem = months.find(m => m.monthKey === monthKey)
-      if (monthItem) {
-        monthItem.bets += p.betAmount || 0
-        monthItem.payouts += p.prizeAmount || p.payout || 0
-      }
-    })
-
-    return months.map(m => ({
-      month: `T.${m.label}`,
-      bets: m.bets,
-      payouts: m.payouts
-    }))
-  }
-
-  const monthlyData = getMonthlyDataFromRealApi(predictions)
-  const maxMonthVal = Math.max(...monthlyData.map(m => m.bets), 1) // Safeguard to avoid division by zero
+  const monthlyData = dashboardStats?.monthlyData || []
+  const maxMonthVal = Math.max(...monthlyData.map((m: any) => m.bets), 1)
 
   // Race status breakdown (100% real API data)
   const raceStatus = {
-    COMPLETED: races.filter(r => ['COMPLETED', 'RESULT_CONFIRMED', 'FINISHED'].includes(r.status || '')).length,
-    SCHEDULED: races.filter(r => ['SCHEDULED', 'PENDING'].includes(r.status || '')).length,
-    ONGOING: races.filter(r => ['ONGOING', 'RUNNING', 'LIVE'].includes(r.status || '')).length,
-    CANCELLED: races.filter(r => ['CANCELLED'].includes(r.status || '')).length,
+    COMPLETED: dashboardStats?.raceStatus?.COMPLETED || 0,
+    SCHEDULED: dashboardStats?.raceStatus?.SCHEDULED || 0,
+    ONGOING: dashboardStats?.raceStatus?.ONGOING || 0,
+    CANCELLED: dashboardStats?.raceStatus?.CANCELLED || 0,
   }
   const totalRacesStatus = raceStatus.COMPLETED + raceStatus.SCHEDULED + raceStatus.ONGOING + raceStatus.CANCELLED
 
