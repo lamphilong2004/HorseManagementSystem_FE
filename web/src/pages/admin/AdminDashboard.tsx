@@ -632,7 +632,7 @@ export function AdminDashboard() {
                     ))}
 
                     {/* Render Monthly Bars */}
-                    {monthlyData.map((m, i) => {
+                    {monthlyData.map((m: any, i: number) => {
                       const barW = 18
                       const spacing = 70
                       const startX = 65 + i * spacing
