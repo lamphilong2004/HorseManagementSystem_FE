@@ -27,4 +27,5 @@ debug-*.js
 scratch-test.js
 web/tsc_errors.txt
 *.bak
-*.backup
+*.backup
+PRM_HorseManagementSystem/
