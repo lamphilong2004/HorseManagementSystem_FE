@@ -190,7 +190,7 @@ class _JockeySearchSheetState extends State<_JockeySearchSheet> {
 
   void _inviteJockey(String jockeyId) async {
     try {
-      await widget.api.sendJockeyInvitation(jockeyId, widget.registration.horseId, widget.registration.raceId);
+      await widget.api.sendJockeyInvitation(jockeyId, widget.registration.horseId, widget.registration.raceId, registrationId: widget.registration.id);
       if (mounted) {
         HapticFeedback.lightImpact();
         Navigator.pop(context);

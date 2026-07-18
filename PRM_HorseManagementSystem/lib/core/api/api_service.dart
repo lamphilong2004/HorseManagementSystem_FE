@@ -100,13 +100,30 @@ class ApiService {
   }
 
 
-  Future<dynamic> sendJockeyInvitation(String jockeyId, String horseId, String raceId) async {
-    final response = await _client.post('/invites/jockey', {
-      'jockeyId': jockeyId,
-      'horseId': horseId,
-      'raceId': raceId,
-    });
-    return response.data;
+  Future<dynamic> sendJockeyInvitation(String jockeyId, String horseId, String raceId, {String? registrationId}) async {
+    try {
+      final response = await _client.post('/horses/$horseId/invitations', {
+        'jockeyId': jockeyId,
+        'raceId': raceId,
+        'message': 'Mời bạn cưỡi ngựa của tôi',
+      });
+      return response.data;
+    } catch (e) {
+      if (registrationId != null) {
+        // Fallback to registrationId if raceId fails (e.g. 404 Race not found)
+        try {
+          final res2 = await _client.post('/horses/$horseId/invitations', {
+            'jockeyId': jockeyId,
+            'raceId': registrationId,
+            'message': 'Mời bạn cưỡi ngựa của tôi',
+          });
+          return res2.data;
+        } catch (_) {
+          rethrow;
+        }
+      }
+      rethrow;
+    }
   }
 
   Future<List<Map<String, dynamic>>> searchJockeys(String? query) async {

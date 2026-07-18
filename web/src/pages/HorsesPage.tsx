@@ -160,7 +160,7 @@ export function HorsesPage() {
   const inviteModalRaces = useMemo(() => {
     if (!inviteModalHorseId) return [];
     return registrations
-      .filter((r: any) => String(r.horseId) === inviteModalHorseId && r.status === 'APPROVED' && r.race)
+      .filter((r: any) => String(r.horseId) === inviteModalHorseId && (r.status === 'APPROVED' || r.status === 'CONFIRMED') && r.race)
       .map((r: any) => ({
         raceId: String(r.race.id || r.race._id),
         raceName: r.race.name
