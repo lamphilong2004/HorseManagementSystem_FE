@@ -30,7 +30,9 @@ import {
   sortTournamentsByStartDate,
 } from '../../utils/spectator';
 
-const QUICK_BETS = [100000, 200000, 500000];
+const MIN_BET_AMOUNT = 100000;
+const MAX_BET_AMOUNT = 10000000;
+const QUICK_BETS = [MIN_BET_AMOUNT, 200000, 500000];
 const HISTORY_STATUS = ['ALL', 'PENDING', 'WON', 'LOST', 'OPEN', 'CLOSED'];
 
 function TournamentFilter({
@@ -169,8 +171,9 @@ export default function PredictionsScreen() {
   const wonCount = predictions.filter((prediction) => prediction.status === 'WON').length;
   const totalPayout = predictions.reduce((sum, prediction) => sum + Number(prediction.prizeAmount || prediction.payout || 0), 0);
   const betValue = Number(betAmount || 0);
+  const isBetAmountValid = betValue >= MIN_BET_AMOUNT && betValue <= MAX_BET_AMOUNT;
   const selectedHorse = horses.find((horse) => getHorseId(horse) === selectedHorseId);
-  const canSubmit = !!selectedRaceId && !!selectedHorseId && betValue > 0 && predictionOpen && !submitting;
+  const canSubmit = !!selectedRaceId && !!selectedHorseId && isBetAmountValid && predictionOpen && !submitting;
 
   const fetchData = async () => {
     setLoading(true);
@@ -257,8 +260,11 @@ export default function PredictionsScreen() {
       Alert.alert('Dự đoán đã đóng', 'Cuộc đua này hiện không nhận dự đoán.');
       return;
     }
-    if (!betValue || betValue <= 0) {
-      Alert.alert('Mức cược chưa hợp lệ', 'Vui lòng nhập số điểm cược lớn hơn 0.');
+    if (!isBetAmountValid) {
+      Alert.alert(
+        'Mức cược chưa hợp lệ',
+        `Mức cược phải từ ${formatPoints(MIN_BET_AMOUNT)} đến ${formatPoints(MAX_BET_AMOUNT)} điểm.`,
+      );
       return;
     }
     if (balance < betValue) {
@@ -435,8 +441,12 @@ export default function PredictionsScreen() {
               </View>
 
               <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
-                <Chip label="Tối thiểu" tone="amber" onPress={() => setBetAmount('100000')} />
-                <Chip label="Tất cả" tone="emerald" onPress={() => setBetAmount(String(Math.floor(balance)))} />
+                <Chip label="Tối thiểu" tone="amber" onPress={() => setBetAmount(String(MIN_BET_AMOUNT))} />
+                <Chip
+                  label="Tất cả"
+                  tone="emerald"
+                  onPress={() => setBetAmount(String(Math.min(Math.floor(balance), MAX_BET_AMOUNT)))}
+                />
                 {QUICK_BETS.map((amount) => (
                   <Chip key={amount} label={formatPoints(amount)} tone="slate" onPress={() => setBetAmount(String(amount))} />
                 ))}

@@ -4,7 +4,11 @@ import { View, Text, TextInput, TouchableOpacity,  ActivityIndicator, KeyboardAv
 import { useRouter as useExpoRouter } from 'expo-router';
 import { Trophy, Mail, Lock, User as UserIcon, Eye, EyeOff, ChevronLeft } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
-import { Role } from '../../types';
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MIN_NAME_LENGTH = 2;
+const MAX_NAME_LENGTH = 100;
+const MIN_PASSWORD_LENGTH = 8;
 
 export default function RegisterScreen() {
   const router = useExpoRouter();
@@ -13,24 +17,49 @@ export default function RegisterScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [obscure, setObscure] = useState(true);
+  const [obscureConfirmPassword, setObscureConfirmPassword] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [role, setRole] = useState<Role>('SPECTATOR');
-  const roleOptions: Array<{ value: Role; label: string; desc: string }> = [
-    { value: 'SPECTATOR', label: 'Khán giả', desc: 'Theo dõi, livestream và dự đoán' },
-    { value: 'OWNER', label: 'Chủ ngựa', desc: 'Quản lý ngựa và tuyển Jockey' },
-    { value: 'JOCKEY', label: 'Jockey', desc: 'Nhận lời mời và xem lịch thi đấu' },
-  ];
 
   const handleRegister = async () => {
-    if (!name || !email || !password) {
+    const trimmedName = name.trim();
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!trimmedName || !normalizedEmail || !password.trim() || !confirmPassword.trim()) {
       Alert.alert('Thiếu thông tin', 'Vui lòng điền đầy đủ các trường.');
+      return;
+    }
+
+    if (trimmedName.length < MIN_NAME_LENGTH || trimmedName.length > MAX_NAME_LENGTH) {
+      Alert.alert(
+        'Họ tên không hợp lệ',
+        `Họ và tên phải có từ ${MIN_NAME_LENGTH} đến ${MAX_NAME_LENGTH} ký tự.`,
+      );
+      return;
+    }
+
+    if (!EMAIL_PATTERN.test(normalizedEmail)) {
+      Alert.alert('Email không hợp lệ', 'Vui lòng nhập đúng định dạng email.');
+      return;
+    }
+
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      Alert.alert(
+        'Mật khẩu không hợp lệ',
+        `Mật khẩu phải có ít nhất ${MIN_PASSWORD_LENGTH} ký tự.`,
+      );
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Mật khẩu không khớp', 'Mật khẩu xác nhận không trùng với mật khẩu đã nhập.');
       return;
     }
     
     setLoading(true);
     try {
-      await register(name, email, password, role);
+      await register(trimmedName, normalizedEmail, password, 'SPECTATOR');
       router.replace('/(tabs)');
     } catch (error: any) {
       Alert.alert('Đăng Ký Thất Bại', error?.response?.data?.message || 'Có lỗi xảy ra');
@@ -78,6 +107,7 @@ export default function RegisterScreen() {
                 placeholderTextColor="#cbd5e1"
                 value={name}
                 onChangeText={setName}
+                maxLength={MAX_NAME_LENGTH}
               />
             </View>
 
@@ -113,22 +143,21 @@ export default function RegisterScreen() {
               </TouchableOpacity>
             </View>
 
-            <Text className="text-xs font-semibold text-slate-700 mb-2 uppercase tracking-wider">Vai trò</Text>
-            <View className="mb-6 gap-2">
-              {roleOptions.map((option) => {
-                const active = role === option.value;
-                return (
-                  <TouchableOpacity
-                    key={option.value}
-                    activeOpacity={0.84}
-                    onPress={() => setRole(option.value)}
-                    className={`p-3 rounded-xl border ${active ? 'bg-blue-50 border-blue-200' : 'bg-slate-50 border-slate-200'}`}
-                  >
-                    <Text className={`font-extrabold ${active ? 'text-blue-700' : 'text-slate-800'}`}>{option.label}</Text>
-                    <Text className="text-xs text-slate-500 mt-1">{option.desc}</Text>
-                  </TouchableOpacity>
-                );
-              })}
+            {/* Confirm Password */}
+            <Text className="text-xs font-semibold text-slate-700 mb-2 uppercase tracking-wider">Xác nhận mật khẩu</Text>
+            <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-1 mb-6 h-12">
+              <Lock size={18} color="#94a3b8" />
+              <TextInput
+                className="flex-1 ml-3 text-slate-800"
+                placeholder="••••••••"
+                placeholderTextColor="#cbd5e1"
+                secureTextEntry={obscureConfirmPassword}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+              />
+              <TouchableOpacity onPress={() => setObscureConfirmPassword(!obscureConfirmPassword)}>
+                {obscureConfirmPassword ? <EyeOff size={18} color="#94a3b8" /> : <Eye size={18} color="#94a3b8" />}
+              </TouchableOpacity>
             </View>
 
             {/* Register Button */}

@@ -1,0 +1,534 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="2200" height="4150" viewBox="0 0 2200 4150" role="img" aria-labelledby="diagram-title diagram-desc">
+  <title id="diagram-title">Horse Management System - Combined Use Case Diagram</title>
+  <desc id="diagram-desc">Combined UML use case diagram covering Authentication and User Management, Horse and Jockey Management, Prediction and Results, and Tournament and Race Management.</desc>
+
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="125%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#16324f" flood-opacity="0.12"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="10" markerHeight="10" orient="auto">
+      <path d="M1,1 L11,6 L1,11 Z" fill="none" stroke="#00695c" stroke-width="1.4"/>
+    </marker>
+    <marker id="extend-arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="10" markerHeight="10" orient="auto">
+      <path d="M1,1 L11,6 L1,11 Z" fill="none" stroke="#a34d00" stroke-width="1.4"/>
+    </marker>
+    <marker id="generalization" viewBox="0 0 16 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto">
+      <path d="M1,1 L15,7 L1,13 Z" fill="#ffffff" stroke="#6941a5" stroke-width="1.5"/>
+    </marker>
+    <g id="actor-shape" fill="#ffffff" stroke="#263238" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="0" cy="-34" r="15"/>
+      <path d="M0,-19 L0,22 M-27,-2 L27,-2 M0,22 L-25,55 M0,22 L25,55"/>
+    </g>
+    <style>
+      .canvas { fill: #f6f8fb; }
+      .title { font: 700 34px "Segoe UI", Arial, sans-serif; fill: #102a43; letter-spacing: .4px; }
+      .subtitle { font: 400 17px "Segoe UI", Arial, sans-serif; fill: #52667a; }
+      .panel { stroke-width: 2.5; rx: 20; filter: url(#shadow); }
+      .panel-auth { fill: #f4f8ff; stroke: #3d6fb4; }
+      .panel-horse { fill: #f3fbf7; stroke: #2c8b68; }
+      .panel-prediction { fill: #faf6ff; stroke: #7956a8; }
+      .panel-race { fill: #fff8f1; stroke: #c76b2a; }
+      .panel-title { font: 700 24px "Segoe UI", Arial, sans-serif; fill: #ffffff; }
+      .panel-count { font: 600 15px "Segoe UI", Arial, sans-serif; fill: #52667a; opacity: .9; }
+      .association { fill: none; stroke: #52616b; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
+      .generalization { fill: none; stroke: #6941a5; stroke-width: 1.8; stroke-linejoin: round; marker-end: url(#generalization); }
+      .include { fill: none; stroke: #00695c; stroke-width: 2; stroke-dasharray: 8 7; marker-end: url(#arrow); }
+      .extend { fill: none; stroke: #a34d00; stroke-width: 2; stroke-dasharray: 8 7; marker-end: url(#extend-arrow); }
+      .relation-label { font: italic 600 15px "Segoe UI", Arial, sans-serif; paint-order: stroke; stroke: #ffffff; stroke-width: 7; stroke-linejoin: round; }
+      .include-label { fill: #00695c; }
+      .extend-label { fill: #a34d00; }
+      .usecase ellipse { fill: #ffffff; stroke: #263238; stroke-width: 2.1; }
+      .usecase text { font: 600 17px "Segoe UI", Arial, sans-serif; fill: #16242c; text-anchor: middle; dominant-baseline: middle; }
+      .actor-name { font: 600 17px "Segoe UI", Arial, sans-serif; fill: #263238; text-anchor: middle; }
+      .actor-note { font: 400 14px "Segoe UI", Arial, sans-serif; fill: #6941a5; text-anchor: middle; }
+      .legend { fill: #ffffff; stroke: #b6c2ce; stroke-width: 1.5; rx: 12; }
+      .legend-text { font: 500 15px "Segoe UI", Arial, sans-serif; fill: #415466; }
+      .section-rule { stroke: #d8e1ea; stroke-width: 1.5; }
+    </style>
+  </defs>
+
+  <rect class="canvas" x="0" y="0" width="2200" height="4150"/>
+  <text class="title" x="1100" y="55" text-anchor="middle">HORSE MANAGEMENT SYSTEM — COMBINED USE CASE DIAGRAM</text>
+  <text class="subtitle" x="1100" y="85" text-anchor="middle">All use cases consolidated from the four source diagrams</text>
+
+  <!-- Subsystem panels -->
+  <rect class="panel panel-auth" x="300" y="170" width="1600" height="600"/>
+  <path d="M300,190 Q300,170 320,170 H835 L870,220 H300 Z" fill="#3d6fb4"/>
+  <text class="panel-title" x="335" y="205">Authentication &amp; User Management</text>
+  <text class="panel-count" x="1830" y="205" text-anchor="end">7 use cases</text>
+
+  <rect class="panel panel-horse" x="300" y="830" width="1600" height="670"/>
+  <path d="M300,850 Q300,830 320,830 H760 L795,880 H300 Z" fill="#2c8b68"/>
+  <text class="panel-title" x="335" y="865">Horse &amp; Jockey Management</text>
+  <text class="panel-count" x="1830" y="865" text-anchor="end">10 use cases</text>
+
+  <rect class="panel panel-prediction" x="300" y="1560" width="1600" height="950"/>
+  <path d="M300,1580 Q300,1560 320,1560 H675 L710,1610 H300 Z" fill="#7956a8"/>
+  <text class="panel-title" x="335" y="1595">Prediction &amp; Results</text>
+  <text class="panel-count" x="1830" y="1595" text-anchor="end">12 unique use cases</text>
+
+  <rect class="panel panel-race" x="300" y="2570" width="1600" height="1480"/>
+  <path d="M300,2590 Q300,2570 320,2570 H790 L825,2620 H300 Z" fill="#c76b2a"/>
+  <text class="panel-title" x="335" y="2605">Tournament &amp; Race Management</text>
+  <text class="panel-count" x="1830" y="2605" text-anchor="end">16 unique use cases</text>
+
+  <!-- Authentication associations -->
+  <path class="association" d="M150,275 L485,290"/>
+  <path class="association" d="M150,470 L785,290"/>
+  <path class="association" d="M150,470 L1085,290"/>
+  <path class="association" d="M150,470 L655,445"/>
+  <path class="association" d="M150,470 L985,445"/>
+  <path class="association" d="M150,675 L755,625"/>
+  <path class="association" d="M150,675 L1115,625"/>
+
+  <!-- Authentication actor generalizations -->
+  <path class="generalization" d="M120,620 L120,525"/>
+  <path class="generalization" d="M2050,230 H1990 V120 H235 V415 L155,445"/>
+  <path class="generalization" d="M2050,355 H2010 V135 H250 V425 L155,452"/>
+  <path class="generalization" d="M2050,490 H2030 V150 H265 V438 L155,460"/>
+  <path class="generalization" d="M2050,650 H2020 V800 H260 V500 L155,480"/>
+
+  <!-- Horse and Jockey associations -->
+  <path class="association" d="M150,1170 L490,930"/>
+  <path class="association" d="M150,1170 L490,1050"/>
+  <path class="association" d="M150,1170 L490,1170"/>
+  <path class="association" d="M150,1170 L490,1300"/>
+  <path class="association" d="M150,1170 L490,1430"/>
+  <path class="association" d="M2050,1080 L1490,950"/>
+  <path class="association" d="M2050,1080 L1490,1090"/>
+  <path class="association" d="M2050,1080 L1490,1240"/>
+  <path class="association" d="M2050,1405 H1885 V1475 H1050 V1460"/>
+  <path class="association" d="M2050,1405 L1510,1415"/>
+
+  <!-- Horse and Jockey include relations -->
+  <path class="include" d="M1360,1045 L1360,995"/>
+  <text class="relation-label include-label" x="1375" y="1024">«include»</text>
+  <path class="include" d="M620,1255 L620,1215"/>
+  <text class="relation-label include-label" x="635" y="1240">«include»</text>
+  <path class="include" d="M620,1385 L620,1345"/>
+  <text class="relation-label include-label" x="635" y="1370">«include»</text>
+
+  <!-- Prediction and Results associations -->
+  <path class="association" d="M150,1960 L510,1690"/>
+  <path class="association" d="M150,1960 L510,1820"/>
+  <path class="association" d="M150,1960 L510,1950"/>
+  <path class="association" d="M150,1960 L510,2080"/>
+  <path class="association" d="M150,1960 L510,2220"/>
+  <path class="association" d="M150,1960 L510,2360"/>
+
+  <path class="association" d="M2050,1780 L1510,1700"/>
+  <path class="association" d="M2050,1780 L790,1820"/>
+  <path class="association" d="M2050,1780 L1510,1890"/>
+
+  <path class="association" d="M150,2310 L1510,1890"/>
+  <path class="association" d="M150,2310 L1210,2070"/>
+  <path class="association" d="M150,2310 L1210,2220"/>
+  <path class="association" d="M150,2310 L1210,2370"/>
+
+  <path class="association" d="M2050,2380 L1530,2380"/>
+
+  <!-- Prediction and Results relations -->
+  <path class="extend" d="M650,1775 L650,1735"/>
+  <text class="relation-label extend-label" x="665" y="1760">«extend»</text>
+  <path class="include" d="M650,2125 L650,2175"/>
+  <text class="relation-label include-label" x="665" y="2160">«include»</text>
+  <path class="include" d="M650,2265 L650,2315"/>
+  <text class="relation-label include-label" x="665" y="2300">«include»</text>
+  <path class="include" d="M1350,2325 L1350,2265"/>
+  <text class="relation-label include-label" x="1365" y="2300">«include»</text>
+
+  <!-- Tournament and Race associations -->
+  <path class="association" d="M150,3040 L490,2710"/>
+  <path class="association" d="M150,3040 L490,2850"/>
+  <path class="association" d="M150,3040 L490,2990"/>
+  <path class="association" d="M150,3040 L490,3130"/>
+  <path class="association" d="M150,3040 L490,3270"/>
+  <path class="association" d="M150,3040 L490,3410"/>
+
+  <path class="association" d="M150,3690 L490,3570"/>
+  <path class="association" d="M150,3690 L490,3730"/>
+  <path class="association" d="M150,3690 L490,3890"/>
+
+  <path class="association" d="M2050,3040 L1510,2710"/>
+  <path class="association" d="M2050,3040 L1510,2860"/>
+  <path class="association" d="M2050,3040 L1510,3010"/>
+  <path class="association" d="M2050,3040 L1510,3160"/>
+  <path class="association" d="M2050,3040 L1510,3310"/>
+  <path class="association" d="M2050,3040 L1510,3460"/>
+
+  <path class="association" d="M2050,3700 L1510,3650"/>
+  <path class="association" d="M2050,3700 L790,3730"/>
+
+  <!-- Tournament and Race relations -->
+  <path class="include" d="M620,2945 L620,2895"/>
+  <text class="relation-label include-label" x="635" y="2930">«include»</text>
+  <path class="include" d="M750,3245 L1515,2732"/>
+  <text class="relation-label include-label" x="1090" y="3000">«include»</text>
+  <path class="extend" d="M1600,3118 L1600,2902"/>
+  <text class="relation-label extend-label" x="1530" y="3015">«extend»</text>
+  <path class="include" d="M1700,3058 L1700,3112"/>
+  <text class="relation-label include-label" x="1715" y="3092">«include»</text>
+  <path class="include" d="M1650,3265 L1650,3205"/>
+  <text class="relation-label include-label" x="1665" y="3245">«include»</text>
+
+  <!-- Authentication use cases -->
+  <g class="usecase">
+    <ellipse cx="620" cy="290" rx="135" ry="45"/>
+    <text x="620" y="290">Register</text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="920" cy="290" rx="135" ry="45"/>
+    <text x="920" y="290">Login</text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="1220" cy="290" rx="135" ry="45"/>
+    <text x="1220" y="290">Logout</text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="790" cy="445" rx="135" ry="45"/>
+    <text x="790" y="445">View Profile</text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="1120" cy="445" rx="135" ry="45"/>
+    <text x="1120" y="445">Update Profile</text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="890" cy="625" rx="145" ry="55"/>
+    <text x="890" y="617">
+      <tspan x="890" dy="0">Manage User</tspan>
+      <tspan x="890" dy="21">Account</tspan>
+    </text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="1250" cy="625" rx="135" ry="45"/>
+    <text x="1250" y="625">Manage Roles</text>
+  </g>
+
+  <!-- Horse and Jockey use cases -->
+  <g class="usecase">
+    <ellipse cx="620" cy="930" rx="130" ry="45"/>
+    <text x="620" y="930">Register Horse</text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="620" cy="1050" rx="130" ry="52"/>
+    <text x="620" y="1042">
+      <tspan x="620" dy="0">Manage Horse</tspan>
+      <tspan x="620" dy="21">Information</tspan>
+    </text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="620" cy="1170" rx="130" ry="52"/>
+    <text x="620" y="1162">
+      <tspan x="620" dy="0">Manage Jockey</tspan>
+      <tspan x="620" dy="21">List</tspan>
+    </text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="620" cy="1300" rx="130" ry="52"/>
+    <text x="620" y="1292">
+      <tspan x="620" dy="0">Hire/ Select</tspan>
+      <tspan x="620" dy="21">Jockey</tspan>
+    </text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="620" cy="1430" rx="145" ry="52"/>
+    <text x="620" y="1422">
+      <tspan x="620" dy="0">Confirm Jockey</tspan>
+      <tspan x="620" dy="21">Participation</tspan>
+    </text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="1360" cy="950" rx="130" ry="45"/>
+    <text x="1360" y="950">Receive Invitation</text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="1360" cy="1090" rx="145" ry="52"/>
+    <text x="1360" y="1082">
+      <tspan x="1360" dy="0">Accept/ Reject</tspan>
+      <tspan x="1360" dy="21">Invitation</tspan>
+    </text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="1360" cy="1240" rx="135" ry="52"/>
+    <text x="1360" y="1232">
+      <tspan x="1360" dy="0">View Horse</tspan>
+      <tspan x="1360" dy="21">Information</tspan>
+    </text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="1050" cy="1415" rx="130" ry="45"/>
+    <text x="1050" y="1415">Manage Horses</text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="1640" cy="1415" rx="130" ry="45"/>
+    <text x="1640" y="1415">Manage Jockeys</text>
+  </g>
+
+  <!-- Prediction and Results use cases -->
+  <g class="usecase">
+    <ellipse cx="650" cy="1690" rx="140" ry="45"/>
+    <text x="650" y="1690">View Live Results</text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="650" cy="1820" rx="140" ry="45"/>
+    <text x="650" y="1820">View Leaderboard</text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="650" cy="1950" rx="145" ry="52"/>
+    <text x="650" y="1942">
+      <tspan x="650" dy="0">Receive Reward</tspan>
+      <tspan x="650" dy="21">Notifications</tspan>
+    </text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="650" cy="2080" rx="145" ry="52"/>
+    <text x="650" y="2072">
+      <tspan x="650" dy="0">Track Prediction</tspan>
+      <tspan x="650" dy="21">Results</tspan>
+    </text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="650" cy="2220" rx="135" ry="45"/>
+    <text x="650" y="2220">Predict Results</text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="650" cy="2360" rx="145" ry="52"/>
+    <text x="650" y="2352">
+      <tspan x="650" dy="0">See match</tspan>
+      <tspan x="650" dy="21">Schedule</tspan>
+    </text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="1650" cy="1700" rx="140" ry="52"/>
+    <text x="1650" y="1692">
+      <tspan x="1650" dy="0">Track Race</tspan>
+      <tspan x="1650" dy="21">Results</tspan>
+    </text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="1650" cy="1890" rx="140" ry="52"/>
+    <text x="1650" y="1882">
+      <tspan x="1650" dy="0">View Prize</tspan>
+      <tspan x="1650" dy="21">Information</tspan>
+    </text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="1350" cy="2070" rx="135" ry="45"/>
+    <text x="1350" y="2070">View Ranking</text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="1350" cy="2220" rx="145" ry="52"/>
+    <text x="1350" y="2212">
+      <tspan x="1350" dy="0">Track Personal</tspan>
+      <tspan x="1350" dy="21">Results</tspan>
+    </text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="1350" cy="2370" rx="140" ry="52"/>
+    <text x="1350" y="2362">
+      <tspan x="1350" dy="0">View</tspan>
+      <tspan x="1350" dy="21">Achievements</tspan>
+    </text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="1660" cy="2380" rx="140" ry="52"/>
+    <text x="1660" y="2372">
+      <tspan x="1660" dy="0">Manage</tspan>
+      <tspan x="1660" dy="21">Predictions</tspan>
+    </text>
+  </g>
+
+  <!-- Tournament and Race use cases -->
+  <g class="usecase">
+    <ellipse cx="620" cy="2710" rx="140" ry="52"/>
+    <text x="620" y="2702">
+      <tspan x="620" dy="0">Manage</tspan>
+      <tspan x="620" dy="21">Tournament</tspan>
+    </text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="620" cy="2850" rx="135" ry="45"/>
+    <text x="620" y="2850">Schedule Races</text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="620" cy="2990" rx="140" ry="52"/>
+    <text x="620" y="2982">
+      <tspan x="620" dy="0">Arrange Race</tspan>
+      <tspan x="620" dy="21">Rounds</tspan>
+    </text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="620" cy="3130" rx="145" ry="52"/>
+    <text x="620" y="3122">
+      <tspan x="620" dy="0">Approve</tspan>
+      <tspan x="620" dy="21">Registrations</tspan>
+    </text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="620" cy="3270" rx="135" ry="45"/>
+    <text x="620" y="3270">Publish Results</text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="620" cy="3410" rx="135" ry="45"/>
+    <text x="620" y="3410">Assign Referees</text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="620" cy="3570" rx="150" ry="52"/>
+    <text x="620" y="3562">
+      <tspan x="620" dy="0">Confirm Horse</tspan>
+      <tspan x="620" dy="21">Participation</tspan>
+    </text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="650" cy="3730" rx="140" ry="52"/>
+    <text x="650" y="3722">
+      <tspan x="650" dy="0">View Race</tspan>
+      <tspan x="650" dy="21">Schedule</tspan>
+    </text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="620" cy="3890" rx="140" ry="52"/>
+    <text x="620" y="3882">
+      <tspan x="620" dy="0">View Race</tspan>
+      <tspan x="620" dy="21">Information</tspan>
+    </text>
+  </g>
+
+  <g class="usecase">
+    <ellipse cx="1650" cy="2710" rx="145" ry="52"/>
+    <text x="1650" y="2702">
+      <tspan x="1650" dy="0">Confirm Race</tspan>
+      <tspan x="1650" dy="21">Results</tspan>
+    </text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="1650" cy="2860" rx="135" ry="45"/>
+    <text x="1650" y="2860">Monitor Race</text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="1650" cy="3010" rx="140" ry="52"/>
+    <text x="1650" y="3002">
+      <tspan x="1650" dy="0">Handle</tspan>
+      <tspan x="1650" dy="21">Violations</tspan>
+    </text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="1650" cy="3160" rx="140" ry="52"/>
+    <text x="1650" y="3152">
+      <tspan x="1650" dy="0">Record</tspan>
+      <tspan x="1650" dy="21">Violations</tspan>
+    </text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="1650" cy="3310" rx="150" ry="52"/>
+    <text x="1650" y="3302">
+      <tspan x="1650" dy="0">Create Referee</tspan>
+      <tspan x="1650" dy="21">Report</tspan>
+    </text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="1650" cy="3460" rx="150" ry="52"/>
+    <text x="1650" y="3452">
+      <tspan x="1650" dy="0">Verify Horse</tspan>
+      <tspan x="1650" dy="21">Information</tspan>
+    </text>
+  </g>
+  <g class="usecase">
+    <ellipse cx="1650" cy="3650" rx="145" ry="52"/>
+    <text x="1650" y="3642">
+      <tspan x="1650" dy="0">View Assigned</tspan>
+      <tspan x="1650" dy="21">Races</tspan>
+    </text>
+  </g>
+
+  <!-- Actors: Authentication -->
+  <g transform="translate(120 275)">
+    <use href="#actor-shape"/>
+    <text class="actor-name" x="0" y="84">Guest</text>
+  </g>
+  <g transform="translate(120 470)">
+    <use href="#actor-shape"/>
+    <text class="actor-name" x="0" y="84">Registered User</text>
+  </g>
+  <g transform="translate(120 675)">
+    <use href="#actor-shape"/>
+    <text class="actor-name" x="0" y="84">Admin</text>
+  </g>
+  <g transform="translate(2080 230)">
+    <use href="#actor-shape"/>
+    <text class="actor-name" x="0" y="84">Jockey</text>
+  </g>
+  <g transform="translate(2080 355)">
+    <use href="#actor-shape"/>
+    <text class="actor-name" x="0" y="84">Spectator</text>
+  </g>
+  <g transform="translate(2080 490)">
+    <use href="#actor-shape"/>
+    <text class="actor-name" x="0" y="84">Horse Owner</text>
+  </g>
+  <g transform="translate(2080 650)">
+    <use href="#actor-shape"/>
+    <text class="actor-name" x="0" y="84">Referee</text>
+  </g>
+
+  <!-- Actors: Horse and Jockey -->
+  <g transform="translate(120 1170)">
+    <use href="#actor-shape"/>
+    <text class="actor-name" x="0" y="84">Horse Owner</text>
+  </g>
+  <g transform="translate(2080 1080)">
+    <use href="#actor-shape"/>
+    <text class="actor-name" x="0" y="84">Jockey</text>
+  </g>
+  <g transform="translate(2080 1405)">
+    <use href="#actor-shape"/>
+    <text class="actor-name" x="0" y="84">Admin</text>
+  </g>
+
+  <!-- Actors: Prediction and Results -->
+  <g transform="translate(120 1960)">
+    <use href="#actor-shape"/>
+    <text class="actor-name" x="0" y="84">Spectator</text>
+  </g>
+  <g transform="translate(120 2310)">
+    <use href="#actor-shape"/>
+    <text class="actor-name" x="0" y="84">Jockey</text>
+  </g>
+  <g transform="translate(2080 1780)">
+    <use href="#actor-shape"/>
+    <text class="actor-name" x="0" y="84">Horse Owner</text>
+  </g>
+  <g transform="translate(2080 2380)">
+    <use href="#actor-shape"/>
+    <text class="actor-name" x="0" y="84">Admin</text>
+  </g>
+
+  <!-- Actors: Tournament and Race -->
+  <g transform="translate(120 3040)">
+    <use href="#actor-shape"/>
+    <text class="actor-name" x="0" y="84">Admin</text>
+  </g>
+  <g transform="translate(120 3690)">
+    <use href="#actor-shape"/>
+    <text class="actor-name" x="0" y="84">Horse Owner</text>
+  </g>
+  <g transform="translate(2080 3040)">
+    <use href="#actor-shape"/>
+    <text class="actor-name" x="0" y="84">Referee</text>
+  </g>
+  <g transform="translate(2080 3700)">
+    <use href="#actor-shape"/>
+    <text class="actor-name" x="0" y="84">Jockey</text>
+  </g>
+
+  <!-- Legend and consolidation note -->
+  <rect class="legend" x="725" y="4075" width="750" height="50"/>
+  <line class="association" x1="755" y1="4100" x2="815" y2="4100"/>
+  <text class="legend-text" x="830" y="4106">Association</text>
+  <line class="include" x1="975" y1="4100" x2="1035" y2="4100"/>
+  <text class="legend-text" x="1050" y="4106">«include»</text>
+  <line class="extend" x1="1190" y1="4100" x2="1250" y2="4100"/>
+  <text class="legend-text" x="1265" y="4106">«extend»</text>
+  <text class="subtitle" x="1100" y="4140" text-anchor="middle">Repeated actor symbols represent the same actor across subsystems.</text>
+</svg>
