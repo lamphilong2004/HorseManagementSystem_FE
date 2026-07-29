@@ -2930,6 +2930,7 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
                     <DatePicker 
                       selected={tournForm.startDate ? new Date(tournForm.startDate) : null}
                       onChange={(date: Date | null) => setTournForm({ ...tournForm, startDate: date ? format(date, "yyyy-MM-dd") : '' })}
+                      minDate={new Date()}
                       dateFormat="dd/MM/yyyy"
                       className="w-full h-[42px] px-3 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[var(--surface-2)] text-sm font-medium outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/10 transition-all text-white"
                       placeholderText="dd/mm/yyyy"
@@ -2940,6 +2941,7 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
                     <DatePicker 
                       selected={tournForm.endDate ? new Date(tournForm.endDate) : null}
                       onChange={(date: Date | null) => setTournForm({ ...tournForm, endDate: date ? format(date, "yyyy-MM-dd") : '' })}
+                      minDate={tournForm.startDate ? new Date(tournForm.startDate) : new Date()}
                       dateFormat="dd/MM/yyyy"
                       className="w-full h-[42px] px-3 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[var(--surface-2)] text-sm font-medium outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/10 transition-all text-white"
                       placeholderText="dd/mm/yyyy"
@@ -2981,6 +2983,8 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
                     <DatePicker 
                       selected={tournForm.registrationCloseDate ? new Date(tournForm.registrationCloseDate) : null}
                       onChange={(date: Date | null) => setTournForm({ ...tournForm, registrationCloseDate: date ? date.toISOString() : '' })}
+                      minDate={new Date()}
+                      maxDate={tournForm.startDate ? new Date(tournForm.startDate) : undefined}
                       showTimeSelect
                       timeFormat="HH:mm"
                       dateFormat="dd/MM/yyyy HH:mm"
