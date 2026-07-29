@@ -105,6 +105,7 @@ export function InvitesPage() {
           return {
             ...inv,
             raceId: matchedRace.id,
+            tournamentId: typeof matchedRace.tournamentId === 'object' ? (matchedRace.tournamentId._id || matchedRace.tournamentId.id) : matchedRace.tournamentId,
             raceName: matchedRace.name || inv.raceName,
             raceDistance: matchedRace.distance || inv.raceDistance,
             raceScheduledAt: matchedRace.scheduledAt || inv.raceScheduledAt,
@@ -128,6 +129,26 @@ export function InvitesPage() {
     setLoadingAction(inviteId)
     try {
       if (action === 'accept') {
+        // Validate if already accepted another horse in the SAME TOURNAMENT
+        const targetInvite = items?.find(inv => inv.id === inviteId || (inv as any)._id === inviteId);
+        if (targetInvite) {
+          const invAny = targetInvite as any;
+          const targetTournId = String(invAny.tournamentId || '');
+          
+          const hasAcceptedInSameTournament = items?.some(inv => {
+            const currentTournId = String((inv as any).tournamentId || '');
+            return targetTournId && currentTournId === targetTournId && 
+                   (inv.status === 'ACCEPTED' || inv.status === 'CONFIRMED') && 
+                   (inv.id !== inviteId && (inv as any)._id !== inviteId);
+          });
+          
+          if (hasAcceptedInSameTournament) {
+            alert('Bạn đã chấp nhận một lời mời khác trong giải đấu này. Không thể nhận thêm ngựa trong cùng 1 giải!');
+            setLoadingAction(null);
+            return;
+          }
+        }
+
         await acceptInvitation(inviteId)
       } else {
         await rejectInvitation(inviteId)

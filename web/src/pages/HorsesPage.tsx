@@ -159,12 +159,23 @@ export function HorsesPage() {
 
   const inviteModalRaces = useMemo(() => {
     if (!inviteModalHorseId) return [];
-    return registrations
-      .filter((r: any) => String(r.horseId) === inviteModalHorseId && (r.status === 'APPROVED' || r.status === 'CONFIRMED') && r.race)
+    const validRaces = registrations
+      .filter((r: any) => {
+        if (String(r.horseId) !== inviteModalHorseId || (r.status !== 'APPROVED' && r.status !== 'CONFIRMED') || !r.race) return false;
+        const rStatus = String(r.race.status || '').toUpperCase();
+        return !rStatus || rStatus === 'SCHEDULED' || rStatus === 'REGISTRATION_OPEN' || rStatus === 'PENDING';
+      })
       .map((r: any) => ({
         raceId: String(r.race.id || r.race._id),
         raceName: r.race.name
-      }))
+      }));
+      
+    // Chỉ hiển thị Heat/Round nếu đã chia bảng
+    const bracketRaces = validRaces.filter((r: any) => /Heat|Round|Bảng/i.test(r.raceName));
+    if (bracketRaces.length > 0) {
+      return bracketRaces;
+    }
+    return validRaces;
   }, [inviteModalHorseId, registrations]);
 
   // Set default race when horse changes
@@ -501,6 +512,17 @@ export function HorsesPage() {
 
       if (!registeredEntry) {
         return showToast('Ngựa chưa đăng ký cuộc đua này. Vui lòng đăng ký (tab Đăng Ký Đua) trước khi mời Jockey.', 'warning')
+      }
+
+      // Check if race is still open
+      const raceStatus = String(race?.status || '').toUpperCase()
+      if (raceStatus && raceStatus !== 'SCHEDULED' && raceStatus !== 'REGISTRATION_OPEN' && raceStatus !== 'PENDING') {
+        return showToast('Giải đua này đã kết thúc hoặc đang diễn ra, không thể mời thêm Jockey.', 'error')
+      }
+
+      // Check if horse already has a Jockey
+      if (registeredEntry.jockeyId || registeredEntry.jockey || (registeredEntry.status === 'CONFIRMED' && registeredEntry.jockeyId)) {
+        return showToast('Ngựa này đã chốt Jockey cho cuộc đua này, không thể mời thêm!', 'error')
       }
 
       const regStatus = String(registeredEntry.status || registeredEntry.registrationStatus || '').toUpperCase()
