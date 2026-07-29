@@ -19,6 +19,9 @@ import { Race } from '../../types';
 import { ActionButton, Chip, EmptyState, StatTile, Surface } from '../../components/MobileUI';
 import { formatDateTime, formatPoints, getHorseId, getHorseName, isPredictionRaceStatus } from '../../utils/spectator';
 
+const MIN_BET_AMOUNT = 100000;
+const MAX_BET_AMOUNT = 10000000;
+
 export default function RaceDetailsScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
@@ -38,6 +41,7 @@ export default function RaceDetailsScreen() {
   const isSpectator = user?.role === 'SPECTATOR';
   const canPredict = isSpectator && predictionOpen && isPredictionRaceStatus(race?.status);
   const betValue = Number(betAmount || 0);
+  const isBetAmountValid = betValue >= MIN_BET_AMOUNT && betValue <= MAX_BET_AMOUNT;
   const selectedHorse = horses.find((horse) => getHorseId(horse) === selectedHorseId);
 
   const results = useMemo(() => {
@@ -82,8 +86,11 @@ export default function RaceDetailsScreen() {
       Alert.alert('Dự đoán đã đóng', 'Cuộc đua này hiện không nhận dự đoán.');
       return;
     }
-    if (!betValue || betValue <= 0) {
-      Alert.alert('Mức cược chưa hợp lệ', 'Vui lòng nhập số điểm cược lớn hơn 0.');
+    if (!isBetAmountValid) {
+      Alert.alert(
+        'Mức cược chưa hợp lệ',
+        `Mức cược phải từ ${formatPoints(MIN_BET_AMOUNT)} đến ${formatPoints(MAX_BET_AMOUNT)} điểm.`,
+      );
       return;
     }
     if (balance < betValue) {
@@ -289,16 +296,20 @@ export default function RaceDetailsScreen() {
           </View>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
-            {[100000, 200000, 500000].map((amount) => (
+            {[MIN_BET_AMOUNT, 200000, 500000].map((amount) => (
               <Chip key={amount} label={formatPoints(amount)} tone="slate" onPress={() => setBetAmount(String(amount))} />
             ))}
-            <Chip label="Tất cả" tone="emerald" onPress={() => setBetAmount(String(Math.floor(balance)))} />
+            <Chip
+              label="Tất cả"
+              tone="emerald"
+              onPress={() => setBetAmount(String(Math.min(Math.floor(balance), MAX_BET_AMOUNT)))}
+            />
           </ScrollView>
 
           <ActionButton
             label="Xác nhận đặt cược"
             loading={submitting}
-            disabled={submitting}
+            disabled={submitting || !selectedHorseId || !isBetAmountValid}
             onPress={handlePlacePrediction}
             icon={CheckCircle}
           />

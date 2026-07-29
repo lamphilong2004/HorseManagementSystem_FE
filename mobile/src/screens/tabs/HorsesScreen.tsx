@@ -79,6 +79,15 @@ function idOf(value: any) {
   return String(value._id || value.id || value.userId || value.raceId || value.horseId || '').trim();
 }
 
+function isValidHttpUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return ['http:', 'https:'].includes(url.protocol) && Boolean(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
 function statusLabel(status?: string) {
   const s = String(status || '').toUpperCase();
   const map: Record<string, string> = {
@@ -108,6 +117,12 @@ function statusTone(status?: string) {
 
 function jockeyName(jockey: Jockey | any) {
   return jockey?.userId?.fullName || jockey?.userId?.name || jockey?.fullName || jockey?.name || 'Jockey';
+}
+
+function meaningfulLabel(value: unknown, placeholders: string[] = []) {
+  const label = String(value || '').trim();
+  if (!label) return '';
+  return placeholders.some((placeholder) => label.toLowerCase() === placeholder.toLowerCase()) ? '' : label;
 }
 
 function raceTournamentId(race: Race | any) {
@@ -274,17 +289,44 @@ export default function HorsesScreen() {
     return 'Đăng ký giải';
   };
 
-  const loadOwnerInvites = async (horseList: Horse[]) => {
+  const loadOwnerInvites = async (
+    horseList: Horse[],
+    raceList: Race[],
+    tournamentList: Tournament[],
+    jockeyList: Jockey[],
+  ) => {
     const inviteGroups = await Promise.all(
       horseList.map(async (horse) => {
         try {
           const horseId = getHorseId(horse);
           const items = await api.getHorseJockeys(horseId);
-          return items.map((item: any) => ({
-            ...item,
-            horseId: item.horseId || horseId,
-            horseName: item.horseName || horse.name,
-          }));
+          return items.map((item: any) => {
+            const inviteRaceId = idOf(item.raceId || item.race);
+            const inviteJockeyId = idOf(item.jockeyId || item.jockey);
+            const matchedRace = raceList.find((race) => getRaceId(race) === inviteRaceId);
+            const matchedJockey = jockeyList.find((jockey) => (
+              idOf(jockey) === inviteJockeyId || idOf(jockey.userId) === inviteJockeyId
+            ));
+            const tournamentId = matchedRace ? raceTournamentId(matchedRace) : idOf(item.tournamentId || item.tournament);
+            const matchedTournament = tournamentList.find((tournament) => tournamentIdOf(tournament) === tournamentId);
+
+            return {
+              ...item,
+              horseId,
+              horseName: horse.name || meaningfulLabel(item.horseName, ['Ngựa thi đấu']),
+              jockeyId: inviteJockeyId || item.jockeyId,
+              jockey: matchedJockey || item.jockey,
+              jockeyName: matchedJockey
+                ? jockeyName(matchedJockey)
+                : meaningfulLabel(item.jockeyName, ['Jockey']),
+              raceId: matchedRace ? getRaceId(matchedRace) : item.raceId,
+              race: matchedRace || item.race,
+              raceName: matchedRace?.name || meaningfulLabel(item.raceName, ['Chưa xác định']),
+              tournamentId,
+              tournamentName: matchedTournament?.name
+                || meaningfulLabel(item.tournamentName, ['Giải đấu', 'Chưa xác định']),
+            };
+          });
         } catch {
           return [];
         }
@@ -404,7 +446,7 @@ export default function HorsesScreen() {
       ]);
       const [regRows, inviteRows] = await Promise.all([
         loadRegistrations(horseList, tournamentList, raceList),
-        loadOwnerInvites(horseList),
+        loadOwnerInvites(horseList, raceList, tournamentList, jockeyList),
       ]);
 
       setHorses(horseList);
@@ -483,32 +525,58 @@ export default function HorsesScreen() {
   };
 
   const saveHorse = async () => {
+    const name = horseForm.name.trim();
+    const breed = horseForm.breed.trim();
+    const color = horseForm.color.trim();
+    const origin = horseForm.origin.trim();
+    const healthCertUrl = horseForm.healthCertUrl.trim();
     const age = Number(horseForm.age);
     const weight = Number(horseForm.weight);
-    if (horseForm.name.trim().length < 2) {
+
+    if (name.length < 2) {
       Alert.alert('Chưa hợp lệ', 'Tên ngựa phải có ít nhất 2 ký tự.');
       return;
     }
-    if (age < 1 || age > 30) {
-      Alert.alert('Chưa hợp lệ', 'Tuổi ngựa phải từ 1 đến 30.');
+    if (!breed) {
+      Alert.alert('Thiếu thông tin', 'Vui lòng nhập giống ngựa.');
       return;
     }
-    if (weight < 200 || weight > 700) {
-      Alert.alert('Chưa hợp lệ', 'Cân nặng phải từ 200kg đến 700kg.');
+    if (!color) {
+      Alert.alert('Thiếu thông tin', 'Vui lòng nhập màu sắc của ngựa.');
+      return;
+    }
+    if (!origin) {
+      Alert.alert('Thiếu thông tin', 'Vui lòng nhập xuất xứ của ngựa.');
+      return;
+    }
+    if (!healthCertUrl) {
+      Alert.alert('Thiếu thông tin', 'Vui lòng nhập URL giấy chứng nhận sức khỏe.');
+      return;
+    }
+    if (!isValidHttpUrl(healthCertUrl)) {
+      Alert.alert('Chưa hợp lệ', 'URL giấy chứng nhận sức khỏe phải là địa chỉ http hoặc https hợp lệ.');
+      return;
+    }
+    if (!Number.isInteger(age) || age < 2 || age > 20) {
+      Alert.alert('Chưa hợp lệ', 'Tuổi ngựa phải từ 2 đến 20.');
+      return;
+    }
+    if (!Number.isInteger(weight) || weight < 300 || weight > 700) {
+      Alert.alert('Chưa hợp lệ', 'Cân nặng phải từ 300kg đến 700kg.');
       return;
     }
 
     setActionLoading('horse');
     try {
       const payload = {
-        name: horseForm.name.trim(),
-        breed: horseForm.breed.trim(),
+        name,
+        breed,
         age,
         weight,
-        color: horseForm.color.trim(),
+        color,
         gender: horseForm.gender,
-        origin: horseForm.origin.trim(),
-        healthCertUrl: horseForm.healthCertUrl.trim() || 'https://example.com/no-cert-provided.pdf',
+        origin,
+        healthCertUrl,
       };
       if (editingHorse) {
         await api.updateHorse(getHorseId(editingHorse), payload);
@@ -685,8 +753,15 @@ export default function HorsesScreen() {
         horseId: selectedHorseId,
         horseName: horse?.name,
         jockeyId: jId,
+        jockey,
+        jockeyName: jockeyName(jockey),
         raceId: selectedRaceId,
+        race,
         raceName: race?.name || registeredEntry.tournamentName || registeredEntry.race.name || '',
+        tournamentId: raceTournamentId(race || registeredEntry.race),
+        tournamentName: tournaments.find(
+          (tournament) => tournamentIdOf(tournament) === raceTournamentId(race || registeredEntry.race),
+        )?.name || registeredEntry.tournamentName || '',
         status: 'PENDING',
         message: 'Mời bạn cưỡi ngựa của tôi',
       } as Invite;
@@ -701,7 +776,7 @@ export default function HorsesScreen() {
         return exists ? current : [...current, optimisticInvite];
       });
       Alert.alert('Đã gửi lời mời', `Đã gửi lời mời đến ${jockeyName(jockey)} cho ${horse?.name || 'ngựa'}.`);
-      loadOwnerInvites(horses)
+      loadOwnerInvites(horses, races, tournaments, jockeys)
         .then((inviteRows) => {
           setInvitations((current) => {
             const merged = [...inviteRows];
@@ -1067,22 +1142,47 @@ export default function HorsesScreen() {
         invitations.map((invite: any) => {
           const raceId = resolveInviteRaceId(invite);
           const matchedReg = registrations.find((reg) => reg.horseId === idOf(invite.horseId) && reg.raceId === raceId);
+          const matchedHorse = horses.find((horse) => getHorseId(horse) === idOf(invite.horseId));
+          const matchedRace = races.find((race) => getRaceId(race) === raceId) || matchedReg?.race;
           const regJockeyId = idOf(matchedReg?.jockeyId);
           const thisJockeyId = idOf(invite.jockeyId || invite.jockey);
+          const matchedJockey = jockeys.find((jockey) => (
+            idOf(jockey) === thisJockeyId || idOf(jockey.userId) === thisJockeyId
+          ));
+          const tournamentId = idOf(invite.tournamentId || invite.tournament)
+            || matchedReg?.tournamentId
+            || raceTournamentId(matchedRace);
+          const matchedTournament = tournaments.find((tournament) => tournamentIdOf(tournament) === tournamentId);
           const hasConfirmedForRace = invitations.some((item: any) => resolveInviteRaceId(item) === raceId && item.status === 'CONFIRMED');
           const isThisConfirmed = invite.status === 'CONFIRMED' || (!!regJockeyId && regJockeyId === thisJockeyId);
           const isOtherConfirmed = !isThisConfirmed && (!!regJockeyId || hasConfirmedForRace) && invite.status !== 'REJECTED';
           const displayStatus = isThisConfirmed ? 'CONFIRMED' : isOtherConfirmed ? 'OTHER_CONFIRMED' : invite.status || 'PENDING';
           const tone = statusTone(displayStatus);
-          const name = invite.jockeyId?.fullName || invite.jockeyId?.name || invite.jockey?.fullName || invite.jockey?.name || 'Jockey';
+          const name = matchedJockey
+            ? jockeyName(matchedJockey)
+            : meaningfulLabel(invite.jockeyName, ['Jockey'])
+              || jockeyName(invite.jockeyId || invite.jockey);
+          const horseName = matchedHorse?.name
+            || matchedReg?.horseName
+            || meaningfulLabel(invite.horseName, ['Ngựa thi đấu'])
+            || 'Chưa xác định';
+          const raceName = matchedRace?.name
+            || matchedReg?.race?.name
+            || meaningfulLabel(invite.raceName, ['Chưa xác định'])
+            || 'Chưa xác định';
+          const tournamentName = matchedTournament?.name
+            || matchedReg?.tournamentName
+            || meaningfulLabel(invite.tournamentName, ['Giải đấu', 'Chưa xác định'])
+            || (tournamentId ? 'Chưa xác định' : 'Cuộc đua độc lập');
 
           return (
             <Surface key={String(invite.id || invite._id)} className="p-4 mb-3">
               <View className="flex-row justify-between items-start">
                 <View className="flex-1 pr-3">
                   <Text className="text-base font-extrabold text-slate-900" numberOfLines={1}>{name}</Text>
-                  <Text className="text-xs text-slate-500 mt-1" numberOfLines={1}>Ngựa: {invite.horseName || getHorseName(invite)}</Text>
-                  <Text className="text-xs text-blue-700 font-bold mt-1" numberOfLines={1}>Cuộc đua: {invite.raceName || matchedReg?.race.name || 'Chưa xác định'}</Text>
+                  <Text className="text-xs text-slate-500 mt-1" numberOfLines={1}>Ngựa: {horseName}</Text>
+                  <Text className="text-xs text-purple-700 font-bold mt-1" numberOfLines={1}>Giải đấu: {tournamentName}</Text>
+                  <Text className="text-xs text-blue-700 font-bold mt-1" numberOfLines={1}>Cuộc đua: {raceName}</Text>
                 </View>
                 <View className={`px-2.5 py-1 rounded-full border ${displayStatus === 'OTHER_CONFIRMED' ? 'bg-slate-100 text-slate-600 border-slate-200' : tone}`}>
                   <Text className={`text-[10px] font-extrabold ${displayStatus === 'OTHER_CONFIRMED' ? 'text-slate-600' : tone.split(' ')[1]}`}>
