@@ -542,10 +542,20 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
       }
     }
 
+    if (!selectedTourn && tournForm.registrationCloseDate) {
+      const today = new Date()
+      if (new Date(tournForm.registrationCloseDate).getTime() <= today.getTime()) {
+        showToast('Ngày đóng đăng ký phải sau thời điểm hiện tại!', 'error')
+        return
+      }
+    }
+
     if (tournForm.registrationCloseDate && tournForm.startDate) {
       const rEnd = new Date(tournForm.registrationCloseDate).getTime()
-      if (new Date(tournForm.startDate).getTime() < rEnd) {
-        showToast('Ngày bắt đầu giải đấu phải diễn ra sau khi đã đóng đăng ký!', 'error')
+      // Nếu ngày bắt đầu được tính là 0h00 của ngày đó
+      const start = new Date(tournForm.startDate).getTime()
+      if (start < rEnd) {
+        showToast('Ngày đóng đăng ký phải trước ngày bắt đầu giải đấu!', 'error')
         return
       }
     }
@@ -2975,7 +2985,6 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
                     <label>Phương thức ghép cặp</label>
                     <select value={tournForm.pairingMethod} onChange={(e) => setTournForm({ ...tournForm, pairingMethod: e.target.value })}>
                       <option value="RANDOM">Ngẫu nhiên (Random)</option>
-                      <option value="SEEDED">Xếp hạt giống (Seeded)</option>
                     </select>
                   </div>
                 </div>
