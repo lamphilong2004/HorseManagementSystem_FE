@@ -1796,6 +1796,8 @@ export function AdminSchedulingPage({ tab }: { tab?: Tab }) {
                             loadTabData(undefined, rId, undefined, undefined)
                           }}
                           lastModifiedRaceId={lastModifiedRaceId}
+                          showToast={showToast}
+                          setConfirmConfig={setConfirmConfig}
                         />
                       </div>
                     )}
@@ -3346,12 +3348,16 @@ function RaceList({
   onViewRace,
   onRefresh,
   lastModifiedRaceId,
+  showToast,
+  setConfirmConfig,
 }: {
   races: Race[]
   onEditRace: (race: Race) => void
   onViewRace: (race: Race) => void
   onRefresh: (highlightRaceId?: string) => void
   lastModifiedRaceId?: string | null
+  showToast: (msg: string, type?: 'success' | 'error' | 'warning' | 'info') => void
+  setConfirmConfig: (config: any) => void
 }) {
   const [startingStreamId, setStartingStreamId] = useState<string | null>(null)
   const [stoppingStreamId, setStoppingStreamId] = useState<string | null>(null)
@@ -3360,35 +3366,45 @@ function RaceList({
     setStartingStreamId(raceId)
     try {
       await startRaceStream(raceId)
-      alert("Đã bắt đầu cuộc đua giả lập thành công! Người xem hiện tại có thể xem giả lập 2D trực tiếp.")
+      showToast("Đã bắt đầu cuộc đua giả lập thành công! Người xem hiện tại có thể xem giả lập 2D trực tiếp.", "success")
       onRefresh(raceId)
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Không thể bắt đầu giả lập cho cuộc đua này')
+      showToast(err.response?.data?.message || 'Không thể bắt đầu giả lập cho cuộc đua này', "error")
     } finally {
       setStartingStreamId(null)
     }
   }
 
   const handleStopStream = async (raceId: string) => {
-    if (!confirm('Bạn có chắc chắn muốn kết thúc cuộc đua giả lập này?')) return
-    setStoppingStreamId(raceId)
-    try {
-      await stopRaceStream(raceId)
-      alert('Đã kết thúc cuộc đua giả lập thành công!')
-      onRefresh(raceId)
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Không thể kết thúc cuộc đua')
-    } finally {
-      setStoppingStreamId(null)
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Kết thúc cuộc đua',
+      message: 'Bạn có chắc chắn muốn kết thúc cuộc đua giả lập này?',
+      isDestructive: true,
+      confirmText: 'Kết thúc',
+      onConfirm: async () => {
+        setConfirmConfig((prev: any) => ({ ...prev, isOpen: false }))
+        setStoppingStreamId(raceId)
+        try {
+          await stopRaceStream(raceId)
+          showToast('Đã kết thúc cuộc đua giả lập thành công!', 'success')
+          onRefresh(raceId)
+        } catch (err: any) {
+          showToast(err.response?.data?.message || 'Không thể kết thúc cuộc đua', 'error')
+        } finally {
+          setStoppingStreamId(null)
+        }
+      }
+    })
   }
 
   const handleQuickStatusChange = async (id: string, newStatus: string) => {
     try {
       await updateRace(id, { status: newStatus } as any)
       onRefresh(id)
+      showToast('Đã cập nhật trạng thái thành công', 'success')
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Không thể đổi trạng thái cuộc đua')
+      showToast(err.response?.data?.message || 'Không thể đổi trạng thái cuộc đua', 'error')
     }
   }
 
@@ -3492,7 +3508,7 @@ function RaceList({
                             style={{ fontSize: '11px', padding: '4px 8px', background: !r.refereeId ? '#6b7280' : '#10b981', color: '#fff', border: 'none', cursor: !r.refereeId ? 'not-allowed' : 'pointer' }}
                             onClick={() => {
                               if (!r.refereeId) {
-                                alert('Vui lòng phân công trọng tài trước khi bắt đầu cuộc đua!');
+                                showToast('Vui lòng phân công trọng tài trước khi bắt đầu cuộc đua!', 'warning');
                                 return;
                               }
                               handleStartStream(r.id);

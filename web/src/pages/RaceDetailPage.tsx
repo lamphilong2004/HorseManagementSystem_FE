@@ -260,12 +260,12 @@ export function RaceDetailPage() {
     {
       id: 'horse',
       header: 'Ngựa',
-      cell: (r: RaceResult) => <span className="fw-600">{r.horseId?.name || r.horseId || '—'}</span>,
+      cell: (r: RaceResult) => <span className="fw-600">{r.horseId?.name || (typeof r.horseId === 'string' ? r.horseId : '—')}</span>,
     },
     {
       id: 'jockey',
       header: 'Nài ngựa',
-      cell: (r: RaceResult) => <span>{r.jockeyId?.fullName || r.jockeyId?.name || r.jockeyId || '—'}</span>,
+      cell: (r: RaceResult) => <span>{r.jockeyId?.fullName || r.jockeyId?.name || (typeof r.jockeyId === 'string' ? r.jockeyId : '—')}</span>,
     },
     {
       id: 'time',
